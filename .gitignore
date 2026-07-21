@@ -1,0 +1,29 @@
+node_modules/
+.next/
+coverage/
+prisma/migrations/
+!.env.example
+!.env.local.example
+.DS_Store
+.vscode/
+.vscode
+data/
+*.tsbuildinfo
+npm-debug.log*
+
+# Local documentation - not needed for production
+docs/
+codex/
+prototype/
+references/
+tasks/
+migrations/
+00_START_HERE.md
+DELIVERY_MANIFEST.json
+
+# Claude Code local config
+.claude/
+
+# Environment files (keep examples only)
+.env
+.env.local

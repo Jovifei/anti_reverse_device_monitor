@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "metrics": [
+    {
+      "metric_key": "ct.active_power.phase_a",
+      "siid": 2,
+      "piid": 2,
+      "identifier": "active_power_ct1",
+      "display_name": "A相CT有功功率",
+      "data_kind": "timeseries",
+      "value_type": "float",
+      "unit": "W",
+      "chart_group": "power",
+      "chart_enabled": true,
+      "critical_rule": {
+        "operator": "lt",
+        "value": 0,
+        "severity": "critical"
+      },
+      "retention_days": 7
+    },
+    {
+      "metric_key": "ct.load_power",
+      "siid": 2,
+      "piid": 9,
+      "identifier": "load_power",
+      "display_name": "家庭负载功率",
+      "data_kind": "timeseries",
+      "value_type": "uint16",
+      "unit": "W",
+      "chart_group": "power",
+      "chart_enabled": true,
+      "retention_days": 7
+    },
+    {
+      "metric_key": "ct.today_energy",
+      "siid": 2,
+      "piid": 12,
+      "identifier": "today_energy",
+      "display_name": "CT今日发电量",
+      "data_kind": "counter",
+      "value_type": "float",
+      "unit": "TO_BE_CONFIRMED",
+      "chart_group": "energy",
+      "chart_enabled": false,
+      "retention_days": 7
+    },
+    {
+      "metric_key": "inverter.online_state",
+      "siid": "4-12",
+      "piid": 1,
+      "identifier": "online_state",
+      "display_name": "微逆在线状态",
+      "data_kind": "state",
+      "value_type": "uint8",
+      "unit": null,
+      "enum_source": "status_dictionary.inverter_online_state",
+      "chart_enabled": false,
+      "retention_days": 7
+    },
+    {
+      "metric_key": "inverter.fault_param",
+      "siid": "4-12",
+      "piid": 13,
+      "identifier": "fault_param",
+      "display_name": "微逆故障参数",
+      "data_kind": "fault",
+      "value_type": "int32",
+      "unit": null,
+      "decoder_source": "fault_dictionary.json",
+      "chart_enabled": false,
+      "retention_days": 7
+    }
+  ]
+}

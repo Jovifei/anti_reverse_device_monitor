@@ -1,0 +1,20 @@
+﻿:root {
+  font-family: Arial, sans-serif;
+  color: #111;
+  background: #f6f8fb;
+}
+
+main {
+  max-width: 960px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+h1,
+h2 {
+  font-size: 24px;
+}
+
+ul {
+  padding-left: 20px;
+}
