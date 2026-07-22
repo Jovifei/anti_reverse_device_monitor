@@ -2,6 +2,8 @@
 
 UI_ACCEPTANCE_STATUS: READY
 
+> 后续细化见 [UI_REAL_LOG_REFINEMENT_REPORT.md](UI_REAL_LOG_REFINEMENT_REPORT.md)，参考页审计见 [UI_REAL_LOG_REFERENCE_AUDIT.md](UI_REAL_LOG_REFERENCE_AUDIT.md)。
+
 ## 1. 基线验证
 
 在 `c0518ec` 的隔离工作树中完成 `npm install`、`npm run prisma:generate`、`npm run typecheck`、`npm run lint`、`npm test` 和 `npm run build`，均通过。原始 E2E 固定占用 3100 端口和同名 SQLite fixture，已改为专用 3101 端口与 `e2e-ui-acceptance.db`，避免干扰 Demo 预览。
@@ -32,7 +34,7 @@ CT 详情页保留既有动态服务，补齐运行 KPI、A/B/C 三相逆流区�
 
 ## 8. 桌面截图
 
-已生成：总览、在线/离线/逆流 CT、在线/离线/故障微逆，共 7 张；位于 `artifacts/ui-review/`（忽略文件）。
+采集脚本覆盖：CT 主视图、相位历史、微逆网格、微逆指标历史、离线历史、逆流告警，以及三张移动端视图，共 9 张；位于 `artifacts/ui-review/`（忽略文件）。
 
 ## 9. 移动端截图
 
@@ -42,7 +44,7 @@ CT 详情页保留既有动态服务，补齐运行 KPI、A/B/C 三相逆流区�
 
 `npm run prisma:generate` 在隔离的 `c0518ec` 基线工作树中通过。最终代码工作树的同一命令会被原先存在的 3100 Next 预览进程锁住 Prisma 引擎文件，因此没有终止该用户进程；本轮没有修改 Prisma schema 或生成客户端契约。
 
-最终运行并通过：`npm run typecheck`、`npm run lint`、`npm test`（6 个文件、8 项）、`npm run build`、`npm run test:e2e`（3/3）、`npm run demo:seed` 和 `npm run ui:capture`（10 张）。
+最终运行并通过：`npm run typecheck`、`npm run lint`、`npm test`、`npm run build`、`npm run test:e2e`、`npm run demo:seed` 和 `npm run ui:capture`（9 张）。
 
 ## 11. 修改文件
 
@@ -68,3 +70,7 @@ npm run demo
 ## 15. Git 分支和提交状态
 
 目标分支为 `codex/phase2-ui-acceptance`，仅允许本地提交；不推送、不合并到 `main`，等待人工页面验收反馈。
+
+## 2026-07-22 refinement addendum
+
+The UI refinement adds phase-history dialogs, inverter metric-history dialogs, severe reverse-flow emphasis, fixed eight-channel state coverage, and screenshot automation. Final acceptance status remains governed by the recorded command results in the current delivery report.

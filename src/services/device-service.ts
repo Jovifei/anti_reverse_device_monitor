@@ -73,6 +73,7 @@ export interface ChartSeries {
   unit: string
   color: string
   markNegative?: boolean
+  dailyReset?: boolean
   points: Array<[string, number]>
 }
 
@@ -86,6 +87,7 @@ export interface DeviceHistorySummary {
 
 const OFFLINE_THRESHOLD_MINUTES = 15
 const ACTIVE_WINDOW_DAYS = 7
+const INVERTER_TODAY_ENERGY_METRIC: MetricDefinition = { key: 'inverter-today-energy', label: '今日发电量', unit: 'kWh', color: '#8b5e34', aliases: ['today_energy', 'inverter_today_energy'] }
 
 function toMinutesSince(date: Date) {
   return Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
@@ -165,6 +167,10 @@ export class DeviceService {
 
   async getDeviceSummary(sn: string) {
     return this.repo.findBySn(parseSn(sn))
+  }
+
+  async getDeviceDataSourceLabel(sn: string) {
+    return (await this.telemetryRepository.hasTelemetryForDevice(parseSn(sn))) ? '本地数据库' : '暂无数据'
   }
 
   async resolveDeviceSn(rawSn: string) {
@@ -336,7 +342,8 @@ export class DeviceService {
       windowStart: startAt.toISOString(),
       windowEnd: endAt.toISOString(),
       power: this.toChartSeries(rows, INVERTER_POWER_METRICS),
-      temperature: this.toChartSeries(rows, [INVERTER_TEMPERATURE_METRIC])
+      temperature: this.toChartSeries(rows, [INVERTER_TEMPERATURE_METRIC]),
+      energy: this.toChartSeries(rows, [INVERTER_TODAY_ENERGY_METRIC]).map((item) => ({ ...item, dailyReset: true }))
     }
   }
 

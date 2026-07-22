@@ -23,16 +23,16 @@ npm run demo
 | --- | --- | --- |
 | `DEMO-CT-ONLINE-001` | 在线正常；6 台已绑定微逆，包含发电、待机、离线、限流、丢包、温度变化、未配对与无数据卡片。 | `/devices/DEMO-CT-ONLINE-001` |
 | `DEMO-CT-OFFLINE-002` | 最近 7 天活跃、当前离线，保留离线开始与持续时间。 | `/devices/DEMO-CT-OFFLINE-002` |
-| `DEMO-CT-REVERSE-003` | A 相当前严重逆流；包含一段已恢复告警与一段持续中的告警。 | `/devices/DEMO-CT-REVERSE-003` |
+| `DEMO-CT-REVERSE-003` | A/B/C 三相合成逆流场景；包含已恢复与持续中的告警。 | `/devices/DEMO-CT-REVERSE-003` |
 
 ## 建议验收路径
 
 1. 在总览使用“仅在线 CT”“仅离线 CT”“仅逆流告警”筛选，确认离线 CT 没有从总览消失，逆流设备显示红色告警。
 2. 打开在线 CT，检查 1～8 微逆卡片：1 为在线发电、2 为在线待机、3 为离线、4 为限流发电、6 有丢包率与温度变化、7 为未配对、8 为无数据。
 3. 打开离线 CT，确认离线状态、最后上报和离线持续时间仍可查看。
-4. 打开逆流 CT，确认 A/B/C 三相独立显示，A 相负功率为红色，告警记录同时存在“已恢复”和“持续中”。
+4. 打开逆流 CT，确认 A/B/C 三相独立显示，负功率为红色，告警记录同时存在“已恢复”和“持续中”；点击相卡可打开默认 7 天曲线。
 5. 打开故障微逆：`/devices/DEMO-CT-REVERSE-003/inverters/1`。页面直接显示 `PV1输入欠压`、`PV2输入欠压`、`PV电压异常`，不会显示 bit 编号。
-6. 在任一功率图切换 1 / 3 / 7 天，勾选或取消曲线，滚轮缩放、拖动时间轴、双击图表或点击“复位缩放”恢复全范围。图表同时具备 tooltip、inside dataZoom 和 slider dataZoom。
+6. 在任一功率图切换 24 小时 / 3 天 / 7 天，勾选或取消曲线，滚轮缩放、拖动时间轴、双击图表或点击“复位缩放”恢复全范围。图表同时具备 tooltip、inside dataZoom、slider dataZoom、负点标记和零线。
 
 ## 截图复现
 
@@ -42,4 +42,10 @@ npm run demo
 npm run ui:capture
 ```
 
-脚本使用独立的 3102 端口，输出 7 张桌面和 3 张移动端截图至 `artifacts/ui-review/`；该目录不会提交到 Git。
+脚本使用独立的 3102 端口，输出 6 张桌面和 3 张移动端截图（含相位与微逆指标历史对话框）至 `artifacts/ui-review/`；该目录不会提交到 Git。
+
+## 2026-07-22 UI refinement evidence
+
+- CT and inverter screens now use click-to-open historical metric dialogs, a read-only source label, and a prominent reverse-flow state.
+- Run `npm run test:e2e` for interaction coverage and `npm run ui:capture` to regenerate ignored acceptance screenshots.
+- See `docs/UI_REAL_LOG_REFERENCE_AUDIT.md` and `docs/UI_REAL_LOG_REFINEMENT_REPORT.md` for the real-log reference boundary and delivered changes.

@@ -225,6 +225,12 @@ export class TelemetryRepository {
     })
   }
 
+  async hasTelemetryForDevice(deviceSn: string) {
+    const device = await this.db.device.findUnique({ where: { deviceSn }, select: { id: true } })
+    if (!device) return false
+    return Boolean(await this.db.telemetry.findFirst({ where: { deviceId: device.id }, select: { id: true } }))
+  }
+
   async listTelemetryByMetric({
     deviceSn,
     metricKey,

@@ -92,6 +92,11 @@ export function numericValue(row: MetricRow | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+export function isReverseFlowPower(row: MetricRow | undefined) {
+  const value = numericValue(row)
+  return value !== null && value < 0
+}
+
 export function displayValue(row: MetricRow | undefined, unit = '') {
   const numeric = numericValue(row)
   if (numeric !== null) return `${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(numeric)}${unit ? ` ${unit}` : ''}`

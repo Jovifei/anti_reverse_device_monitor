@@ -78,14 +78,17 @@ async function main() {
 
     const addCtHour = (deviceId: number, reportedAt: Date, mode: 'online' | 'offline' | 'reverse', hour: number) => {
       const generated = 3600 * solarFactor(reportedAt)
-      const historicReverse = mode === 'reverse' && ((hour >= 72 && hour <= 74) || hour <= 2)
+      const reverseA = mode === 'reverse' && ((hour >= 72 && hour <= 74) || hour <= 2)
+      const reverseB = mode === 'reverse' && hour >= 42 && hour <= 44
+      const reverseC = mode === 'reverse' && hour <= 1
+      const historicReverse = reverseA || reverseB || reverseC
       const rows: Metric[] = []
       addMetric(rows, null, 'load_power', 950 + generated * 0.42, reportedAt)
       addMetric(rows, null, 'grid_power', historicReverse ? -420 - (hour % 3) * 35 : 120 + generated * 0.08, reportedAt)
       addMetric(rows, null, 'inverter_total_power', generated, reportedAt)
-      addMetric(rows, null, 'active_power_ct1', historicReverse ? -420 : 55 + generated * 0.04, reportedAt)
-      addMetric(rows, null, 'active_power_ct2', 75 + generated * 0.035, reportedAt)
-      addMetric(rows, null, 'active_power_ct3', 95 + generated * 0.03, reportedAt)
+      addMetric(rows, null, 'active_power_ct1', reverseA ? -420 : 55 + generated * 0.04, reportedAt)
+      addMetric(rows, null, 'active_power_ct2', reverseB ? -330 : 75 + generated * 0.035, reportedAt)
+      addMetric(rows, null, 'active_power_ct3', reverseC ? -260 : 95 + generated * 0.03, reportedAt)
       addMetric(rows, null, 'grid_voltage', 229 + Math.sin(hour / 4) * 2, reportedAt)
       addMetric(rows, null, 'grid_frequency', 50 + Math.cos(hour / 3) * 0.04, reportedAt)
       addMetric(rows, null, 'today_energy', Math.max(0, generated / 1000 * Math.max(0, reportedAt.getHours() - 6)), reportedAt)
@@ -106,7 +109,7 @@ async function main() {
 
       for (const binding of onlineBindings.filter((item) => item.paired)) {
         const generated = 640 * solarFactor(reportedAt) * (0.8 + binding.inverterIndex * 0.025)
-        const offlineState = binding.inverterIndex === 3
+        const offlineState = binding.inverterIndex === 3 || (binding.inverterIndex === 6 && hour >= 40 && hour <= 43)
         const standby = binding.inverterIndex === 2
         const limited = binding.inverterIndex === 4
         const recoveredFault = binding.inverterIndex === 5 && hour >= 84 && hour <= 86
@@ -169,8 +172,9 @@ async function main() {
     await prisma.telemetry.createMany({ data: records })
     await prisma.deviceLatest.createMany({ data: [...latest.values()] })
     await prisma.reverseFlowAlert.createMany({ data: [
-      { deviceId: reverse.id, phase: 'A', startedAt: new Date(now.getTime() - 74 * 60 * 60 * 1000), endedAt: new Date(now.getTime() - 71 * 60 * 60 * 1000), minimumPowerW: -490, sampleCount: 3, severity: 'critical' },
-      { deviceId: reverse.id, phase: 'A', startedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000), endedAt: null, minimumPowerW: -490, sampleCount: 3, severity: 'critical' }
+      { deviceId: reverse.id, phase: 'A', startedAt: new Date(now.getTime() - 74 * 60 * 60 * 1000), endedAt: new Date(now.getTime() - 71 * 60 * 60 * 1000), minimumPowerW: -420, sampleCount: 3, severity: 'critical' },
+      { deviceId: reverse.id, phase: 'B', startedAt: new Date(now.getTime() - 44 * 60 * 60 * 1000), endedAt: new Date(now.getTime() - 41 * 60 * 60 * 1000), minimumPowerW: -330, sampleCount: 3, severity: 'critical' },
+      { deviceId: reverse.id, phase: 'C', startedAt: new Date(now.getTime() - 60 * 60 * 1000), endedAt: null, minimumPowerW: -260, sampleCount: 2, severity: 'critical' }
     ] })
     await prisma.device.update({ where: { id: offline.id }, data: { platformOnline: false, lastReportedAt: offlineAt } })
 

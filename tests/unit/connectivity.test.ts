@@ -18,4 +18,13 @@ describe('inverter online-state continuity', () => {
     expect(result.currentOfflineMinutes).toBe(30)
     expect(result.offlineWindows).toHaveLength(1)
   })
+
+  it('uses a baseline state at the window start and ignores repeated states', () => {
+    const result = summarizeInverterOnlineStates([
+      { at: new Date('2026-07-14T00:20:00.000Z'), value: 1 },
+      { at: new Date('2026-07-14T00:40:00.000Z'), value: 2 }
+    ], start, end, { at: new Date('2026-07-13T23:50:00.000Z'), value: 1 })
+    expect(result.offlineWindows[0]).toMatchObject({ durationMinutes: 40 })
+    expect(result.transitions.map((item) => item.state)).toEqual(['offline', 'online'])
+  })
 })
