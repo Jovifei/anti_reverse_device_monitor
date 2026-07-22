@@ -30,4 +30,13 @@ backups/
 test-results/
 playwright-report/
 artifacts/ui-review/
+.next-validation/
+.next-ui-capture-*/
+.tsconfig-ui-capture-*.json
 docs/dependency-audit.raw.json
+
+# Local real-log UI exploration; never commit customer telemetry or derived previews.
+log/
+ui-preview.html
+ui-preview-real-logs.html
+scripts/generate-log-preview.cjs

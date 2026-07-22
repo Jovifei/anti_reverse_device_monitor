@@ -8,7 +8,7 @@ const compat = new FlatCompat({ baseDirectory })
 
 const config = [
   ...compat.config(nextVitals),
-  { ignores: ['.next/**', 'coverage/**', 'data/**', 'node_modules/**', 'prototype/**'] }
+  { ignores: ['.next/**', '.next-validation/**', '.next-ui-capture-*/**', 'coverage/**', 'data/**', 'node_modules/**', 'prototype/**'] }
 ]
 
 export default config

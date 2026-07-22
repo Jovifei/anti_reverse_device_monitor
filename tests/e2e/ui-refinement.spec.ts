@@ -31,13 +31,19 @@ test.describe('CT and inverter monitoring refinements', () => {
     await expect(page.getByText('微型逆变器 1～8')).toBeVisible();
     await expect(page.getByText('未配对通道')).toBeVisible();
     await expect(page.getByText('暂无遥测数据')).toBeVisible();
+    await expect(page.locator('.inverter-card').first().getByText('今日发电时长', { exact: true })).toBeVisible();
 
     await page.goto('/devices/DEMO-CT-REVERSE-003/inverters/1');
     await expect(page.getByText('PV1 输入欠压', { exact: true })).toBeVisible();
     await expect(page.getByText('PV2 输入欠压', { exact: true })).toBeVisible();
     await expect(page.getByText('PV 电压异常', { exact: true })).toBeVisible();
-    await expect(page.getByText('undefined')).toHaveCount(0);
-    await expect(page.getByText('NaN')).toHaveCount(0);
+    const body = page.locator('body');
+    await expect(body).not.toContainText('PV1输入欠压');
+    await expect(body).not.toContainText('PV2输入欠压');
+    await expect(body).not.toContainText('PV电压异常');
+    await expect(body).not.toContainText('undefined');
+    await expect(body).not.toContainText('null');
+    await expect(body).not.toContainText('NaN');
   });
 
   test('shows a severe reverse-flow banner and offline interval history', async ({ page }) => {

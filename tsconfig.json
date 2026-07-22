@@ -32,12 +32,14 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next/types/**/*.ts",
     "next-env.d.ts",
-    "prisma/*.ts",
-    ".next/types/**/*.ts"
+    "prisma/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "migrations"
+    "migrations",
+    ".next-validation",
+    ".next-ui-capture-*"
   ]
 }

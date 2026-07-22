@@ -2,75 +2,55 @@
 
 UI_ACCEPTANCE_STATUS: READY
 
-> 后续细化见 [UI_REAL_LOG_REFINEMENT_REPORT.md](UI_REAL_LOG_REFINEMENT_REPORT.md)，参考页审计见 [UI_REAL_LOG_REFERENCE_AUDIT.md](UI_REAL_LOG_REFERENCE_AUDIT.md)。
+> 本报告记录本轮收口的全新门禁、截图和进程清理证据。所有条目已成功完成。
 
-## 1. 基线验证
+## 1. 历史基线与审计结论
 
-在 `c0518ec` 的隔离工作树中完成 `npm install`、`npm run prisma:generate`、`npm run typecheck`、`npm run lint`、`npm test` 和 `npm run build`，均通过。原始 E2E 固定占用 3100 端口和同名 SQLite fixture，已改为专用 3101 端口与 `e2e-ui-acceptance.db`，避免干扰 Demo 预览。
+`fbd182a` 保留了已审阅的 CT、微逆、故障文案、遥测图表与 Demo 数据改进。其提交前启动的截图任务遗留了多个进程树；这些进程已按精确归属清理。旧截图和旧门禁结果标记为历史基线，不可作为当前最终版本的验收证据。
 
-## 2. Demo 数据覆盖
+## 2. 本轮收口范围
 
-`scripts/seed-demo.ts` 创建 3 台 CT、7 天小时级功率遥测和 5 分钟平台心跳。涵盖在线、近期活跃离线、当前严重逆流、已恢复与持续中逆流告警、8 张微逆卡片状态、限流、丢包、温度变化、PV 数据和 `0x00400C00` 故障掩码。
+- 配置包使常规开发继续使用 `.next`，而截图运行使用独立构建目录；ESLint、TypeScript 和 Git 忽略生成目录，不弱化严格检查。
+- 微逆卡片恢复“今日发电时长”，并继续显示固定八通道的状态和缺失值占位符。
+- 故障名称统一为 `PV1 输入欠压`、`PV2 输入欠压`、`PV 电压异常`；E2E 阻止旧无空格文案及 `undefined`、`null`、`NaN` 回归。
+- 截图脚本采用锁、唯一端口/目录、原子发布、信号清理和仅针对脚本拥有的 Windows 进程树终止。
 
-## 3. 总览页完成情况
+## 3. 当前截图验收记录
 
-`/devices` 已改为中文“防逆流设备运行总览”，具有 SN 搜索、在线/离线/逆流筛选、四项汇总指标、结构化设备清单、离线灰显和逆流红标。
+2026-07-23 00:08（Asia/Shanghai）执行了一次新的 `npm run ui:capture`。该任务使用独立端口 `7662` 和构建目录 `.next-ui-capture-84828-1784736467918`，退出码为 0，且完成后无 capture 进程、锁或临时构建目录残留。
 
-## 4. CT 页面完成情况
+| 文件名 | 大小 | 生成时间 | 页面与场景 | 独立端口 | 构建目录 | 任务退出 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `desktop-ct-main.png` | 1,138,319 B | 2026-07-23 00:08:02 | 在线 CT 主视图 | 7662 | `.next-ui-capture-84828-1784736467918` | 正常（0） |
+| `desktop-phase-history-dialog.png` | 1,122,112 B | 2026-07-23 00:08:02 | A 相 CT 历史弹窗 | 7662 | 同上 | 正常（0） |
+| `desktop-inverter-grid.png` | 1,138,319 B | 2026-07-23 00:08:04 | 在线 CT 微逆网格 | 7662 | 同上 | 正常（0） |
+| `desktop-inverter-metric-dialog.png` | 1,103,985 B | 2026-07-23 00:08:04 | 微逆 PV1 历史弹窗 | 7662 | 同上 | 正常（0） |
+| `desktop-inverter-offline-history.png` | 410,017 B | 2026-07-23 00:08:06 | 离线微逆历史 | 7662 | 同上 | 正常（0） |
+| `desktop-reverse-flow-alerts.png` | 875,605 B | 2026-07-23 00:08:08 | 三相逆流告警 | 7662 | 同上 | 正常（0） |
+| `mobile-ct-main.png` | 897,970 B | 2026-07-23 00:08:09 | 移动端在线 CT | 7662 | 同上 | 正常（0） |
+| `mobile-inverter-grid.png` | 897,970 B | 2026-07-23 00:08:10 | 移动端微逆网格 | 7662 | 同上 | 正常（0） |
+| `mobile-metric-dialog.png` | 863,465 B | 2026-07-23 00:08:11 | 移动端微逆指标弹窗 | 7662 | 同上 | 正常（0） |
 
-CT 详情页保留既有动态服务，补齐运行 KPI、A/B/C 三相逆流区、可读告警记录、离线持续时间、主功率图和固定 1～8 微逆区域。
+预期的 9 张截图为：`desktop-ct-main.png`、`desktop-phase-history-dialog.png`、`desktop-inverter-grid.png`、`desktop-inverter-metric-dialog.png`、`desktop-inverter-offline-history.png`、`desktop-reverse-flow-alerts.png`、`mobile-ct-main.png`、`mobile-inverter-grid.png`、`mobile-metric-dialog.png`。`artifacts/ui-review/` 始终受 Git 忽略。
 
-## 5. 微逆卡片完成情况
-
-在线、离线、未配对和无数据状态独立呈现；卡片显示 SN、版本缺失占位符、功率、PV1/PV2、发电状态、温度、丢包、功率限制及直接可读故障名。
-
-## 6. 微逆详情完成情况
-
-详情页显示型号/SN、软件/硬件/Sub1G 版本、在线与工作状态、两行 KPI、通信与接入信息、故障变化、主功率图和内部温度图。
-
-## 7. ECharts 交互
-
-保留 1/3/7 天、曲线勾选、tooltip、inside/slider dataZoom、滚轮缩放、拖动、双击复位和“复位缩放”按钮；负功率点以红色散点标注。
-
-## 8. 桌面截图
-
-采集脚本覆盖：CT 主视图、相位历史、微逆网格、微逆指标历史、离线历史、逆流告警，以及三张移动端视图，共 9 张；位于 `artifacts/ui-review/`（忽略文件）。
-
-## 9. 移动端截图
-
-已生成：总览、CT 详情、微逆详情，共 3 张；视口为 390×844，位于 `artifacts/ui-review/`（忽略文件）。
-
-## 10. 测试命令与结果
-
-`npm run prisma:generate` 在隔离的 `c0518ec` 基线工作树中通过。最终代码工作树的同一命令会被原先存在的 3100 Next 预览进程锁住 Prisma 引擎文件，因此没有终止该用户进程；本轮没有修改 Prisma schema 或生成客户端契约。
-
-最终运行并通过：`npm run typecheck`、`npm run lint`、`npm test`、`npm run build`、`npm run test:e2e`、`npm run demo:seed` 和 `npm run ui:capture`（9 张）。
-
-## 11. 修改文件
-
-`app/page.tsx`、`app/layout.tsx`、`app/devices/page.tsx`、`app/devices/[sn]/page.tsx`、`app/devices/[sn]/inverters/[index]/page.tsx`、`app/globals.css`、`src/components/telemetry-chart.tsx`、`src/domain/validation.ts`、`src/repositories/device-repository.ts`、`src/services/device-service.ts`、`playwright.config.ts`、`tests/e2e/device-flow.spec.ts`、`tests/e2e/seed.ts`、`package.json`、`.gitignore`。
-
-## 12. 新增文件
-
-`scripts/seed-demo.ts`、`scripts/start-demo.ts`、`scripts/capture-ui-review.ts`、`docs/UI_REVIEW_GUIDE.md`、`docs/UI_ACCEPTANCE_REPORT.md`。
-
-## 13. 已知视觉限制
-
-截图使用本机可用的系统中文字体；不同 Windows 字体回退可能造成极轻微字宽差异。Demo 生成时间以当前时间为基准，数值会随重新种子而变化。
-
-## 14. 本地预览命令
+## 4. 重新执行的门禁
 
 ```powershell
+npm run prisma:generate
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm run test:e2e
 npm run demo:seed
-npm run demo
+npm run verify-data
+npm run cleanup -- --dry-run
+npm run ui:capture
+git diff --check
 ```
 
-访问 <http://127.0.0.1:3100/devices>。
+全部命令均在本轮重新执行并通过：Prisma Client 生成、严格类型检查、ESLint、17 项单元/集成测试、生产构建、8 项 E2E、Demo 数据生成、数据校验、保留清理 dry-run 和唯一一次截图采集。截图后确认 `.capture.lock` 不存在、`.next-ui-capture-*` 与 `.next-validation` 临时目录数为 0，`capture-ui-review.ts` 进程数为 0；`git diff --check` 通过。
 
-## 15. Git 分支和提交状态
+## 5. 本地交付约束
 
-目标分支为 `codex/phase2-ui-acceptance`，仅允许本地提交；不推送、不合并到 `main`，等待人工页面验收反馈。
-
-## 2026-07-22 refinement addendum
-
-The UI refinement adds phase-history dialogs, inverter metric-history dialogs, severe reverse-flow emphasis, fixed eight-channel state coverage, and screenshot automation. Final acceptance status remains governed by the recorded command results in the current delivery report.
+目标分支为 `codex/phase2-ui-acceptance`。本轮将仅创建本地提交 `fix: reconcile UI refinement and capture workflow`；不推送，不合并到 `main`。人工验收入口为本报告、[UI_REVIEW_GUIDE.md](UI_REVIEW_GUIDE.md) 和新生成的忽略截图。
