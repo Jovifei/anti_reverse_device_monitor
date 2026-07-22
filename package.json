@@ -7,13 +7,21 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "import:excel": "tsx scripts/import-excel.ts",
     "cleanup": "tsx scripts/cleanup-retention.ts",
-    "verify-data": "tsx scripts/verify-data.ts"
+    "verify-data": "tsx scripts/verify-data.ts",
+    "source:inspect": "tsx scripts/inspect-source.ts",
+    "source:validate-mapping": "tsx scripts/validate-source-mapping.ts",
+    "source:sync": "tsx scripts/sync-source-data.ts",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "tsx tests/integration/run.ts",
+    "test:e2e:seed": "tsx tests/e2e/seed.ts",
+    "test:e2e": "npm run test:e2e:seed && tsx tests/e2e/run.ts",
+    "test": "npm run test:unit && npm run test:integration"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",

@@ -1,7 +1,6 @@
 node_modules/
 .next/
 coverage/
-prisma/migrations/
 !.env.example
 !.env.local.example
 .DS_Store
@@ -11,8 +10,7 @@ data/
 *.tsbuildinfo
 npm-debug.log*
 
-# Local documentation - not needed for production
-docs/
+# Local delivery material not needed for production
 codex/
 prototype/
 references/
@@ -27,3 +25,8 @@ DELIVERY_MANIFEST.json
 # Environment files (keep examples only)
 .env
 .env.local
+config/source-field-mapping.local.json
+backups/
+test-results/
+playwright-report/
+docs/dependency-audit.raw.json

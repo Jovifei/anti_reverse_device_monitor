@@ -1,0 +1,139 @@
+import { resolveStatusLabel } from '@/src/domain/dictionaries'
+
+export interface MetricRow {
+  metricKey: string
+  valueNumber: number | null
+  valueText: string | null
+  reportedAt: Date | string
+}
+
+export interface MetricDefinition {
+  key: string
+  label: string
+  unit: string
+  aliases: string[]
+  color: string
+  markNegative?: boolean
+}
+
+export const CT_POWER_METRICS: MetricDefinition[] = [
+  { key: 'load', label: '家庭负载功率', unit: 'W', aliases: ['load_power', 'ct.load_power'], color: '#1463d9' },
+  { key: 'grid', label: '电网功率', unit: 'W', aliases: ['grid_power', 'ct.grid_power'], color: '#0d9488' },
+  { key: 'generation', label: '微逆发电总功率', unit: 'W', aliases: ['inverter_total_power', 'total_generation_power', 'micro_total_power'], color: '#ea580c' },
+  { key: 'ct-a', label: 'A相 CT 有功功率', unit: 'W', aliases: ['active_power_ct1', 'ct.active_power.phase_a'], color: '#dc2626', markNegative: true },
+  { key: 'ct-b', label: 'B相 CT 有功功率', unit: 'W', aliases: ['active_power_ct2', 'ct.active_power.phase_b'], color: '#7c3aed', markNegative: true },
+  { key: 'ct-c', label: 'C相 CT 有功功率', unit: 'W', aliases: ['active_power_ct3', 'ct.active_power.phase_c'], color: '#0891b2', markNegative: true },
+  { key: 'inv-a', label: 'A相微逆当前功率', unit: 'W', aliases: ['active_power_inv1', 'inverter_power_ct1'], color: '#65a30d' },
+  { key: 'inv-b', label: 'B相微逆当前功率', unit: 'W', aliases: ['active_power_inv2', 'inverter_power_ct2'], color: '#be123c' },
+  { key: 'inv-c', label: 'C相微逆当前功率', unit: 'W', aliases: ['active_power_inv3', 'inverter_power_ct3'], color: '#4f46e5' }
+]
+
+export const GRID_QUALITY_METRICS: MetricDefinition[] = [
+  { key: 'voltage', label: '电网电压', unit: 'V', aliases: ['grid_voltage'], color: '#2563eb' },
+  { key: 'frequency', label: '电网频率', unit: 'Hz', aliases: ['grid_frequency'], color: '#9333ea' }
+]
+
+export const INVERTER_POWER_METRICS: MetricDefinition[] = [
+  { key: 'power', label: '发电总功率', unit: 'W', aliases: ['inverter_power', 'generation_power', 'total_power', 'power'], color: '#ea580c' },
+  { key: 'pv1', label: 'PV1 功率', unit: 'W', aliases: ['pv1_power', 'pv1power'], color: '#1463d9' },
+  { key: 'pv2', label: 'PV2 功率', unit: 'W', aliases: ['pv2_power', 'pv2power'], color: '#0d9488' }
+]
+
+export const INVERTER_TEMPERATURE_METRIC: MetricDefinition = {
+  key: 'temperature',
+  label: '内部温度',
+  unit: '°C',
+  aliases: ['internal_temperature', 'temperature', 'temp'],
+  color: '#dc2626'
+}
+
+export const CT_KPI_ALIASES = {
+  todayEnergy: ['today_energy', 'today_generation_energy'],
+  totalEnergy: ['total_energy', 'lifetime_energy', 'accumulated_energy'],
+  todayDuration: ['today_generation_duration', 'today_duration', 'generation_duration'],
+  state: ['ct_state', 'state'],
+  limitState: ['limit_state'],
+  sub1gState: ['sub1g_state'],
+  workMode: ['work_mode']
+}
+
+export const INVERTER_KPI_ALIASES = {
+  onlineState: ['online_state'],
+  workState: ['work_state'],
+  generating: ['is_generating', 'generating_state', 'generation_state'],
+  todayEnergy: ['today_energy', 'today_generation_energy'],
+  totalEnergy: ['total_energy', 'lifetime_energy', 'accumulated_energy'],
+  todayDuration: ['today_generation_duration', 'today_duration', 'generation_duration'],
+  packetLoss: ['packet_loss_rate', 'packet_loss'],
+  phase: ['phase_num'],
+  connectionPoint: ['connection_point'],
+  antiReverse: ['anti_reverse_enabled', 'anti_reverse_switch'],
+  generationEnabled: ['generation_enabled', 'generation_switch'],
+  powerLimit: ['power_limit', 'limit_power']
+}
+
+function normalizedMetricKey(value: string) {
+  return value.trim().toLowerCase().replace(/[\s_-]+/g, '.')
+}
+
+export function metricMatches(metricKey: string, aliases: string[]) {
+  const actual = normalizedMetricKey(metricKey)
+  return aliases.some((alias) => {
+    const normalizedAlias = normalizedMetricKey(alias)
+    return actual === normalizedAlias || actual.endsWith(`.${normalizedAlias}`) || actual.endsWith(normalizedAlias)
+  })
+}
+
+export function numericValue(row: MetricRow | undefined): number | null {
+  if (!row) return null
+  if (row.valueNumber !== null && Number.isFinite(row.valueNumber)) return row.valueNumber
+  if (row.valueText === null || row.valueText.trim() === '') return null
+  const parsed = Number(row.valueText)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+export function displayValue(row: MetricRow | undefined, unit = '') {
+  const numeric = numericValue(row)
+  if (numeric !== null) return `${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(numeric)}${unit ? ` ${unit}` : ''}`
+  if (row?.valueText && row.valueText.trim()) return `${row.valueText}${unit ? ` ${unit}` : ''}`
+  return '—'
+}
+
+export function findLatestMetric<T extends MetricRow>(rows: T[], aliases: string[]) {
+  return rows.find((row) => metricMatches(row.metricKey, aliases))
+}
+
+export function formatDuration(minutes: number | null | undefined) {
+  if (minutes === null || minutes === undefined || !Number.isFinite(minutes)) return '—'
+  if (minutes < 60) return `${Math.round(minutes)} 分钟`
+  const hours = Math.floor(minutes / 60)
+  const remaining = Math.round(minutes % 60)
+  return `${hours} 小时 ${remaining} 分钟`
+}
+
+export function formatTime(value: Date | string | null | undefined) {
+  if (!value) return '—'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return '—'
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: process.env.APP_TIMEZONE || 'Asia/Shanghai',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).format(parsed)
+}
+
+export function getInverterStatus(raw: number | null) {
+  const label = resolveStatusLabel('inverter_online_state', raw) ?? '无数据'
+  if (raw === 2) return { label, variant: 'online' as const }
+  if (raw === 1) return { label, variant: 'offline' as const }
+  if (raw === 0) return { label, variant: 'unpaired' as const }
+  return { label, variant: 'unknown' as const }
+}
+
+export function getInverterWorkStatus(raw: number | null) {
+  return resolveStatusLabel('inverter_work_state', raw) ?? '—'
+}
+
+export function isGenerating(rawGenerating: number | null, rawWorkState: number | null) {
+  if (rawGenerating !== null) return rawGenerating > 0
+  return rawWorkState === 1 || rawWorkState === 3
+}

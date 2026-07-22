@@ -21,7 +21,7 @@ const fileRecordSchema = z.object({
   metric_key: z.string(),
   value: z.union([z.number(), z.string(), z.null()]),
   value_text: z.string().nullable().optional(),
-  source_record_id: z.string().default(() => Math.random().toString(36).slice(2))
+  source_record_id: z.string().optional()
 })
 
 function readWorkBook(filePath: string): WorkBook {
@@ -65,7 +65,7 @@ export class ExcelSourceAdapter extends ReadOnlySourceAdapter {
           metricKey: parsed.metric_key,
           value: parsed.value,
           valueText: parsed.value_text ?? null,
-          sourceRecordId: parsed.source_record_id ?? `${this.filePath}-${idx}`
+          sourceRecordId: parsed.source_record_id?.trim() || `${path.resolve(this.filePath)}-${idx}`
         }
       })
   }

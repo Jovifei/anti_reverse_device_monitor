@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "sourceName": "approved-readonly-source",
+  "timezone": "Asia/Shanghai",
+  "telemetry": { "sourceRecordId": "<unique_record_id>", "deviceSn": "<device_sn>", "siid": "<siid>", "piid": "<piid>", "inverterIndex": "<inverter_index>", "reportedAt": "<reported_at>", "receivedAt": "<received_at>", "value": "<property_value>", "valueType": "<property_value_type>" },
+  "properties": { "device": {}, "inverter": {} }
+}

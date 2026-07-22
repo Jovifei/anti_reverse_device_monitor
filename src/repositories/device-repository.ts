@@ -91,7 +91,6 @@ export class DeviceRepository {
       where: { deviceSn },
       include: {
         inverterBindings: {
-          where: { paired: true },
           orderBy: { inverterIndex: 'asc' }
         },
         latestRows: {
@@ -111,7 +110,6 @@ export class DeviceRepository {
       where: { deviceSn },
       include: {
         inverterBindings: {
-          where: { paired: true },
           orderBy: { inverterIndex: 'asc' },
           select: {
             id: true,
@@ -192,5 +190,19 @@ export class DeviceRepository {
 
   async count() {
     return this.db.device.count()
+  }
+
+  async findSnByExact(deviceSn: string) {
+    const row = await this.db.device.findUnique({ where: { deviceSn }, select: { deviceSn: true } })
+    return row?.deviceSn ?? null
+  }
+
+  async findSnBySuffix(suffix: string) {
+    return this.db.device.findMany({
+      where: { deviceSn: { endsWith: suffix } },
+      select: { deviceSn: true },
+      orderBy: { deviceSn: 'asc' },
+      take: 2
+    })
   }
 }

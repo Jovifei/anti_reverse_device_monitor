@@ -3,6 +3,8 @@ import { DeviceRepository } from '@/src/repositories/device-repository'
 import { TelemetryRepository } from '@/src/repositories/telemetry-repository'
 import { parseSn } from '@/src/domain/validation'
 import { Prisma } from '@prisma/client'
+import path from 'node:path'
+import { prisma } from '@/src/lib/prisma'
 
 function normalizeMetricKey(input: string): string {
   return input.trim().toLowerCase()
@@ -26,6 +28,7 @@ async function main() {
 
   const deviceRepo = new DeviceRepository()
   const telemetryRepo = new TelemetryRepository()
+  const batch = await prisma.importBatch.create({ data: { source: 'excel', fileName: path.basename(filePath), status: 'running' } })
 
   let count = 0
   let skippedDuplicates = 0
@@ -74,9 +77,11 @@ async function main() {
     }
   }
 
+  await prisma.importBatch.update({ where: { id: batch.id }, data: { recordCount: count, status: 'completed' } })
   console.log(
     JSON.stringify(
       {
+        importBatchId: batch.id,
         imported: count,
         duplicatesSkipped: skippedDuplicates
       },

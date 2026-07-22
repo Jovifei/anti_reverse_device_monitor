@@ -29,6 +29,8 @@ export interface ConnectivitySummary {
   offlineMinutes: number
   transitions: ConnectivityTransition[]
   offlineWindows: OfflineWindow[]
+  stateSince?: string | null
+  currentOfflineMinutes?: number | null
 }
 
 export interface FaultChange {
@@ -124,6 +126,65 @@ function diffFaultBits(prevMask: number, nextMask: number) {
   }
 
   return { added, removed }
+}
+
+export function summarizeInverterOnlineStates(
+  sourcePoints: Array<{ at: Date; value: number }>,
+  windowStart: Date,
+  windowEnd: Date,
+  baseline?: { at: Date; value: number } | null
+): ConnectivitySummary {
+  const points = Array.from(
+    new Map(
+      sourcePoints
+        .sort((left, right) => left.at.getTime() - right.at.getTime())
+        .map((point) => [point.at.getTime(), point])
+    ).values()
+  )
+
+  if (points.length === 0 && !baseline) {
+    return {
+      windowStart: windowStart.toISOString(), windowEnd: windowEnd.toISOString(), samples: 0,
+      lastSeenAt: null, isOnline: false, offlineMinutes: 0, transitions: [], offlineWindows: [], stateSince: null, currentOfflineMinutes: null
+    }
+  }
+
+  const initial = baseline ?? points[0]
+  let isOnline = initial.value === 2
+  let stateSince = baseline ? windowStart : initial.at
+  const transitions: ConnectivityTransition[] = [{ at: stateSince.toISOString(), state: isOnline ? 'online' : 'offline', value: initial.value }]
+  const offlineWindows: OfflineWindow[] = []
+
+  for (const point of points) {
+    const nextOnline = point.value === 2
+    if (nextOnline === isOnline) continue
+    if (!isOnline) {
+      const window = clampInterval(stateSince, point.at, windowStart, windowEnd)
+      if (window) offlineWindows.push(window)
+    }
+    isOnline = nextOnline
+    stateSince = point.at
+    transitions.push({ at: point.at.toISOString(), state: isOnline ? 'online' : 'offline', value: point.value })
+  }
+
+  if (!isOnline) {
+    const window = clampInterval(stateSince, windowEnd, windowStart, windowEnd)
+    if (window) offlineWindows.push(window)
+  }
+
+  const currentOfflineMinutes = isOnline ? null : roundMinutes(windowEnd.getTime() - stateSince.getTime())
+  return {
+    windowStart: windowStart.toISOString(),
+    windowEnd: windowEnd.toISOString(),
+    samples: points.length,
+    lastSeenAt: toIso(points.at(-1)?.at ?? baseline?.at ?? null),
+    isOnline,
+    offlineMinutes: offlineWindows.reduce((sum, item) => sum + item.durationMinutes, 0),
+    transitions,
+    offlineWindows,
+    stateSince: stateSince.toISOString(),
+    currentOfflineMinutes
+  }
 }
 
 export class TelemetryService {
@@ -343,115 +404,20 @@ export class TelemetryService {
     })
 
     if (states.length > 0) {
-      const before = await this.repo.getLatestBefore({
-        deviceSn: validatedSn,
-        metricKey: 'inverter.online_state',
-        inverterIndex,
-        beforeAt: startAt
+      const before = await this.repo.getLatestBeforeMetricContains({
+        deviceSn: validatedSn, metricKeyContains: 'online_state', inverterIndex, beforeAt: startAt
       })
-
-      const ordered = states
-        .map((row) => ({
-          at: row.reportedAt,
-          value: parseNumericValue(row.valueNumber, row.valueText)
-        }))
+      const points = states
+        .map((row) => ({ at: row.reportedAt, value: parseNumericValue(row.valueNumber, row.valueText) }))
         .filter((row): row is { at: Date; value: number } => row.value !== null)
-        .sort((a, b) => a.at.getTime() - b.at.getTime())
-
-      const unique = Array.from(new Map(ordered.map((row) => [row.at.getTime(), row]).entries()).values())
-      const points = unique.sort((a, b) => a.at.getTime() - b.at.getTime())
-
-      const transitions: ConnectivityTransition[] = []
-      const offlineWindows: OfflineWindow[] = []
-
-      const samples = points.length
-      if (samples === 0) {
-        return this.getInverterHeartbeatConnectivity(validatedSn, inverterIndex, startAt, endAt, parsed.days)
-      }
-
-      const initialState = before ? parseNumericValue(before.valueNumber, before.valueText) === 1 : points[0].value === 1
-      let currentState: boolean = initialState
-      let lastStateAt = before?.reportedAt ?? points[0].at
-      let currentOfflineStart: Date | null = currentState ? null : lastStateAt
-      let lastSeenAt = points[points.length - 1].at
-      transitions.push({
-        at: lastStateAt.toISOString(),
-        state: currentState ? 'online' : 'offline',
-        value: parseNumericValue(before?.valueNumber, before?.valueText)
-      })
-
-      for (const point of points) {
-        const nextState = point.value === 1
-        if (nextState === currentState) {
-          if (point.at > lastStateAt) {
-            lastStateAt = point.at
-          }
-          continue
-        }
-
-        if (!currentState && nextState) {
-          if (currentOfflineStart && point.at > currentOfflineStart) {
-            const window = clampInterval(currentOfflineStart, point.at, startAt, endAt)
-            if (window) {
-              offlineWindows.push(window)
-            }
-            transitions.push({
-              at: point.at.toISOString(),
-              state: 'online',
-              value: point.value
-            })
-          }
-          currentOfflineStart = null
-        } else {
-          currentOfflineStart = point.at
-          transitions.push({
-            at: point.at.toISOString(),
-            state: 'offline',
-            value: point.value
-          })
-        }
-
-        currentState = nextState
-        lastStateAt = point.at
-      }
-
-      const isStale = endAt.getTime() - lastStateAt.getTime() > OFFLINE_THRESHOLD_MS
-      if (currentState && isStale) {
-        const timeoutStart = new Date(lastStateAt.getTime() + OFFLINE_THRESHOLD_MS)
-        if (endAt > timeoutStart) {
-          const window = clampInterval(timeoutStart, endAt, startAt, endAt)
-          if (window) {
-            offlineWindows.push(window)
-            transitions.push({
-              at: window.startAt,
-              state: 'offline',
-              value: null
-            })
-            currentState = false
-          }
-        }
-      }
-      if (currentOfflineStart && currentState === false && endAt > currentOfflineStart) {
-        const window = clampInterval(currentOfflineStart, endAt, startAt, endAt)
-        if (window) {
-          offlineWindows.push(window)
-          transitions.push({
-            at: window.startAt,
-            state: 'offline',
-            value: null
-          })
-        }
-      }
-
-      return {
-        windowStart: startAt.toISOString(),
-        windowEnd: endAt.toISOString(),
-        samples,
-        lastSeenAt: toIso(lastSeenAt),
-        isOnline: currentState && !isStale,
-        offlineMinutes: offlineWindows.reduce((sum, item) => sum + item.durationMinutes, 0),
-        transitions,
-        offlineWindows
+      const baselineValue = before ? parseNumericValue(before.valueNumber, before.valueText) : null
+      if (points.length > 0) {
+        return summarizeInverterOnlineStates(
+          points,
+          startAt,
+          endAt,
+          baselineValue === null || !before ? null : { at: before.reportedAt, value: baselineValue }
+        )
       }
     }
 
@@ -490,7 +456,9 @@ export class TelemetryService {
         isOnline: false,
         offlineMinutes: 0,
         transitions,
-        offlineWindows
+        offlineWindows,
+        stateSince: null,
+        currentOfflineMinutes: null
       }
     }
 
@@ -555,7 +523,11 @@ export class TelemetryService {
       isOnline: trailingGap <= OFFLINE_THRESHOLD_MS,
       offlineMinutes: offlineWindows.reduce((sum, item) => sum + item.durationMinutes, 0),
       transitions,
-      offlineWindows
+      offlineWindows,
+      stateSince: trailingGap > OFFLINE_THRESHOLD_MS
+        ? new Date(lastSeenAt.getTime() + OFFLINE_THRESHOLD_MS).toISOString()
+        : lastSeenAt.toISOString(),
+      currentOfflineMinutes: trailingGap > OFFLINE_THRESHOLD_MS ? roundMinutes(trailingGap - OFFLINE_THRESHOLD_MS) : null
     }
   }
 
@@ -579,7 +551,11 @@ export class TelemetryService {
     })
 
     const transitions: FaultChange[] = []
-    let prevMask: number | null = null
+    const before = await this.repo.getLatestBeforeMetricContains({
+      deviceSn: validatedSn, metricKeyContains: 'fault_param', inverterIndex, beforeAt: startAt
+    })
+    const baseline = before ? parseNumericValue(before.valueNumber, before.valueText) : null
+    let prevMask: number | null = baseline === null ? null : normalizeFaultMask(baseline)
 
     const rowsOrdered = rows
       .map((row) => ({
@@ -589,7 +565,8 @@ export class TelemetryService {
       .filter((row): row is { at: Date; mask: number } => row.mask !== null)
       .sort((a, b) => a.at.getTime() - b.at.getTime())
 
-    for (const row of rowsOrdered) {
+    const uniqueRows = Array.from(new Map(rowsOrdered.map((row) => [row.at.getTime(), row])).values())
+    for (const row of uniqueRows) {
       const nextMask = normalizeFaultMask(row.mask)
       const nextFaults = toFaultsFromMask(nextMask)
 

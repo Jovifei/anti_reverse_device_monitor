@@ -1,5 +1,14 @@
 import { decodeFaultMask, hasCriticalFault } from '@/src/domain/faults'
 import { parseDeviceListQuery, parseSn, parseTelemetryQuery } from '@/src/domain/validation'
+import { parseSnLookup } from '@/src/domain/validation'
+import {
+  CT_POWER_METRICS,
+  GRID_QUALITY_METRICS,
+  INVERTER_POWER_METRICS,
+  INVERTER_TEMPERATURE_METRIC,
+  type MetricDefinition,
+  metricMatches
+} from '@/src/domain/monitoring'
 import { DeviceRepository } from '@/src/repositories/device-repository'
 import { TelemetryRepository } from '@/src/repositories/telemetry-repository'
 import {
@@ -39,13 +48,22 @@ export interface DeviceHealthSummary {
 }
 
 export interface ReverseFlowAlertItem {
-  metricKey: string
+  phase: 'A' | 'B' | 'C'
   sampleCount: number
   minimumPower: number
-  maximumReversePower: number
-  severity: 'low' | 'critical'
-  firstAt: string
-  lastAt: string
+  severity: 'critical'
+  startedAt: string
+  endedAt: string | null
+  durationMinutes: number
+}
+
+export interface ChartSeries {
+  key: string
+  label: string
+  unit: string
+  color: string
+  markNegative?: boolean
+  points: Array<[string, number]>
 }
 
 export interface DeviceHistorySummary {
@@ -55,8 +73,6 @@ export interface DeviceHistorySummary {
   windowStart: string
   windowEnd: string
 }
-
-const REVERSE_FLOW_THRESHOLD = -1000
 
 const OFFLINE_THRESHOLD_MINUTES = 15
 
@@ -98,6 +114,17 @@ export class DeviceService {
     return this.repo.findBySn(parseSn(sn))
   }
 
+  async resolveDeviceSn(rawSn: string) {
+    const lookup = parseSnLookup(rawSn)
+    const exact = await this.repo.findSnByExact(lookup)
+    if (exact) return { kind: 'resolved' as const, deviceSn: exact }
+
+    const matches = await this.repo.findSnBySuffix(lookup)
+    if (matches.length === 1) return { kind: 'resolved' as const, deviceSn: matches[0].deviceSn }
+    if (matches.length > 1) return { kind: 'ambiguous' as const }
+    return { kind: 'not-found' as const }
+  }
+
   async getDeviceHealth(sn: string): Promise<DeviceHealthSummary | null> {
     const device = await this.repo.findHealthSnapshot(parseSn(sn))
     if (!device) {
@@ -106,25 +133,14 @@ export class DeviceService {
 
     const inverterRows = await Promise.all(
       device.inverterBindings.map(async (binding) => {
-        const latestRows = await this.telemetryRepository.listLatest({
-          deviceSn: device.deviceSn,
-          inverterIndex: binding.inverterIndex,
-          page: 1,
-          pageSize: 1
-        })
-
-        const latest = latestRows[0]
-        const lastSeen = latest?.reportedAt ?? null
-        const isOnline = Boolean(
-          lastSeen && toMinutesSince(lastSeen) <= OFFLINE_THRESHOLD_MINUTES
-        )
+        const connectivity = await this.telemetryService.getInverterConnectivity(device.deviceSn, binding.inverterIndex, { days: '7' })
 
         return {
           inverterIndex: binding.inverterIndex,
           inverterSn: binding.inverterSn ?? null,
-          lastSeenAt: lastSeen ? lastSeen.toISOString() : null,
-          offlineMinutes: lastSeen ? toMinutesSince(lastSeen) : null,
-          isOnline
+          lastSeenAt: connectivity.lastSeenAt,
+          offlineMinutes: connectivity.currentOfflineMinutes ?? null,
+          isOnline: connectivity.isOnline
         } satisfies DeviceHealthInverter
       })
     )
@@ -190,6 +206,12 @@ export class DeviceService {
       deviceSn,
       inverterIndex,
       inverterSn: binding.inverterSn,
+      softwareVersion: binding.softwareVersion,
+      hardwareVersion: binding.hardwareVersion,
+      sub1gVersion: binding.sub1gVersion,
+      phaseNum: binding.phaseNum,
+      connectionPoint: binding.connectionPoint,
+      paired: binding.paired,
       latestRows: rows,
       faults,
       connectivity: await this.telemetryService.getInverterConnectivity(
@@ -232,6 +254,39 @@ export class DeviceService {
     }
   }
 
+  async getDeviceChartData(sn: string, rawQuery: unknown) {
+    const parsed = parseTelemetryQuery(rawQuery)
+    const endAt = new Date()
+    const startAt = new Date(endAt)
+    startAt.setDate(endAt.getDate() - parsed.days)
+    const rows = await this.telemetryRepository.listTelemetryWindow({
+      deviceSn: parseSn(sn), startAt, endAt
+    })
+    return {
+      windowStart: startAt.toISOString(),
+      windowEnd: endAt.toISOString(),
+      power: this.toChartSeries(rows, CT_POWER_METRICS),
+      grid: this.toChartSeries(rows, GRID_QUALITY_METRICS)
+    }
+  }
+
+  async getInverterChartData(sn: string, rawIndex: string | number, rawQuery: unknown) {
+    const parsed = parseTelemetryQuery(rawQuery)
+    const inverterIndex = parseIndex(rawIndex)
+    const endAt = new Date()
+    const startAt = new Date(endAt)
+    startAt.setDate(endAt.getDate() - parsed.days)
+    const rows = await this.telemetryRepository.listTelemetryWindow({
+      deviceSn: parseSn(sn), inverterIndex, startAt, endAt
+    })
+    return {
+      windowStart: startAt.toISOString(),
+      windowEnd: endAt.toISOString(),
+      power: this.toChartSeries(rows, INVERTER_POWER_METRICS),
+      temperature: this.toChartSeries(rows, [INVERTER_TEMPERATURE_METRIC])
+    }
+  }
+
   async getReverseFlowAlarms(sn: string, rawQuery: unknown) {
     const parsed = parseTelemetryQuery(rawQuery)
     const now = new Date()
@@ -239,47 +294,70 @@ export class DeviceService {
     startAt.setDate(now.getDate() - parsed.days)
     const deviceSn = parseSn(sn)
 
-    const rows = await this.telemetryRepository.listTelemetryByMetricContains({
+    const rows = await this.telemetryRepository.listTelemetryWindow({
       deviceSn,
-      metricKeyContains: 'power',
       startAt,
       endAt: now
     })
-
-    const alarms = new Map<string, ReverseFlowAlertItem>()
-
-    for (const row of rows) {
-      if (row.valueNumber === null || row.valueNumber >= 0) {
-        continue
+    const phases = [
+      { phase: 'A' as const, aliases: ['active_power_ct1', 'ct.active_power.phase_a'] },
+      { phase: 'B' as const, aliases: ['active_power_ct2', 'ct.active_power.phase_b'] },
+      { phase: 'C' as const, aliases: ['active_power_ct3', 'ct.active_power.phase_c'] }
+    ]
+    const alarms = phases.flatMap(({ phase, aliases }) => {
+      const points = rows
+        .filter((row) => metricMatches(row.metricKey, aliases) && row.valueNumber !== null)
+        .sort((left, right) => left.reportedAt.getTime() - right.reportedAt.getTime())
+      const intervals: ReverseFlowAlertItem[] = []
+      let active: { startedAt: Date; minimumPower: number; sampleCount: number } | null = null
+      for (const point of points) {
+        const value = point.valueNumber
+        if (value === null) continue
+        if (value < 0) {
+          if (!active) active = { startedAt: point.reportedAt, minimumPower: value, sampleCount: 0 }
+          active.minimumPower = Math.min(active.minimumPower, value)
+          active.sampleCount += 1
+          continue
+        }
+        if (active) {
+          intervals.push({
+            phase, sampleCount: active.sampleCount, minimumPower: active.minimumPower, severity: 'critical',
+            startedAt: active.startedAt.toISOString(), endedAt: point.reportedAt.toISOString(),
+            durationMinutes: Math.max(0, Math.round((point.reportedAt.getTime() - active.startedAt.getTime()) / 60_000))
+          })
+          active = null
+        }
       }
-      const key = row.metricKey
-      const existing = alarms.get(key)
-      if (!existing) {
-        alarms.set(key, {
-          metricKey: key,
-          sampleCount: 1,
-          minimumPower: row.valueNumber,
-          maximumReversePower: row.valueNumber,
-          severity: row.valueNumber <= REVERSE_FLOW_THRESHOLD ? 'critical' : 'low',
-          firstAt: row.reportedAt.toISOString(),
-          lastAt: row.reportedAt.toISOString()
+      if (active) {
+        intervals.push({
+          phase, sampleCount: active.sampleCount, minimumPower: active.minimumPower, severity: 'critical',
+          startedAt: active.startedAt.toISOString(), endedAt: null,
+          durationMinutes: Math.max(0, Math.round((now.getTime() - active.startedAt.getTime()) / 60_000))
         })
-        continue
       }
-
-      existing.sampleCount += 1
-      existing.minimumPower = Math.min(existing.minimumPower, row.valueNumber)
-      existing.maximumReversePower = Math.max(existing.maximumReversePower, row.valueNumber)
-      existing.lastAt = row.reportedAt.toISOString()
-      if (row.valueNumber <= REVERSE_FLOW_THRESHOLD) {
-        existing.severity = 'critical'
-      }
-    }
+      return intervals
+    })
 
     return {
       deviceSn,
       days: parsed.days,
-      alerts: Array.from(alarms.values())
+      alerts: alarms.sort((left, right) => right.startedAt.localeCompare(left.startedAt))
     }
+  }
+
+  private toChartSeries(
+    rows: Array<{ metricKey: string; valueNumber: number | null; valueText: string | null; reportedAt: Date }>,
+    definitions: MetricDefinition[]
+  ): ChartSeries[] {
+    return definitions.map((definition) => ({
+      key: definition.key,
+      label: definition.label,
+      unit: definition.unit,
+      color: definition.color,
+      markNegative: definition.markNegative,
+      points: rows
+        .filter((row) => metricMatches(row.metricKey, definition.aliases) && row.valueNumber !== null)
+        .map((row) => [row.reportedAt.toISOString(), row.valueNumber as number])
+    }))
   }
 }

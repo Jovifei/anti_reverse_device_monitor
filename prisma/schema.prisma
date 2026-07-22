@@ -1,4 +1,4 @@
-﻿generator client {
+generator client {
   provider = "prisma-client-js"
 }
 
@@ -26,6 +26,7 @@ model Device {
   telemetry           Telemetry[]
   latestRows          DeviceLatest[]
   events              DeviceEvent[]
+  reverseFlowAlerts   ReverseFlowAlert[]
 }
 
 model InverterBinding {
@@ -37,6 +38,7 @@ model InverterBinding {
   softwareVersion   String?
   hardwareVersion   String?
   sub1gVersion     String?
+  phaseNum         String?
   connectionPoint   String?
   paired           Boolean  @default(true)
   createdAt        DateTime @default(now())
@@ -45,6 +47,8 @@ model InverterBinding {
   device           Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   telemetry        Telemetry[]
   latestRows       DeviceLatest[]
+  events          DeviceEvent[]
+  faultEvents     FaultEvent[]
 
   @@unique([deviceId, inverterIndex])
   @@unique([deviceId, inverterSn])
@@ -63,7 +67,7 @@ model MetricDefinition {
   chartGroup      String?
   chartEnabled    Boolean  @default(true)
   enumSource      String?
-  enumJson        Json?
+  enumJson        String?
   warningMin      Float?
   warningMax      Float?
   criticalMin     Float?
@@ -83,12 +87,14 @@ model Telemetry {
   valueNumber     Float?
   valueText       String?
   sourceRecordId  String   @unique
+  sourceName      String   @default("excel")
 
   device          Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   inverterBinding InverterBinding? @relation(fields: [inverterId], references: [id], onDelete: SetNull)
 
   @@index([deviceId, metricKey, reportedAt(sort: Desc)])
   @@index([inverterId, metricKey, reportedAt(sort: Desc)])
+  @@index([sourceName, reportedAt])
   @@unique([deviceId, inverterId, metricKey, reportedAt])
 }
 
@@ -130,7 +136,7 @@ model FaultEvent {
   inverterId       Int
   faultMask        Int
   faultHex         String
-  activeFaultsJson  Json
+  activeFaultsJson  String
   eventType        String
   startedAt        DateTime
   endedAt          DateTime?
@@ -174,6 +180,39 @@ model SyncCheckpoint {
   sourceCursor String
   syncedAt    DateTime @default(now())
   status      String   @default("ok")
+  lastError   String?
+  lastSuccessAt DateTime?
 
   @@unique([sourceName])
+}
+
+model SyncBatch {
+  id                 Int         @id @default(autoincrement())
+  sourceName         String
+  status             String
+  startedAt          DateTime    @default(now())
+  completedAt        DateTime?
+  cursorBefore       String?
+  cursorAfter        String?
+  imported           Int         @default(0)
+  duplicatesSkipped  Int         @default(0)
+  failed             Int         @default(0)
+  unknownMetrics     Int         @default(0)
+  missingIdentifiers Int         @default(0)
+  lastError          String?
+  errors             SyncError[]
+
+  @@index([sourceName, startedAt])
+}
+
+model SyncError {
+  id             Int       @id @default(autoincrement())
+  syncBatchId    Int
+  sourceRecordId String?
+  errorCode      String
+  message        String
+  createdAt      DateTime  @default(now())
+  syncBatch      SyncBatch @relation(fields: [syncBatchId], references: [id], onDelete: Cascade)
+
+  @@index([syncBatchId])
 }

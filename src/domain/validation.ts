@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export const snSchema = z.string().trim().min(6).max(64).regex(/^[A-Za-z0-9_-]+$/)
+export const snLookupSchema = z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/)
 
 export const deviceListSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -16,6 +17,10 @@ export const telemetryQuerySchema = z.object({
 
 export function parseSn(value: string | null): string {
   return snSchema.parse(value)
+}
+
+export function parseSnLookup(value: string | null): string {
+  return snLookupSchema.parse(value)
 }
 
 function firstValue(record: unknown, key: string): string | undefined {

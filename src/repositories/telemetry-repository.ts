@@ -26,6 +26,7 @@ export class TelemetryRepository {
       valueNumber?: number | null
       valueText?: string | null
       sourceRecordId: string
+      sourceName?: string
     }>
   ) {
     const results = await this.db.$transaction(async (tx) => {
@@ -63,7 +64,8 @@ export class TelemetryRepository {
             receivedAt: row.receivedAt,
             valueNumber: row.valueNumber ?? null,
             valueText: row.valueText ?? null,
-            sourceRecordId: row.sourceRecordId
+            sourceRecordId: row.sourceRecordId,
+            sourceName: row.sourceName ?? 'excel'
           }
         })
 
@@ -78,30 +80,26 @@ export class TelemetryRepository {
           device.lastReportedAt = row.reportedAt
         }
 
-        await tx.deviceLatest.upsert({
-          where: {
-            deviceId_inverterId_metricKey: {
-              deviceId: device.id,
-              inverterId,
-              metricKey: row.metricKey
-            }
-          },
-          update: {
+        const latest = await tx.deviceLatest.findFirst({
+          where: { deviceId: device.id, inverterId, metricKey: row.metricKey },
+          select: { id: true }
+        })
+        const latestData = {
             valueNumber: row.valueNumber ?? null,
             valueText: row.valueText ?? null,
             reportedAt: row.reportedAt,
             receivedAt: row.receivedAt
-          },
-          create: {
+        }
+        if (latest) {
+          await tx.deviceLatest.update({ where: { id: latest.id }, data: latestData })
+        } else {
+          await tx.deviceLatest.create({ data: {
             deviceId: device.id,
             inverterId,
             metricKey: row.metricKey,
-            valueNumber: row.valueNumber ?? null,
-            valueText: row.valueText ?? null,
-            reportedAt: row.reportedAt,
-            receivedAt: row.receivedAt
-          }
-        })
+            ...latestData
+          } })
+        }
 
         savedRows.push(created)
       }
@@ -187,9 +185,8 @@ export class TelemetryRepository {
         where: { deviceId: device.id, inverterIndex },
         select: { id: true }
       })
-      if (binding) {
-        where.inverterId = binding.id
-      }
+      if (!binding) return [] as LatestTelemetryRow[]
+      where.inverterId = binding.id
     }
 
     const rows = await this.db.deviceLatest.findMany({
@@ -252,7 +249,8 @@ export class TelemetryRepository {
         where: { deviceId: device.id, inverterIndex },
         select: { id: true }
       })
-      inverterId = binding?.id ?? null
+      if (!binding) return []
+      inverterId = binding.id
     }
 
     return this.db.telemetry.findMany({
@@ -265,7 +263,7 @@ export class TelemetryRepository {
           lte: endAt
         }
       },
-      orderBy: { reportedAt: 'asc' }
+      orderBy: [{ reportedAt: 'asc' }, { id: 'asc' }]
     })
   }
 
@@ -293,7 +291,8 @@ export class TelemetryRepository {
         where: { deviceId: device.id, inverterIndex },
         select: { id: true }
       })
-      inverterId = binding?.id ?? null
+      if (!binding) return []
+      inverterId = binding.id
     }
 
     return this.db.telemetry.findMany({
@@ -306,7 +305,7 @@ export class TelemetryRepository {
           lte: endAt
         }
       },
-      orderBy: { reportedAt: 'asc' }
+      orderBy: [{ reportedAt: 'asc' }, { id: 'asc' }]
     })
   }
 
@@ -322,7 +321,8 @@ export class TelemetryRepository {
         where: { deviceId: device.id, inverterIndex },
         select: { id: true }
       })
-      inverterId = binding?.id ?? null
+      if (!binding) return 0
+      inverterId = binding.id
     }
 
     return this.db.telemetry.count({
@@ -360,7 +360,8 @@ export class TelemetryRepository {
         where: { deviceId: device.id, inverterIndex },
         select: { id: true }
       })
-      inverterId = binding?.id ?? null
+      if (!binding) return []
+      inverterId = binding.id
     }
 
     return this.db.telemetry.findMany({
@@ -372,7 +373,7 @@ export class TelemetryRepository {
           lte: endAt
         }
       },
-      orderBy: { reportedAt: 'asc' }
+      orderBy: [{ reportedAt: 'asc' }, { id: 'asc' }]
     })
   }
 
@@ -398,7 +399,8 @@ export class TelemetryRepository {
         where: { deviceId: device.id, inverterIndex },
         select: { id: true }
       })
-      inverterId = binding?.id ?? null
+      if (!binding) return null
+      inverterId = binding.id
     }
 
     return this.db.telemetry.findFirst({
@@ -411,6 +413,36 @@ export class TelemetryRepository {
         }
       },
       orderBy: { reportedAt: 'desc' }
+    })
+  }
+
+  async getLatestBeforeMetricContains({
+    deviceSn,
+    metricKeyContains,
+    inverterIndex,
+    beforeAt
+  }: {
+    deviceSn: string
+    metricKeyContains: string
+    inverterIndex?: number | null
+    beforeAt: Date
+  }) {
+    const device = await this.db.device.findUnique({ where: { deviceSn }, select: { id: true } })
+    if (!device) return null
+
+    let inverterId: number | null = null
+    if (inverterIndex) {
+      const binding = await this.db.inverterBinding.findFirst({
+        where: { deviceId: device.id, inverterIndex },
+        select: { id: true }
+      })
+      if (!binding) return null
+      inverterId = binding.id
+    }
+
+    return this.db.telemetry.findFirst({
+      where: { deviceId: device.id, inverterId, metricKey: { contains: metricKeyContains }, reportedAt: { lte: beforeAt } },
+      orderBy: [{ reportedAt: 'desc' }, { id: 'desc' }]
     })
   }
 }

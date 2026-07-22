@@ -1,74 +1,30 @@
-﻿import { prisma } from '@/src/lib/prisma'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/src/lib/prisma'
 
-function getRetentionDays(): number {
-  const value = Number(process.env.DATA_RETENTION_DAYS ?? '7')
-  return Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 7
+export function getRetentionDays(value = process.env.DATA_RETENTION_DAYS): number {
+  const days = Number(value ?? '7')
+  return Number.isFinite(days) ? Math.max(1, Math.floor(days)) : 7
 }
 
-async function cleanup() {
-  const retention = getRetentionDays()
-  const now = new Date()
+export async function cleanupRetention(db: PrismaClient = prisma, now = new Date(), dryRun = false) {
+  const retentionDays = getRetentionDays()
   const cutoff = new Date(now)
-  cutoff.setDate(now.getDate() - retention)
-
-  const telemetryCount = await prisma.telemetry.deleteMany({
-    where: {
-      reportedAt: {
-        lt: cutoff
-      }
-    }
-  })
-
-  const latestCount = await prisma.deviceLatest.deleteMany({
-    where: {
-      reportedAt: {
-        lt: cutoff
-      }
-    }
-  })
-
-  const eventCount = await prisma.deviceEvent.deleteMany({
-    where: {
-      happenedAt: {
-        lt: cutoff
-      }
-    }
-  })
-
-  const faultEventCount = await prisma.faultEvent.deleteMany({
-    where: {
-      startedAt: {
-        lt: cutoff
-      }
-    }
-  })
-
-  const reverseFlowCount = await prisma.reverseFlowAlert.deleteMany({
-    where: {
-      startedAt: {
-        lt: cutoff
-      }
-    }
-  })
-
-  console.log(
-    JSON.stringify(
-      {
-        retentionDays: retention,
-        cutoff: cutoff.toISOString(),
-        telemetry: telemetryCount.count,
-        deviceLatest: latestCount.count,
-        deviceEvents: eventCount.count,
-        faultEvents: faultEventCount.count,
-        reverseFlowAlerts: reverseFlowCount.count
-      },
-      null,
-      2
-    )
-  )
+  cutoff.setDate(cutoff.getDate() - retentionDays)
+  const telemetryWhere = { reportedAt: { lt: cutoff } }
+  const eventWhere = { happenedAt: { lt: cutoff } }
+  const faultWhere = { startedAt: { lt: cutoff } }
+  const reverseFlowWhere = { startedAt: { lt: cutoff } }
+  const [telemetry, deviceEvents, faultEvents, reverseFlowAlerts] = await Promise.all([
+    dryRun ? db.telemetry.count({ where: telemetryWhere }).then((count) => ({ count })) : db.telemetry.deleteMany({ where: telemetryWhere }),
+    dryRun ? db.deviceEvent.count({ where: eventWhere }).then((count) => ({ count })) : db.deviceEvent.deleteMany({ where: eventWhere }),
+    dryRun ? db.faultEvent.count({ where: faultWhere }).then((count) => ({ count })) : db.faultEvent.deleteMany({ where: faultWhere }),
+    dryRun ? db.reverseFlowAlert.count({ where: reverseFlowWhere }).then((count) => ({ count })) : db.reverseFlowAlert.deleteMany({ where: reverseFlowWhere })
+  ])
+  return { retentionDays, cutoff: cutoff.toISOString(), dryRun, telemetry: telemetry.count, deviceEvents: deviceEvents.count, faultEvents: faultEvents.count, reverseFlowAlerts: reverseFlowAlerts.count }
 }
 
-cleanup().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+async function main() { console.log(JSON.stringify(await cleanupRetention(prisma, new Date(), process.argv.includes('--dry-run')), null, 2)) }
+const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
+if (invokedDirectly) main().catch((error) => { console.error(error); process.exitCode = 1 })
