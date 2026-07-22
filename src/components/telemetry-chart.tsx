@@ -31,10 +31,10 @@ export function TelemetryChart({ title, series, height = 430 }: { title: string;
     const chart = chartRef.current
     if (!chart) return
     chart.setOption({
-      color: visible.map((item) => item.color), grid: { left: 58, right: 24, top: 38, bottom: 76 }, tooltip: { trigger: 'axis' }, legend: { top: 4, type: 'scroll' }, xAxis: { type: 'time', boundaryGap: false }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#e3e8ef' } } },
+      animationDuration: 360, color: visible.map((item) => item.color), grid: { left: 62, right: 28, top: 42, bottom: 76 }, tooltip: { trigger: 'axis', backgroundColor: '#17233a', borderWidth: 0, textStyle: { color: '#fff' }, padding: [9, 12] }, legend: { top: 7, type: 'scroll', textStyle: { color: '#667085' } }, xAxis: { type: 'time', boundaryGap: false, axisLine: { lineStyle: { color: '#cdd7e5' } }, axisLabel: { color: '#7a8799' } }, yAxis: { type: 'value', axisLabel: { color: '#7a8799' }, splitLine: { lineStyle: { color: '#e8edf4' } } },
       dataZoom: [{ type: 'inside', xAxisIndex: 0, zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: true }, { type: 'slider', xAxisIndex: 0, height: 24, bottom: 16 }],
       series: visible.flatMap((item) => {
-        const line = { name: item.label, type: 'line' as const, showSymbol: false, smooth: false, data: item.points, emphasis: { focus: 'series' as const } }
+        const line = { name: item.label, type: 'line' as const, showSymbol: false, smooth: .16, lineStyle: { width: 2.25 }, data: item.points, emphasis: { focus: 'series' as const } }
         const negative = item.markNegative ? [{ name: `${item.label} 逆流点`, type: 'scatter' as const, data: item.points.filter(([, value]) => value < 0), symbolSize: 7, itemStyle: { color: '#c92828' }, tooltip: { show: false }, silent: true }] : []
         return [line, ...negative]
       })

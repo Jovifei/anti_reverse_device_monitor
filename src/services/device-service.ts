@@ -19,6 +19,12 @@ import {
 
 export interface DeviceListResponse {
   total: number
+  summary: {
+    activeTotal: number
+    onlineCtCount: number
+    offlineCtCount: number
+    criticalReverseFlowCount: number
+  }
   items: {
     id: number
     deviceSn: string
@@ -26,6 +32,10 @@ export interface DeviceListResponse {
     platformOnline: boolean
     lastReportedAt: Date | null
     inverterCount: number
+    onlineInverterCount: number
+    isOnline: boolean
+    reverseFlow: boolean
+    reverseFlowPhases: Array<'A' | 'B' | 'C'>
   }[]
   page: number
   pageSize: number
@@ -75,6 +85,7 @@ export interface DeviceHistorySummary {
 }
 
 const OFFLINE_THRESHOLD_MINUTES = 15
+const ACTIVE_WINDOW_DAYS = 7
 
 function toMinutesSince(date: Date) {
   return Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
@@ -96,15 +107,57 @@ export class DeviceService {
 
   async listDevices(rawQuery: unknown) {
     const parsed = parseDeviceListQuery(rawQuery)
-    const { items, total } = await this.repo.findManyWithKeyword({
-      page: parsed.page,
-      pageSize: parsed.pageSize,
-      keyword: parsed.q
+    const now = new Date()
+    const activeCutoff = new Date(now)
+    activeCutoff.setDate(activeCutoff.getDate() - ACTIVE_WINDOW_DAYS)
+    const onlineCutoff = new Date(now.getTime() - OFFLINE_THRESHOLD_MINUTES * 60_000)
+    const records = await this.repo.findDashboardRecords()
+    const activeItems = records
+      .filter((item) => item.platformOnline || (item.lastReportedAt !== null && item.lastReportedAt >= activeCutoff))
+      .map((item) => {
+        const phaseMetric = (aliases: string[]) => item.latestRows.find((row) => metricMatches(row.metricKey, aliases))?.valueNumber ?? null
+        const phaseValues = [
+          { phase: 'A' as const, value: phaseMetric(['active_power_ct1', 'ct.active_power.phase_a']) },
+          { phase: 'B' as const, value: phaseMetric(['active_power_ct2', 'ct.active_power.phase_b']) },
+          { phase: 'C' as const, value: phaseMetric(['active_power_ct3', 'ct.active_power.phase_c']) }
+        ]
+        const reverseFlowPhases = phaseValues.filter((item) => item.value !== null && item.value < 0).map((item) => item.phase)
+        const isOnline = Boolean(item.platformOnline && item.lastReportedAt && item.lastReportedAt >= onlineCutoff)
+        const pairedInverters = item.inverterBindings.filter((binding) => binding.paired)
+        const onlineInverterCount = pairedInverters.filter((binding) => binding.latestRows.some((row) => row.valueNumber === 2)).length
+        return {
+          id: item.id,
+          deviceSn: item.deviceSn,
+          productModel: item.productModel,
+          platformOnline: item.platformOnline,
+          lastReportedAt: item.lastReportedAt,
+          inverterCount: pairedInverters.length,
+          onlineInverterCount,
+          isOnline,
+          reverseFlow: reverseFlowPhases.length > 0,
+          reverseFlowPhases
+        }
+      })
+    const summary = {
+      activeTotal: activeItems.length,
+      onlineCtCount: activeItems.filter((item) => item.isOnline).length,
+      offlineCtCount: activeItems.filter((item) => !item.isOnline).length,
+      criticalReverseFlowCount: activeItems.filter((item) => item.reverseFlow).length
+    }
+    const matchingItems = activeItems.filter((item) => {
+      if (parsed.q && !item.deviceSn.toLowerCase().includes(parsed.q.toLowerCase())) return false
+      if (parsed.status === 'online') return item.isOnline
+      if (parsed.status === 'offline') return !item.isOnline
+      if (parsed.status === 'reverse') return item.reverseFlow
+      return true
     })
+    const total = matchingItems.length
+    const items = matchingItems.slice((parsed.page - 1) * parsed.pageSize, parsed.page * parsed.pageSize)
 
     return {
       items,
       total,
+      summary,
       page: parsed.page,
       pageSize: parsed.pageSize
     } as DeviceListResponse

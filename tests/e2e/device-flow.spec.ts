@@ -1,13 +1,46 @@
 import { expect, test } from '@playwright/test'
 
-test('SN suffix lookup opens the CT dashboard and an inverter detail page', async ({ page }) => {
-  await page.goto('/devices/252')
-  await expect(page.getByRole('heading', { name: /设备 SN：GC2001000000252/ })).toBeVisible()
+test('根首页重定向到中文设备总览，并展示三种 Demo CT 场景', async ({ page }) => {
+  await page.goto('/')
+  await expect(page).toHaveURL(/\/devices$/)
+  await expect(page.getByRole('heading', { name: '防逆流设备运行总览' })).toBeVisible()
+  await expect(page.getByText('DEMO-CT-ONLINE-001')).toBeVisible()
+  await expect(page.getByText('DEMO-CT-OFFLINE-002')).toBeVisible()
+  await expect(page.getByText('DEMO-CT-REVERSE-003')).toBeVisible()
+  await expect(page.locator('.offline-row').filter({ hasText: 'DEMO-CT-OFFLINE-002' })).toBeVisible()
+  await expect(page.locator('.reverse-row')).toContainText('DEMO-CT-REVERSE-003')
+  await expect(page.locator('body')).not.toContainText('undefined')
+  await expect(page.locator('body')).not.toContainText('null')
+})
+
+test('在线 CT 展示八张微逆卡、状态差异与图表控件', async ({ page }) => {
+  await page.goto('/devices/DEMO-CT-ONLINE-001')
+  await expect(page.getByRole('heading', { name: /设备 SN：DEMO-CT-ONLINE-001/ })).toBeVisible()
   await expect(page.getByRole('heading', { name: '功率总览' })).toBeVisible()
-  await Promise.all([
-    page.waitForURL('**/devices/GC2001000000252/inverters/1'),
-    page.getByRole('link', { name: '查看微逆 1 详情' }).click()
-  ])
-  await expect(page.getByRole('heading', { name: /微型逆变器 1：MI-0001/ })).toBeVisible()
+  await expect(page.locator('.inverter-card')).toHaveCount(8)
+  await expect(page.locator('.inverter-card.online').first()).toBeVisible()
+  await expect(page.locator('.inverter-card.offline')).toContainText('微型逆变器 3')
+  await expect(page.locator('.inverter-card.unpaired')).toContainText('未配对通道')
+  await expect(page.locator('.inverter-card.unknown')).toContainText('暂无遥测数据')
+  await expect(page.getByRole('button', { name: '复位缩放' }).first()).toBeVisible()
+  await expect(page.getByLabel('范围').first()).toHaveValue('7')
+  const detailLink = page.locator('.inverter-card').filter({ hasText: '微型逆变器 1' }).getByRole('link', { name: '查看详情' })
+  await expect(detailLink).toHaveAttribute('href', '/devices/DEMO-CT-ONLINE-001/inverters/1')
+  await detailLink.click()
+  await expect(page).toHaveURL(/\/devices\/DEMO-CT-ONLINE-001\/inverters\/1$/)
+  await expect(page.getByRole('heading', { name: /微型逆变器 1：DEMO-MI-A01/ })).toBeVisible()
+})
+
+test('逆流告警和故障名称在 CT 与微逆详情中直接可读', async ({ page }) => {
+  await page.goto('/devices/DEMO-CT-REVERSE-003')
+  await expect(page.getByText('严重告警：正在反送电网')).toBeVisible()
+  await expect(page.locator('.phase-card.danger')).toContainText('A 相 CT 有功功率')
+  await expect(page.getByText('最近 7 天逆流告警记录')).toBeVisible()
+  await page.goto('/devices/DEMO-CT-REVERSE-003/inverters/1')
+  await expect(page.locator('.fault-name').getByText('PV1输入欠压', { exact: true })).toBeVisible()
+  await expect(page.locator('.fault-name').getByText('PV2输入欠压', { exact: true })).toBeVisible()
+  await expect(page.locator('.fault-name').getByText('PV电压异常', { exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: '内部温度曲线' })).toBeVisible()
+  await expect(page.locator('body')).not.toContainText('undefined')
+  await expect(page.locator('body')).not.toContainText('null')
 })
