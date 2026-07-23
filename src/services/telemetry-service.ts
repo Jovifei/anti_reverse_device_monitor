@@ -31,6 +31,7 @@ export interface ConnectivitySummary {
   offlineWindows: OfflineWindow[]
   stateSince?: string | null
   currentOfflineMinutes?: number | null
+  currentOnlineMinutes?: number | null
 }
 
 export interface FaultChange {
@@ -145,7 +146,7 @@ export function summarizeInverterOnlineStates(
   if (points.length === 0 && !baseline) {
     return {
       windowStart: windowStart.toISOString(), windowEnd: windowEnd.toISOString(), samples: 0,
-      lastSeenAt: null, isOnline: false, offlineMinutes: 0, transitions: [], offlineWindows: [], stateSince: null, currentOfflineMinutes: null
+      lastSeenAt: null, isOnline: false, offlineMinutes: 0, transitions: [], offlineWindows: [], stateSince: null, currentOfflineMinutes: null, currentOnlineMinutes: null
     }
   }
 
@@ -173,6 +174,7 @@ export function summarizeInverterOnlineStates(
   }
 
   const currentOfflineMinutes = isOnline ? null : roundMinutes(windowEnd.getTime() - stateSince.getTime())
+  const currentOnlineMinutes = isOnline ? roundMinutes(windowEnd.getTime() - stateSince.getTime()) : null
   return {
     windowStart: windowStart.toISOString(),
     windowEnd: windowEnd.toISOString(),
@@ -183,7 +185,8 @@ export function summarizeInverterOnlineStates(
     transitions,
     offlineWindows,
     stateSince: stateSince.toISOString(),
-    currentOfflineMinutes
+    currentOfflineMinutes,
+    currentOnlineMinutes
   }
 }
 
@@ -288,17 +291,24 @@ export class TelemetryService {
         }
       }
 
+      const isOnline = baselineSeenAt
+        ? endAt.getTime() - baselineSeenAt.getTime() <= OFFLINE_THRESHOLD_MS
+        : false
+      const stateSince = baselineSeenAt
+        ? (isOnline ? baselineSeenAt : new Date(baselineSeenAt.getTime() + OFFLINE_THRESHOLD_MS))
+        : null
       return {
         windowStart: startAt.toISOString(),
         windowEnd: endAt.toISOString(),
         samples: 0,
         lastSeenAt: toIso(baselineSeenAt),
-        isOnline: baselineSeenAt
-          ? endAt.getTime() - baselineSeenAt.getTime() <= OFFLINE_THRESHOLD_MS
-          : false,
+        isOnline,
         offlineMinutes: offlineWindows.reduce((sum, item) => sum + item.durationMinutes, 0),
         transitions,
-        offlineWindows
+        offlineWindows,
+        stateSince: toIso(stateSince),
+        currentOfflineMinutes: isOnline || !stateSince ? null : roundMinutes(endAt.getTime() - stateSince.getTime()),
+        currentOnlineMinutes: isOnline && stateSince ? roundMinutes(endAt.getTime() - stateSince.getTime()) : null
       }
     }
 
@@ -376,15 +386,23 @@ export class TelemetryService {
       }
     }
 
+    const isOnline = lastGap <= OFFLINE_THRESHOLD_MS
+    const lastOnlineTransition = [...transitions].reverse().find((item) => item.state === 'online')
+    const stateSince = isOnline
+      ? new Date(lastOnlineTransition?.at ?? uniqueTimes[0].toISOString())
+      : new Date(lastSeenAt.getTime() + OFFLINE_THRESHOLD_MS)
     return {
       windowStart: startAt.toISOString(),
       windowEnd: endAt.toISOString(),
       samples: rows.length,
       lastSeenAt: toIso(lastSeenAt),
-      isOnline: lastGap <= OFFLINE_THRESHOLD_MS,
+      isOnline,
       offlineMinutes: offlineWindows.reduce((sum, item) => sum + item.durationMinutes, 0),
       transitions,
-      offlineWindows
+      offlineWindows,
+      stateSince: stateSince.toISOString(),
+      currentOfflineMinutes: isOnline ? null : roundMinutes(endAt.getTime() - stateSince.getTime()),
+      currentOnlineMinutes: isOnline ? roundMinutes(endAt.getTime() - stateSince.getTime()) : null
     }
   }
 
@@ -458,7 +476,8 @@ export class TelemetryService {
         transitions,
         offlineWindows,
         stateSince: null,
-        currentOfflineMinutes: null
+        currentOfflineMinutes: null,
+        currentOnlineMinutes: null
       }
     }
 
@@ -515,6 +534,10 @@ export class TelemetryService {
       }
     }
 
+    const heartbeatStateSince = trailingGap > OFFLINE_THRESHOLD_MS
+      ? new Date(lastSeenAt.getTime() + OFFLINE_THRESHOLD_MS)
+      : new Date(transitions.filter((item) => item.state === 'online').at(-1)?.at ?? lastSeenAt.toISOString())
+
     return {
       windowStart: startAt.toISOString(),
       windowEnd: endAt.toISOString(),
@@ -524,10 +547,11 @@ export class TelemetryService {
       offlineMinutes: offlineWindows.reduce((sum, item) => sum + item.durationMinutes, 0),
       transitions,
       offlineWindows,
-      stateSince: trailingGap > OFFLINE_THRESHOLD_MS
-        ? new Date(lastSeenAt.getTime() + OFFLINE_THRESHOLD_MS).toISOString()
-        : lastSeenAt.toISOString(),
-      currentOfflineMinutes: trailingGap > OFFLINE_THRESHOLD_MS ? roundMinutes(trailingGap - OFFLINE_THRESHOLD_MS) : null
+      stateSince: heartbeatStateSince.toISOString(),
+      currentOfflineMinutes: trailingGap > OFFLINE_THRESHOLD_MS ? roundMinutes(trailingGap - OFFLINE_THRESHOLD_MS) : null,
+      currentOnlineMinutes: trailingGap <= OFFLINE_THRESHOLD_MS
+        ? roundMinutes(endAt.getTime() - heartbeatStateSince.getTime())
+        : null
     }
   }
 

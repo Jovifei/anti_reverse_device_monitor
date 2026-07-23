@@ -10,6 +10,7 @@ describe('inverter online-state continuity', () => {
     expect(result.isOnline).toBe(true)
     expect(result.offlineMinutes).toBe(10)
     expect(result.transitions.map((item) => item.state)).toEqual(['offline', 'online'])
+    expect(result.currentOnlineMinutes).toBe(40)
   })
 
   it('keeps a trailing offline interval open until the query end', () => {
@@ -17,6 +18,7 @@ describe('inverter online-state continuity', () => {
     expect(result.isOnline).toBe(false)
     expect(result.currentOfflineMinutes).toBe(30)
     expect(result.offlineWindows).toHaveLength(1)
+    expect(result.currentOnlineMinutes).toBeNull()
   })
 
   it('uses a baseline state at the window start and ignores repeated states', () => {

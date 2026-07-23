@@ -170,7 +170,7 @@ export class DeviceService {
   }
 
   async getDeviceDataSourceLabel(sn: string) {
-    return (await this.telemetryRepository.hasTelemetryForDevice(parseSn(sn))) ? '本地数据库' : '暂无数据'
+    return (await this.telemetryRepository.hasTelemetryForDevice(parseSn(sn))) ? 'Demo SQLite' : '暂无数据'
   }
 
   async resolveDeviceSn(rawSn: string) {

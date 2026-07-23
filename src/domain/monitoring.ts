@@ -138,7 +138,24 @@ export function getInverterWorkStatus(raw: number | null) {
   return resolveStatusLabel('inverter_work_state', raw) ?? '—'
 }
 
-export function isGenerating(rawGenerating: number | null, rawWorkState: number | null) {
-  if (rawGenerating !== null) return rawGenerating > 0
+export function displaySwitch(row: MetricRow | undefined) {
+  const value = numericValue(row)
+  if (value === 1) return '\u5f00\u542f'
+  if (value === 0) return '\u5173\u95ed'
+  return displayValue(row)
+}
+
+export function displayPowerLimit(row: MetricRow | undefined) {
+  const value = numericValue(row)
+  if (value === 0) return '\u5173\u95ed'
+  if (value !== null) return `${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value)} W`
+  return displayValue(row)
+}
+
+/** Real-time output is authoritative; status flags are only a fallback when output is missing. */
+export function isGenerating(rawOnlineState: number | null, rawWorkState: number | null, rawPower?: number | null) {
+  if (rawPower === undefined) return rawOnlineState === 2 && (rawWorkState === 1 || rawWorkState === 3)
+  if (rawOnlineState !== 2) return false
+  if (rawPower !== null && Number.isFinite(rawPower)) return rawPower > 1
   return rawWorkState === 1 || rawWorkState === 3
 }

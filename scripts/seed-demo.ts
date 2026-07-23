@@ -77,18 +77,20 @@ async function main() {
     }
 
     const addCtHour = (deviceId: number, reportedAt: Date, mode: 'online' | 'offline' | 'reverse', hour: number) => {
-      const generated = 3600 * solarFactor(reportedAt)
+      const currentOnlineSample = hour === 0 && mode === 'online'
+      const currentReverseSample = hour === 0 && mode === 'reverse'
+      const generated = currentReverseSample ? 1370 : currentOnlineSample ? 2100 : 3600 * solarFactor(reportedAt)
       const reverseA = mode === 'reverse' && ((hour >= 72 && hour <= 74) || hour <= 2)
       const reverseB = mode === 'reverse' && hour >= 42 && hour <= 44
       const reverseC = mode === 'reverse' && hour <= 1
       const historicReverse = reverseA || reverseB || reverseC
       const rows: Metric[] = []
-      addMetric(rows, null, 'load_power', 950 + generated * 0.42, reportedAt)
-      addMetric(rows, null, 'grid_power', historicReverse ? -420 - (hour % 3) * 35 : 120 + generated * 0.08, reportedAt)
+      addMetric(rows, null, 'load_power', currentReverseSample ? 950 : 950 + generated * 0.42, reportedAt)
+      addMetric(rows, null, 'grid_power', currentReverseSample ? -420 : historicReverse ? -420 - (hour % 3) * 35 : 120 + generated * 0.08, reportedAt)
       addMetric(rows, null, 'inverter_total_power', generated, reportedAt)
-      addMetric(rows, null, 'active_power_ct1', reverseA ? -420 : 55 + generated * 0.04, reportedAt)
-      addMetric(rows, null, 'active_power_ct2', reverseB ? -330 : 75 + generated * 0.035, reportedAt)
-      addMetric(rows, null, 'active_power_ct3', reverseC ? -260 : 95 + generated * 0.03, reportedAt)
+      addMetric(rows, null, 'active_power_ct1', currentReverseSample ? -160 : reverseA ? -420 : 55 + generated * 0.04, reportedAt)
+      addMetric(rows, null, 'active_power_ct2', currentReverseSample ? 0 : reverseB ? -330 : 75 + generated * 0.035, reportedAt)
+      addMetric(rows, null, 'active_power_ct3', currentReverseSample ? -260 : reverseC ? -260 : 95 + generated * 0.03, reportedAt)
       addMetric(rows, null, 'grid_voltage', 229 + Math.sin(hour / 4) * 2, reportedAt)
       addMetric(rows, null, 'grid_frequency', 50 + Math.cos(hour / 3) * 0.04, reportedAt)
       addMetric(rows, null, 'today_energy', Math.max(0, generated / 1000 * Math.max(0, reportedAt.getHours() - 6)), reportedAt)
@@ -108,7 +110,7 @@ async function main() {
       if (hour >= 50) addCtHour(offline.id, reportedAt, 'offline', hour)
 
       for (const binding of onlineBindings.filter((item) => item.paired)) {
-        const generated = 640 * solarFactor(reportedAt) * (0.8 + binding.inverterIndex * 0.025)
+        const generated = (hour === 0 ? 640 : 640 * solarFactor(reportedAt)) * (0.8 + binding.inverterIndex * 0.025)
         const offlineState = binding.inverterIndex === 3 || (binding.inverterIndex === 6 && hour >= 40 && hour <= 43)
         const standby = binding.inverterIndex === 2
         const limited = binding.inverterIndex === 4
@@ -116,10 +118,11 @@ async function main() {
         const rows: Metric[] = []
         addMetric(rows, binding.id, 'online_state', offlineState ? 1 : 2, reportedAt)
         addMetric(rows, binding.id, 'work_state', offlineState ? 0 : standby ? 2 : 1, reportedAt)
-        addMetric(rows, binding.id, 'is_generating', offlineState || standby ? 0 : 1, reportedAt)
-        addMetric(rows, binding.id, 'inverter_power', offlineState || standby ? 0 : generated * (limited ? 0.65 : 1), reportedAt)
-        addMetric(rows, binding.id, 'pv1_power', offlineState ? 0 : generated * 0.48, reportedAt)
-        addMetric(rows, binding.id, 'pv2_power', offlineState ? 0 : generated * 0.52, reportedAt)
+        const inverterPower = offlineState || standby ? 0 : generated * (limited ? 0.65 : 1)
+        addMetric(rows, binding.id, 'is_generating', inverterPower > 1 ? 1 : 0, reportedAt)
+        addMetric(rows, binding.id, 'inverter_power', inverterPower, reportedAt)
+        addMetric(rows, binding.id, 'pv1_power', offlineState || standby ? 0 : generated * (limited ? 0.65 : 1) * 0.48, reportedAt)
+        addMetric(rows, binding.id, 'pv2_power', offlineState || standby ? 0 : generated * (limited ? 0.65 : 1) * 0.52, reportedAt)
         addMetric(rows, binding.id, 'internal_temperature', 31 + solarFactor(reportedAt) * 18 + (binding.inverterIndex === 6 ? 4 : 0), reportedAt)
         addMetric(rows, binding.id, 'packet_loss_rate', binding.inverterIndex === 6 ? 1.8 + (hour % 4) * 0.35 : 0.1, reportedAt)
         addMetric(rows, binding.id, 'today_energy', Math.max(0, generated / 1000 * Math.max(0, reportedAt.getHours() - 6)), reportedAt)
@@ -149,11 +152,11 @@ async function main() {
 
     for (let hour = 4; hour >= 0; hour -= 1) {
       const reportedAt = new Date(now.getTime() - hour * 60 * 60 * 1000)
-      const generated = 530 * solarFactor(reportedAt)
+      const generated = hour === 0 ? 1370 : 530 * solarFactor(reportedAt)
       const rows: Metric[] = []
       addMetric(rows, reverseBinding.id, 'online_state', 2, reportedAt)
       addMetric(rows, reverseBinding.id, 'work_state', 1, reportedAt)
-      addMetric(rows, reverseBinding.id, 'is_generating', 1, reportedAt)
+      addMetric(rows, reverseBinding.id, 'is_generating', generated > 1 ? 1 : 0, reportedAt)
       addMetric(rows, reverseBinding.id, 'inverter_power', generated, reportedAt)
       addMetric(rows, reverseBinding.id, 'pv1_power', generated * 0.48, reportedAt)
       addMetric(rows, reverseBinding.id, 'pv2_power', generated * 0.52, reportedAt)

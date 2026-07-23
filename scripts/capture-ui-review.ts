@@ -16,16 +16,25 @@ const temporaryTsconfigPath = path.join(root, `.tsconfig-ui-capture-${runId}.jso
 const demoDatabase = path.join(root, 'data', 'demo-device-monitor.db');
 const nextEnvPath = path.join(root, 'next-env.d.ts');
 const screenshots = [
-  'desktop-ct-main.png',
+  'desktop-device-overview.png',
+  'desktop-ct-online.png',
+  'desktop-ct-offline.png',
+  'desktop-ct-reverse-flow.png',
   'desktop-phase-history-dialog.png',
   'desktop-inverter-grid.png',
+  'desktop-inverter-online.png',
+  'desktop-inverter-offline.png',
+  'desktop-inverter-fault.png',
   'desktop-inverter-metric-dialog.png',
   'desktop-inverter-offline-history.png',
   'desktop-reverse-flow-alerts.png',
+  'mobile-device-overview.png',
   'mobile-ct-main.png',
   'mobile-inverter-grid.png',
+  'mobile-inverter-detail.png',
   'mobile-metric-dialog.png'
 ] as const;
+const obsoleteScreenshots = ['desktop-ct-main.png'] as const;
 
 let baseUrl = '';
 let server: ChildProcess | undefined;
@@ -121,11 +130,12 @@ async function waitForServer() {
   throw new Error('The UI capture server did not start within 60 seconds.');
 }
 
-async function capture(page: Page, filename: string, route: string) {
+async function capture(page: Page, filename: string, route: string, options: { fullPage?: boolean; locator?: string } = {}) {
   await page.goto(`${baseUrl}${route}`, { waitUntil: 'commit', timeout: 15_000 });
   await page.locator('main').waitFor({ state: 'visible', timeout: 15_000 });
   await page.waitForTimeout(600);
-  await page.screenshot({ path: path.join(stagingDir, filename), fullPage: true });
+  if (options.locator) await page.locator(options.locator).screenshot({ path: path.join(stagingDir, filename) });
+  else await page.screenshot({ path: path.join(stagingDir, filename), fullPage: options.fullPage ?? true });
 }
 
 async function publishScreenshots() {
@@ -234,6 +244,7 @@ async function main() {
     originalNextEnv = await fs.readFile(nextEnvPath);
     await acquireCaptureLock();
     await fs.mkdir(stagingDir, { recursive: true });
+    await Promise.all(obsoleteScreenshots.map((filename) => fs.rm(path.join(outputDir, filename), { force: true })));
     await fs.rm(nextDistDir, { recursive: true, force: true });
     await fs.writeFile(temporaryTsconfigPath, JSON.stringify({
       extends: './tsconfig.json',
@@ -267,16 +278,32 @@ async function main() {
     const desktop = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true });
 
-    await capture(desktop, 'desktop-ct-main.png', '/devices/DEMO-CT-ONLINE-001');
-    await desktop.getByRole('button', { name: /A\s*.*CT/ }).click();
-    await desktop.screenshot({ path: path.join(stagingDir, 'desktop-phase-history-dialog.png'), fullPage: true });
+    await capture(desktop, 'desktop-device-overview.png', '/devices');
+    await capture(desktop, 'desktop-ct-online.png', '/devices/DEMO-CT-ONLINE-001');
+    await capture(desktop, 'desktop-ct-offline.png', '/devices/DEMO-CT-OFFLINE-002');
+    await capture(desktop, 'desktop-ct-reverse-flow.png', '/devices/DEMO-CT-REVERSE-003');
+    await desktop.getByTestId('reverse-safety-panel').locator('.metric-history-trigger').first().click();
+    await desktop.screenshot({ path: path.join(stagingDir, 'desktop-phase-history-dialog.png'), fullPage: false });
     await desktop.close({ runBeforeUnload: false });
 
     const desktopGrid = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
-    await capture(desktopGrid, 'desktop-inverter-grid.png', '/devices/DEMO-CT-ONLINE-001');
-    await desktopGrid.getByRole('button', { name: /PV1/ }).first().click();
-    await desktopGrid.screenshot({ path: path.join(stagingDir, 'desktop-inverter-metric-dialog.png'), fullPage: true });
+    await capture(desktopGrid, 'desktop-inverter-grid.png', '/devices/DEMO-CT-ONLINE-001', { locator: '.inverter-grid', fullPage: false });
     await desktopGrid.close({ runBeforeUnload: false });
+
+    const desktopOnline = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+    await capture(desktopOnline, 'desktop-inverter-online.png', '/devices/DEMO-CT-ONLINE-001/inverters/1');
+    await desktopOnline.close();
+    const desktopInverterOffline = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+    await capture(desktopInverterOffline, 'desktop-inverter-offline.png', '/devices/DEMO-CT-ONLINE-001/inverters/3');
+    await desktopInverterOffline.close();
+    const desktopFault = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+    await capture(desktopFault, 'desktop-inverter-fault.png', '/devices/DEMO-CT-REVERSE-003/inverters/1');
+    await desktopFault.close();
+    const desktopMetric = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+    await capture(desktopMetric, 'desktop-inverter-metric-dialog.png', '/devices/DEMO-CT-ONLINE-001/inverters/1');
+    await desktopMetric.locator('.metric-history-trigger').first().click();
+    await desktopMetric.screenshot({ path: path.join(stagingDir, 'desktop-inverter-metric-dialog.png'), fullPage: false });
+    await desktopMetric.close();
 
     const desktopOffline = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
     await capture(desktopOffline, 'desktop-inverter-offline-history.png', '/devices/DEMO-CT-ONLINE-001/inverters/3');
@@ -285,10 +312,15 @@ async function main() {
     await capture(desktopReverse, 'desktop-reverse-flow-alerts.png', '/devices/DEMO-CT-REVERSE-003');
     await desktopReverse.close();
 
+    await capture(mobile, 'mobile-device-overview.png', '/devices');
     await capture(mobile, 'mobile-ct-main.png', '/devices/DEMO-CT-ONLINE-001');
-    await capture(mobile, 'mobile-inverter-grid.png', '/devices/DEMO-CT-ONLINE-001');
-    await mobile.getByRole('button', { name: /PV1/ }).first().click();
-    await mobile.screenshot({ path: path.join(stagingDir, 'mobile-metric-dialog.png'), fullPage: true });
+    await capture(mobile, 'mobile-inverter-grid.png', '/devices/DEMO-CT-ONLINE-001', { locator: '.inverter-grid', fullPage: false });
+    await capture(mobile, 'mobile-inverter-detail.png', '/devices/DEMO-CT-ONLINE-001/inverters/1');
+    await mobile.goto(`${baseUrl}/devices/DEMO-CT-ONLINE-001`, { waitUntil: 'commit', timeout: 15_000 });
+    await mobile.locator('main').waitFor({ state: 'visible', timeout: 15_000 });
+    await mobile.waitForTimeout(600);
+    await mobile.locator('.inverter-grid .metric-history-trigger').first().click();
+    await mobile.screenshot({ path: path.join(stagingDir, 'mobile-metric-dialog.png'), fullPage: false });
     await closeBrowser();
     await publishScreenshots();
     trace('screenshot_count', screenshots.length);
