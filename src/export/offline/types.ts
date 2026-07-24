@@ -9,6 +9,8 @@ export interface OfflineChartSeries {
   color: string
   markNegative?: boolean
   dailyReset?: boolean
+  /** Hold previous value until next sample, then jump (no diagonal interpolation). */
+  step?: 'start' | 'middle' | 'end'
   points: ChartPoint[]
 }
 

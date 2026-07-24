@@ -2,7 +2,29 @@
 
 import * as echarts from 'echarts'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { buildBeijingDayNightBands, visibleSeriesTimeRange } from '@/src/domain/beijing-sun'
+import { buildBeijingDayNightBands, seriesNeedsDayNightBands, visibleSeriesTimeRange } from '@/src/domain/beijing-sun'
+
+const NEGATIVE_WARN_COLOR = '#c92828'
+
+type ChartPoint = [string, number | null]
+
+function splitNegativeWarningPoints(points: ChartPoint[]) {
+  const normal: ChartPoint[] = []
+  const warning: ChartPoint[] = []
+  const warningDots: Array<[string, number]> = []
+  for (const point of points) {
+    const value = point[1]
+    if (typeof value === 'number' && value < 0) {
+      normal.push([point[0], null])
+      warning.push(point)
+      warningDots.push([point[0], value])
+    } else {
+      normal.push(point)
+      warning.push([point[0], null])
+    }
+  }
+  return { normal, warning, warningDots }
+}
 
 export interface ClientChartSeries {
   key: string
@@ -11,6 +33,8 @@ export interface ClientChartSeries {
   color: string
   markNegative?: boolean
   dailyReset?: boolean
+  /** Hold previous value until next sample, then jump (no diagonal interpolation). */
+  step?: 'start' | 'middle' | 'end'
   points: Array<[string, number]>
 }
 
@@ -126,7 +150,7 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
       .map((item) => ({ ...item, points: item.points.filter(([at]) => new Date(at).getTime() >= cutoff) }))
       .filter((item) => item.points.length > 0)
   }, [days, selected, series])
-  const enableDayNight = dayNightBands ?? visible.some((item) => item.unit === 'W' || item.unit === 'kWh' || item.unit === '°C')
+  const enableDayNight = dayNightBands ?? seriesNeedsDayNightBands(visible.map((item) => item.unit))
 
   useEffect(() => {
     const container = containerRef.current
@@ -176,15 +200,17 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
         }]
       : []
     chart.setOption({
-      animationDuration: 360,
-      color: visible.map((item) => item.markNegative ? '#4b5563' : item.color),
+      animationDuration: 320,
+      animationEasing: 'cubicOut',
+      color: visible.map((item) => item.color),
       grid: { left: 68, right: axisPlan.gridRight, top: 42, bottom: days <= 1 ? 84 : 98 },
       tooltip: {
         trigger: 'axis',
-        backgroundColor: '#17233a',
+        backgroundColor: 'rgba(23, 35, 58, .94)',
         borderWidth: 0,
-        textStyle: { color: '#fff' },
-        padding: [9, 12],
+        borderRadius: 10,
+        textStyle: { color: '#fff', fontSize: 12 },
+        padding: [10, 14],
         formatter: (params: unknown) => {
           const list = Array.isArray(params) ? params : [params]
           if (!list.length) return ''
@@ -192,13 +218,23 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
           const ts = Array.isArray(first.value) ? Number(first.value[0]) : Date.now()
           const lines = list
             .filter((item) => (item as { seriesType?: string }).seriesType === 'line')
-            .filter((item) => (item as { seriesName?: string }).seriesName !== '昼夜背景')
+            .filter((item) => {
+              const name = (item as { seriesName?: string }).seriesName ?? ''
+              return name !== '昼夜背景' && !name.includes('·负')
+            })
             .map((item) => {
               const row = item as { marker?: string; seriesName?: string; value?: [number | string, number | null] }
-              const raw = Array.isArray(row.value) ? row.value[1] : null
+              let raw = Array.isArray(row.value) ? row.value[1] : null
+              if ((raw === null || raw === undefined) && row.seriesName && Array.isArray(row.value)) {
+                const series = visible.find((entry) => entry.label === row.seriesName)
+                const ts = row.value[0]
+                const hit = series?.points.find((point) => point[0] === ts || new Date(point[0]).getTime() === new Date(ts).getTime())
+                if (hit) raw = hit[1]
+              }
               const text = raw === null || raw === undefined ? '—' : Number(raw).toLocaleString('zh-CN', { maximumFractionDigits: 2 })
               const unit = unitByName[row.seriesName ?? ''] || ''
-              return `${row.marker ?? ''}${row.seriesName ?? ''}: ${text}${unit ? ` ${unit}` : ''}`
+              const warn = typeof raw === 'number' && raw < 0
+              return `${row.marker ?? ''}${row.seriesName ?? ''}: ${text}${unit ? ` ${unit}` : ''}${warn ? '（负值警示）' : ''}`
             })
           return [`时间 ${formatTooltipTime(ts)}`, ...lines].join('<br/>')
         }
@@ -237,25 +273,71 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
                 return crossed && point[1] < prev[1] ? [[point[0], null] as [string, null], point] : [point]
               })
             : item.points
-          const line = {
+          const lineBase = {
             name: item.label,
             type: 'line' as const,
             showSymbol: false,
-            symbol: 'none',
-            smooth: 0.12,
+            symbol: 'none' as const,
+            smooth: item.step ? false : 0.12,
+            step: item.step,
             connectNulls: false,
             sampling: undefined,
             yAxisIndex,
-            lineStyle: { width: 2.25, color: item.markNegative ? '#4b5563' : item.color },
-            data: chartPoints,
-            emphasis: { focus: 'series' as const },
-            markLine: item.markNegative ? { silent: true, symbol: 'none', lineStyle: { color: '#c92828', type: 'dashed' as const }, label: { formatter: '0 W 基准线', color: '#c92828' }, data: [{ yAxis: 0 }] } : undefined
+            emphasis: { focus: 'series' as const }
           }
-          const negativePoints = item.points.filter(([, value]) => value < 0)
-          const negative = item.markNegative && negativePoints.length > 0
-            ? [{ name: `${item.label} 负值点`, type: 'scatter' as const, yAxisIndex, data: negativePoints, symbolSize: 7, itemStyle: { color: '#c92828' }, tooltip: { show: false }, silent: true }]
-            : []
-          return [line, ...negative]
+          if (!item.markNegative) {
+            return [{
+              ...lineBase,
+              lineStyle: { width: 2.25, color: item.color },
+              data: chartPoints
+            }]
+          }
+          const split = splitNegativeWarningPoints(chartPoints as ChartPoint[])
+          const zeroLine = {
+            silent: true,
+            symbol: 'none' as const,
+            lineStyle: { color: NEGATIVE_WARN_COLOR, type: 'dashed' as const },
+            label: { formatter: '0 W 基准线', color: NEGATIVE_WARN_COLOR },
+            data: [{ yAxis: 0 }]
+          }
+          // Primary series blanks negatives so only the red warning stroke/points remain visible there.
+          const layers: echarts.SeriesOption[] = [{
+            ...lineBase,
+            lineStyle: { width: 2.25, color: item.color },
+            data: split.normal,
+            markLine: zeroLine
+          }]
+          if (split.warningDots.length > 0) {
+            layers.push({
+              name: `${item.label}·负值`,
+              type: 'line',
+              showSymbol: false,
+              symbol: 'none',
+              smooth: item.step ? false : 0.12,
+              step: item.step,
+              connectNulls: false,
+              yAxisIndex,
+              lineStyle: { width: 2.75, color: NEGATIVE_WARN_COLOR },
+              data: split.warning,
+              z: 3,
+              silent: true,
+              tooltip: { show: false },
+              legendHoverLink: false,
+              emphasis: { disabled: true }
+            })
+            layers.push({
+              name: `${item.label}·负值点`,
+              type: 'scatter',
+              yAxisIndex,
+              data: split.warningDots,
+              symbolSize: 8,
+              itemStyle: { color: NEGATIVE_WARN_COLOR, borderColor: '#fff', borderWidth: 1 },
+              tooltip: { show: false },
+              silent: true,
+              z: 4
+            })
+          }
+          return layers
         })
       ]
     }, { notMerge: true })

@@ -1,6 +1,82 @@
-/** Browser runtime injected into offline HTML. No fetch / no network. */
-export function clientRuntimeSource(): string {
-  return `(() => {
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>防逆流设备离线总览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>:root{--ink:#15233a;--muted:#69758a;--canvas:#f3f6fa;--paper:#fff;--paper-alt:#f7f9fc;--line:#dde4ee;--blue:#1558d6;--blue-deep:#103e95;--blue-wash:#eaf1ff;--green:#168449;--green-wash:#e7f8ed;--amber:#b86b09;--amber-wash:#fff3dd;--red:#c33131;--red-wash:#fff0f0;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--radius-sm:8px;--radius-md:12px;--radius-lg:16px;--shadow-sm:0 2px 8px rgba(32,51,81,.04);--shadow-md:0 8px 22px rgba(32,51,81,.06);--shadow-lg:0 14px 32px rgba(32,51,81,.08);--font-data:"Fira Code","JetBrains Mono","SF Mono",monospace;--font-ui:"Fira Sans","MiSans","HarmonyOS Sans SC","PingFang SC","Microsoft YaHei",sans-serif;font-family:var(--font-ui);color:var(--ink);background:var(--canvas)}
+*{box-sizing:border-box}body{margin:0;min-width:320px;background:linear-gradient(120deg,#f7f9fc 0%,#f1f4f8 52%,#eef3fa 100%)}
+main{max-width:1440px;margin:0 auto;padding:22px 24px 72px}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(24px,3vw,36px);letter-spacing:-.04em}h2{font-size:18px}a{color:var(--blue);text-decoration:none}
+button{border:1px solid var(--blue);border-radius:9px;background:var(--blue);color:#fff;cursor:pointer;padding:8px 12px;font:inherit;transition:transform .16s ease,background .16s ease,box-shadow .16s ease}button:hover{transform:translateY(-1px);box-shadow:0 7px 16px rgba(21,88,214,.22)}
+.page-header{display:flex;gap:16px;justify-content:space-between;align-items:flex-end;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #aebbcd}
+.device-switcher{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 10px}.device-switcher label{font-size:13px;font-weight:800;color:var(--muted)}.device-switcher select{min-width:280px;padding:8px 10px;border:1px solid #c9d5e4;border-radius:var(--radius-sm);background:#fff;font:inherit;color:var(--ink);font-weight:800;font-size:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.muted{color:var(--muted);font-size:13px}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--space-3);margin-bottom:var(--space-4)}
+.power-hero-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.energy-secondary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.metric-card.is-hero{min-height:118px;border-color:#9dbcf2;background:linear-gradient(160deg,#f4f8ff,#fff 58%);box-shadow:0 12px 28px rgba(21,88,214,.1)}.metric-card.is-hero .label{color:#35598f;font-size:13px}.metric-card.is-hero .value{font-family:var(--font-data);font-size:clamp(24px,2.2vw,34px);color:#103e95;margin-top:12px}
+.quality-inline{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.quality-inline>div{flex:0 1 160px;padding:6px 10px;border:1px solid #e5ebf3;border-radius:var(--radius-sm);background:var(--paper-alt)}.quality-inline .label{display:block;color:var(--muted);font-size:11px;font-weight:700;margin-bottom:3px}.quality-inline strong{font-family:var(--font-data);font-size:13px;font-weight:600;color:#43516a}
+.ct-status-panel,.ct-overview-panel{max-width:none}.ct-overview-panel .overview-inner-grid{margin-top:12px;margin-bottom:0}.ct-overview-panel .metric-card{box-shadow:none}.status-list-compact{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.status-list-compact li{padding:8px 9px;font-size:12px}.status-list-compact li strong{font-family:var(--font-data);font-size:13px;overflow-wrap:anywhere}
+.metric-card,.panel,.chart-panel,.inverter-card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-md)}
+.metric-card{padding:14px 16px;transition:box-shadow .15s ease}.metric-card:hover{box-shadow:var(--shadow-lg)}.metric-card .label{color:var(--muted);font-size:12px;font-weight:700}.metric-card .value{font-family:var(--font-data);font-size:22px;font-weight:700;margin-top:8px}
+.panel,.chart-panel{padding:16px;margin-bottom:var(--space-4)}.panel-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800;transition:background .15s ease,color .15s ease}.badge.online{background:var(--green-wash);color:#157242}.badge.offline{background:#eef1f5;color:#657185}.badge.unpaired{background:#f7f9fc;color:#6a7588;border:1px dashed #aeb9c7}.badge.unknown{background:var(--amber-wash);color:#98600d}.badge.danger{background:var(--red-wash);color:#b52a2a}
+.readonly-badge{display:inline-flex;padding:6px 9px;border:1px solid #cbdcf8;border-radius:999px;background:var(--blue-wash);color:var(--blue-deep);font-size:12px;font-weight:800}
+.reverse-safety-panel.is-danger{border-color:#ffc8c8;background:linear-gradient(#fff,#fff0f0)}.active-alert{margin:0 0 12px;padding:10px 12px;border:1px solid #ffc8c8;border-radius:var(--radius-sm);background:var(--red-wash);color:#a62121;font-weight:700}
+.reverse-status-banner{display:inline-flex;align-items:center;justify-content:center;min-width:220px;min-height:72px;padding:16px 28px;border-radius:var(--radius-lg);font-size:clamp(22px,2.4vw,32px);font-weight:900;letter-spacing:.06em;line-height:1.15;text-align:center;box-shadow:0 10px 24px rgba(20,73,51,.16)}.reverse-status-banner.is-safe{border:2px solid #3ecf7a;background:linear-gradient(145deg,#c9f5da,#e8fbee);color:#0b6b38}.reverse-status-banner.is-danger{border:2px solid #f07171;background:linear-gradient(145deg,#ffd6d6,#fff1f1);color:#a31616;box-shadow:0 10px 24px rgba(163,22,22,.18)}
+.phase-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3);margin-bottom:14px}.phase-card{display:block;width:100%;text-align:left;padding:14px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper-alt);color:inherit;transition:border-color .15s ease,box-shadow .15s ease}.phase-card:hover{border-color:#b8cce8;box-shadow:var(--shadow-sm)}.phase-card.danger{border-color:#ffc8c8;background:var(--red-wash)}.phase-card .phase-label{color:var(--muted);font-size:12px;font-weight:700}.phase-card .phase-value{display:block;font-family:var(--font-data);font-size:24px;font-weight:700;margin:8px 0 4px}.phase-card.danger .phase-value,.danger-value{color:var(--red)}
+.status-list,.record-list{list-style:none;padding:0;margin:0}.status-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.status-list li{padding:11px;border:1px solid #e5ebf3;border-radius:var(--radius-sm);background:var(--paper-alt);font-size:13px}.status-list li strong{font-family:var(--font-data)}.record-list li{border-top:1px solid #e8edf3;padding:10px 2px;font-size:13px}.record-list li:first-child{border-top:0}
+.alert-phase-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px;width:100%}.alert-phase-col{display:flex;flex-direction:column;border:1px solid #ead0d0;border-radius:var(--radius-md);background:#fff;padding:10px;min-height:0;max-height:260px;overflow:hidden}.alert-phase-col h4{margin:0 0 8px;font-size:13px;color:#8a3a3a;flex:0 0 auto}.alert-phase-scroll{overflow-y:auto;flex:1 1 auto;min-height:0;padding-right:2px}.alert-card{padding:9px 10px;border:1px solid #f0e4e4;border-radius:var(--radius-sm);background:#fffaf8;margin-bottom:8px}.alert-card:last-child{margin-bottom:0}.alert-card.is-active{border-color:#f0b4b4;background:#fff0f0}.alert-card-time{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;color:#43516a;font-weight:700}.alert-arrow{color:#b08a8a}.alert-card-meta{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:12px;color:#69758a}.alert-empty{margin:18px 0 8px;text-align:center}.alert-ongoing{color:var(--red);font-weight:700}
+.two-column{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}.quality-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.ct-presence-panel{max-width:none}.ct-presence-panel h3{margin:0 0 8px;font-size:13px}.presence-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.record-scroll{max-height:160px;overflow-y:auto;padding-right:2px;border:1px solid #e8edf3;border-radius:var(--radius-sm);background:var(--paper-alt)}.record-scroll .record-list li{padding:7px 10px;font-size:12px}
+.inverter-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--space-3)}.inverter-card{padding:14px;position:relative;transition:transform .18s ease,box-shadow .18s ease}.inverter-card:hover{transform:translateY(-2px);box-shadow:0 15px 30px rgba(27,54,95,.1)}.inverter-card .inverter-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px}.inverter-card .inverter-head h3{margin:0 0 4px;font-size:15px;font-weight:700}.inverter-card .inverter-head .muted{margin:0}.inverter-card.online{border-left:3px solid var(--green)}.inverter-card.offline{opacity:.78;filter:grayscale(.25);border-left:3px solid #a0a9b6}.inverter-card.unpaired{border-style:dashed;border-left:3px dashed #b0b8c4}.status-lamp{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:#94a3b8}.status-lamp.on{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.2)}.status-lamp.off{background:#94a3b8}
+.inverter-metric{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid #edf1f6;font-size:13px}.inverter-metric button{all:unset;cursor:pointer;color:var(--blue);font-weight:700;transition:opacity .15s ease}.inverter-metric button:hover{opacity:.8}.inverter-metric .label{color:var(--muted)}
+.chart-controls,.series-toggles{display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:12px;color:var(--muted)}.chart-controls label,.series-toggles label{display:inline-flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid #e0e7f0;border-radius:var(--radius-sm);background:var(--paper-alt);cursor:pointer;transition:border-color .15s ease,background .15s ease}.chart-controls label:hover,.series-toggles label:hover{border-color:#c5d0e0;background:#f0f3f8}.day-night-legend{display:inline-flex;align-items:center;gap:6px;padding:6px 0;color:#8590a1;font-weight:700}.day-night-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid #c9d2de}.day-night-legend i.day{background:rgba(255,236,179,.85)}.day-night-legend i.night{background:rgba(148,163,184,.75)}.chart-host{width:100%;height:430px}
+.dialog-backdrop{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:20px;background:rgba(21,35,58,.48)}.dialog{width:min(1080px,100%);max-height:calc(100vh - 40px);overflow:auto;padding:18px;border-radius:var(--radius-lg);background:var(--paper);box-shadow:0 20px 55px rgba(10,24,48,.32)}.dialog-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
+.device-table{width:100%;border-collapse:collapse}.device-table th,.device-table td{padding:10px;border-bottom:1px solid #e8edf3;text-align:left;font-size:13px}.device-table tr:hover td{background:rgba(241,245,253,.6)}
+@media (max-width:1100px){.inverter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){.phase-grid,.status-list,.status-list-compact,.two-column,.presence-columns,.quality-grid,.alert-phase-grid,.power-hero-grid,.energy-secondary-grid,.inverter-grid{grid-template-columns:1fr}.page-header{flex-direction:column;align-items:flex-start}.ct-status-panel,.ct-overview-panel,.ct-presence-panel,.alert-phase-grid{max-width:none}.alert-phase-col{max-height:220px}}</style>
+</head>
+<body>
+<main>
+<header class="page-header"><div><p class="eyebrow">Offline Bundle</p><h1>防逆流设备离线总览</h1><p class="muted">双击本地 HTML 即可查看，无需服务与网络。</p></div><span class="readonly-badge">数据来源：Demo SQLite</span></header>
+<section class="card-grid">
+  <div class="metric-card"><div class="label">活跃设备</div><div class="value">3</div></div>
+  <div class="metric-card"><div class="label">在线 CT</div><div class="value">0</div></div>
+  <div class="metric-card"><div class="label">离线 CT</div><div class="value">3</div></div>
+  <div class="metric-card"><div class="label">严重逆流</div><div class="value">0</div></div>
+</section>
+<section class="panel"><h2>设备列表</h2>
+<table class="device-table"><thead><tr><th>SN</th><th>型号</th><th>状态</th><th>最后上报</th><th>逆流</th><th>打开</th></tr></thead><tbody>
+<tr>
+  <td>GC2001000000190</td>
+  <td>—</td>
+  <td><span class="badge offline">离线</span></td>
+  <td>2026/07/24 16:13:39</td>
+  <td>无</td>
+  <td><a href="./device-GC2001000000190.html">CT 面板</a></td>
+</tr><tr>
+  <td>GC2001000000252</td>
+  <td>—</td>
+  <td><span class="badge offline">离线</span></td>
+  <td>2026/07/24 11:00:22</td>
+  <td>无</td>
+  <td><a href="./device-GC2001000000252.html">CT 面板</a></td>
+</tr><tr>
+  <td>GC2001000000457</td>
+  <td>—</td>
+  <td><span class="badge offline">离线</span></td>
+  <td>2026/07/24 11:04:07</td>
+  <td>无</td>
+  <td><a href="./device-GC2001000000457.html">CT 面板</a></td>
+</tr>
+</tbody></table></section>
+</main>
+<script>window.__OFFLINE_VM__ = {"kind":"overview","title":"防逆流设备离线总览","sourceLabel":"Demo SQLite","summary":{"activeTotal":3,"onlineCtCount":0,"offlineCtCount":3,"criticalReverseFlowCount":0},"items":[{"deviceSn":"GC2001000000190","productModel":"—","isOnline":false,"lastReportedAt":"2026/07/24 16:13:39","reverseFlow":false,"reversePhases":"—","href":"./device-GC2001000000190.html"},{"deviceSn":"GC2001000000252","productModel":"—","isOnline":false,"lastReportedAt":"2026/07/24 11:00:22","reverseFlow":false,"reversePhases":"—","href":"./device-GC2001000000252.html"},{"deviceSn":"GC2001000000457","productModel":"—","isOnline":false,"lastReportedAt":"2026/07/24 11:04:07","reverseFlow":false,"reversePhases":"—","href":"./device-GC2001000000457.html"}]};</script>
+<script src="./assets/echarts.min.js"></script>
+<script>(() => {
   const vm = window.__OFFLINE_VM__;
   if (!vm || typeof echarts === 'undefined') return;
   const state = { days: 7, charts: new Map() };
@@ -28,7 +104,7 @@ export function clientRuntimeSource(): string {
     const p = partsInTz(ms);
     // Always show down to hour; day/hour layout depends on window width.
     if (days <= 1) return p.hour + ':' + p.minute;
-    return p.month + '-' + p.day + '\\n' + p.hour + ':' + p.minute;
+    return p.month + '-' + p.day + '\n' + p.hour + ':' + p.minute;
   }
 
   function formatTooltipTime(ms){
@@ -458,5 +534,6 @@ export function clientRuntimeSource(): string {
 
   bindDeviceSwitcher();
   window.addEventListener('resize', () => { state.charts.forEach(chart => chart.resize()); });
-})();`
-}
+})();</script>
+</body>
+</html>

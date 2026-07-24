@@ -29,8 +29,6 @@ config/source-field-mapping.local.json
 backups/
 test-results/
 playwright-report/
-artifacts/ui-review/
-artifacts/offline-ui/
 .next-validation/
 .next-ui-capture-*/
 .tsconfig-ui-capture-*.json

@@ -74,6 +74,7 @@ export interface ChartSeries {
   color: string
   markNegative?: boolean
   dailyReset?: boolean
+  step?: 'start' | 'middle' | 'end'
   points: Array<[string, number]>
 }
 
@@ -88,7 +89,14 @@ export interface DeviceHistorySummary {
 const OFFLINE_THRESHOLD_MINUTES = 15
 const ACTIVE_WINDOW_DAYS = 7
 const INVERTER_TODAY_ENERGY_METRIC: MetricDefinition = { key: 'inverter-today-energy', label: '今日发电量', unit: 'kWh', color: '#8b5e34', aliases: ['today_energy', 'inverter_today_energy'] }
-const INVERTER_PACKET_LOSS_METRIC: MetricDefinition = { key: 'packet-loss', label: '丢包率', unit: '%', color: '#64748b', aliases: ['packet_loss_rate', 'packet_loss'] }
+const INVERTER_PACKET_LOSS_METRIC: MetricDefinition = {
+  key: 'packet-loss',
+  label: '丢包率',
+  unit: '%',
+  color: '#64748b',
+  aliases: ['packet_loss_rate', 'packet_loss'],
+  step: 'end'
+}
 
 function toMinutesSince(date: Date) {
   return Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
@@ -421,6 +429,7 @@ export class DeviceService {
       unit: definition.unit,
       color: definition.color,
       markNegative: definition.markNegative,
+      step: definition.step,
       points: rows
         .filter((row) => metricMatches(row.metricKey, definition.aliases) && row.valueNumber !== null)
         .map((row) => [row.reportedAt.toISOString(), row.valueNumber as number])

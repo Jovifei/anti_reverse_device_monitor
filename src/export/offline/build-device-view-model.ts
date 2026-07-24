@@ -32,6 +32,7 @@ function toOfflineSeries(series: ChartSeries[]): OfflineChartSeries[] {
       color: item.color,
       markNegative: item.markNegative,
       dailyReset: item.dailyReset,
+      step: item.step,
       points: item.points
     })
   )

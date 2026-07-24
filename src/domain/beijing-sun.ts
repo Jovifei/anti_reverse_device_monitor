@@ -3,6 +3,13 @@ export const BEIJING_LAT = 39.9042
 export const BEIJING_LON = 116.4074
 export const BEIJING_TZ_OFFSET_HOURS = 8
 
+/** 默认开启昼夜背景的曲线单位（功率/电量/温度/丢包率/电网质量）。 */
+export const DAY_NIGHT_CHART_UNITS = new Set(['W', 'kWh', '°C', '%', 'V', 'Hz'])
+
+export function seriesNeedsDayNightBands(units: Array<string | undefined | null>): boolean {
+  return units.some((unit) => unit != null && DAY_NIGHT_CHART_UNITS.has(unit))
+}
+
 const DAY_MS = 86_400_000
 
 function radians(deg: number) {

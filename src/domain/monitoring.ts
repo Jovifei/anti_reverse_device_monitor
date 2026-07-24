@@ -14,11 +14,13 @@ export interface MetricDefinition {
   aliases: string[]
   color: string
   markNegative?: boolean
+  /** ECharts step line: hold previous sample until next timestamp, then jump. */
+  step?: 'start' | 'middle' | 'end'
 }
 
 export const CT_POWER_METRICS: MetricDefinition[] = [
   { key: 'load', label: '家庭负载功率', unit: 'W', aliases: ['load_power', 'ct.load_power'], color: '#1463d9' },
-  { key: 'grid', label: '电网功率', unit: 'W', aliases: ['grid_power', 'ct.grid_power'], color: '#0d9488' },
+  { key: 'grid', label: '电网功率', unit: 'W', aliases: ['grid_power', 'ct.grid_power'], color: '#0d9488', markNegative: true },
   { key: 'generation', label: '微逆发电总功率', unit: 'W', aliases: ['inverter_total_power', 'total_generation_power', 'micro_total_power'], color: '#ea580c' },
   { key: 'ct-a', label: 'A相 CT 有功功率', unit: 'W', aliases: ['active_power_ct1', 'ct.active_power.phase_a'], color: '#dc2626', markNegative: true },
   { key: 'ct-b', label: 'B相 CT 有功功率', unit: 'W', aliases: ['active_power_ct2', 'ct.active_power.phase_b'], color: '#7c3aed', markNegative: true },
