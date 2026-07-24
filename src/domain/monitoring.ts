@@ -174,6 +174,20 @@ export function displaySwitch(row: MetricRow | undefined) {
   return displayValue(row)
 }
 
+/** 微逆所在相：1/2/3 → A/B/C 相，便于与 CT 三相对照。 */
+export function displayInverterPhaseLabel(raw: string | number | null | undefined) {
+  if (raw === null || raw === undefined || raw === '') return '—'
+  const asNumber = typeof raw === 'number' ? raw : Number(String(raw).trim())
+  if (asNumber === 1) return 'A相'
+  if (asNumber === 2) return 'B相'
+  if (asNumber === 3) return 'C相'
+  const label = resolveStatusLabel('phase_num', raw)
+  if (label === 'CT1相') return 'A相'
+  if (label === 'CT2相') return 'B相'
+  if (label === 'CT3相') return 'C相'
+  return label ?? String(raw)
+}
+
 export function displayPowerLimit(row: MetricRow | undefined) {
   const value = numericValue(row)
   if (value === 0) return '\u5173\u95ed'

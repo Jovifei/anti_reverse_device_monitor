@@ -104,9 +104,13 @@ function renderDevice(vm: OfflineDeviceViewModel) {
       const clickable = (label: string, value: string, series: unknown, title: string) =>
         `<div class="inverter-metric"><span class="label">${escapeHtml(label)}</span><button type="button" data-open-series='${seriesAttr(series)}' data-dialog-title="${escapeHtml(title)}">${escapeHtml(value)}</button></div>`
       return `<article class="inverter-card ${escapeHtml(inv.statusVariant)}" data-testid="inverter-card-${inv.index}">
-  <h3><span class="status-lamp ${inv.statusVariant === 'online' ? 'on' : 'off'}"></span>微型逆变器 ${inv.index}</h3>
-  <p class="muted">SN：${escapeHtml(inv.sn)}</p>
-  <p><span class="badge ${escapeHtml(inv.statusVariant)}">${escapeHtml(inv.statusLabel)}</span></p>
+  <div class="inverter-head">
+    <div>
+      <h3><span class="status-lamp ${inv.statusVariant === 'online' ? 'on' : 'off'}"></span>${escapeHtml(inv.title)}</h3>
+      <p class="muted">SN：${escapeHtml(inv.sn)}</p>
+    </div>
+    <span class="badge ${escapeHtml(inv.statusVariant)}">${escapeHtml(inv.statusLabel)}</span>
+  </div>
   ${clickable('发电总功率', inv.power, inv.charts.power.filter((s) => s.key === 'power'), `微逆 ${inv.index} 发电总功率`)}
   ${clickable('PV1', inv.pv1, inv.charts.power.filter((s) => s.key === 'pv1'), `微逆 ${inv.index} PV1`)}
   ${clickable('PV2', inv.pv2, inv.charts.power.filter((s) => s.key === 'pv2'), `微逆 ${inv.index} PV2`)}
@@ -114,7 +118,9 @@ function renderDevice(vm: OfflineDeviceViewModel) {
   <div class="inverter-metric"><span class="label">累计发电量</span><strong>${escapeHtml(inv.totalEnergy)}</strong></div>
   <div class="inverter-metric"><span class="label">今日发电时长</span><strong>${escapeHtml(inv.todayDuration)}</strong></div>
   ${clickable('内部温度', inv.temperature, inv.charts.temperature, `微逆 ${inv.index} 内部温度`)}
-  <div class="inverter-metric"><span class="label">丢包率</span><strong>${escapeHtml(inv.packetLoss)}</strong></div>
+  ${clickable('丢包率', inv.packetLoss, inv.charts.packetLoss, `微逆 ${inv.index} 丢包率`)}
+  <div class="inverter-metric"><span class="label">防逆流开关</span><strong>${escapeHtml(inv.antiReverse)}</strong></div>
+  <div class="inverter-metric"><span class="label">发电开关</span><strong>${escapeHtml(inv.generationEnabled)}</strong></div>
   <div class="inverter-metric"><span class="label">工作状态</span><strong>${escapeHtml(inv.workState)}</strong></div>
   <div class="inverter-metric"><span class="label">当前是否发电</span><strong>${escapeHtml(inv.generating)}</strong></div>
   <div class="inverter-metric"><span class="label">软件版本</span><strong>${escapeHtml(inv.softwareVersion)}</strong></div>
@@ -141,7 +147,7 @@ function renderDevice(vm: OfflineDeviceViewModel) {
 <p class="muted">最近 ${vm.days} 天离线快照 · 时区 ${escapeHtml(vm.timezone)}</p></div>
 <div><span class="readonly-badge">数据来源：${escapeHtml(vm.sourceLabel)}</span><p class="muted">最后上报：${escapeHtml(vm.lastReportedAt)}</p></div></header>
 
-<section class="panel ct-status-panel"><div class="panel-heading"><div><h2>CT 当前状态</h2></div><span class="badge ${vm.ctOnline ? 'online' : 'offline'}">${vm.ctOnline ? 'CT 在线' : 'CT 离线'}</span></div>
+<section class="panel ct-overview-panel"><div class="panel-heading"><div><h2>CT 当前状态</h2></div><span class="badge ${vm.ctOnline ? 'online' : 'offline'}">${vm.ctOnline ? 'CT 在线' : 'CT 离线'}</span></div>
 ${vm.isLastKnown ? `<p class="muted">当前离线，以下为最后已知值。</p>` : ''}
 <ul class="status-list status-list-compact">
   <li>软件版本号<br/><strong>${escapeHtml(vm.softwareVersion)}</strong></li>
@@ -150,21 +156,16 @@ ${vm.isLastKnown ? `<p class="muted">当前离线，以下为最后已知值。<
   <li>运行状态<br/><strong>${escapeHtml(vm.ctState)}</strong></li>
   <li>工作模式<br/><strong>${escapeHtml(vm.workMode)}</strong></li>
 </ul>
-<div class="quality-inline">
-  <div><span class="label">电网电压</span><strong>${escapeHtml(vm.gridVoltage)}</strong></div>
-  <div><span class="label">电网频率</span><strong>${escapeHtml(vm.gridFrequency)}</strong></div>
-</div>
-</section>
-
-<section class="card-grid power-hero-grid">
+<div class="card-grid power-hero-grid overview-inner-grid">
   ${metricCard('当前家庭负载功率', vm.loadPower, 'is-hero')}
   ${metricCard('当前电网功率', vm.gridPower, 'is-hero')}
   ${metricCard('微逆发电总功率', vm.inverterTotalPower, 'is-hero')}
-</section>
-<section class="card-grid energy-secondary-grid">
+</div>
+<div class="card-grid energy-secondary-grid overview-inner-grid">
   ${metricCard('今日发电量', vm.todayEnergy)}
   ${metricCard('今日发电时长', vm.todayDuration)}
   ${metricCard('累计发电量', vm.totalEnergy)}
+</div>
 </section>
 
 <section class="reverse-safety-panel panel ${vm.reverseNow ? 'is-danger' : ''}" data-testid="reverse-safety-panel">
@@ -184,12 +185,13 @@ ${vm.isLastKnown ? `<p class="muted">当前离线，以下为最后已知值。<
 </section>
 
 ${chartPanel({ title: '功率总览（W）', seriesKey: 'powerSeries', initialKeys: ['load', 'grid', 'generation'], advancedKeys: ['ct-a', 'ct-b', 'ct-c', 'inv-a', 'inv-b', 'inv-c'], height: 510 })}
-${chartPanel({ title: '电网电压与频率（V / Hz）', seriesKey: 'gridSeries', height: 360 })}
-
-<section class="panel ct-presence-panel"><h2>CT 本体上下线与离线时长</h2><div class="two-column presence-columns"><div><h3>上下线时间</h3>${recordList(vm.platformTransitions, '当前窗口没有状态变化记录。')}</div><div><h3>离线时长</h3>${recordList(vm.platformOfflineWindows, '当前窗口没有离线区间。')}</div></div></section>
 
 <section class="panel"><div class="panel-heading"><div><h2>微型逆变器 1～8</h2><p class="muted">固定 8 通道；缺失显示 —</p></div></div>
-<div class="inverter-grid">${inverterCards}</div></section>`
+<div class="inverter-grid">${inverterCards}</div></section>
+
+${chartPanel({ title: '电网电压与频率（V / Hz）', seriesKey: 'gridSeries', height: 360 })}
+
+<section class="panel ct-presence-panel"><h2>CT 本体上下线与离线时长</h2><div class="presence-columns"><div><h3>上线时间</h3>${recordList(vm.platformOnlineEvents, '当前窗口没有上线记录。')}</div><div><h3>下线时间</h3>${recordList(vm.platformOfflineEvents, '当前窗口没有下线记录。')}</div><div><h3>持续离线时间</h3>${recordList(vm.platformOfflineWindows, '当前窗口没有离线区间。')}</div></div></section>`
 }
 
 function renderInverter(vm: OfflineInverterViewModel) {
@@ -216,6 +218,7 @@ function renderInverter(vm: OfflineInverterViewModel) {
 ${chartPanel({ title: '功率曲线（W）', seriesKey: 'charts.power', height: 420 })}
 ${chartPanel({ title: '内部温度（°C）', seriesKey: 'charts.temperature', height: 360 })}
 ${chartPanel({ title: '今日发电量（kWh）', seriesKey: 'charts.energy', height: 360 })}
+${chartPanel({ title: '丢包率（%）', seriesKey: 'charts.packetLoss', height: 360 })}
 <section class="panel"><h3>故障变化</h3>${recordList(vm.faultChanges, '无故障变化记录。')}<h3>离线区间</h3>${recordList(vm.offlineWindows, '无离线区间。')}</section>`
 }
 
@@ -244,7 +247,8 @@ export function renderOfflineHtmlDocument(options: {
           ...options.vm,
           'charts.power': options.vm.charts.power,
           'charts.temperature': options.vm.charts.temperature,
-          'charts.energy': options.vm.charts.energy
+          'charts.energy': options.vm.charts.energy,
+          'charts.packetLoss': options.vm.charts.packetLoss
         }
       : options.vm
 

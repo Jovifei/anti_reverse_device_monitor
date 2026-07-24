@@ -1,6 +1,7 @@
 import { faultDisplayNames, toHexMask } from '@/src/domain/faults'
 import {
   displayEnergyKwh,
+  displayInverterPhaseLabel,
   displayPowerLimit,
   displaySwitch,
   displayValue,
@@ -89,7 +90,7 @@ export async function buildInverterViewModel(
     todayDuration: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.todayDuration), 'h'),
     temperature: displayValue(findLatestMetric(rows, ['internal_temperature', 'temperature', 'temp']), '°C'),
     packetLoss: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.packetLoss), '%'),
-    phase: displayOrEmpty(summary.phaseNum),
+    phase: displayInverterPhaseLabel(summary.phaseNum ?? numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.phase))),
     connectionPoint: displayOrEmpty(summary.connectionPoint),
     antiReverse: displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.antiReverse)),
     generationEnabled: displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.generationEnabled)),
@@ -105,7 +106,8 @@ export async function buildInverterViewModel(
     charts: {
       power: toOfflineSeries(charts.power),
       temperature: toOfflineSeries(charts.temperature),
-      energy: toOfflineSeries(charts.energy)
+      energy: toOfflineSeries(charts.energy),
+      packetLoss: toOfflineSeries(charts.packetLoss ?? [])
     },
     deviceHref: `./device-${safeFileToken(deviceSn)}.html`
   }

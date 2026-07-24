@@ -31,6 +31,16 @@ describe('inverter configuration display', () => {
   })
 })
 
+describe('inverter phase label', () => {
+  it('maps phase_num 1/2/3 to A/B/C 相', async () => {
+    const { displayInverterPhaseLabel } = await import('@/src/domain/monitoring')
+    expect(displayInverterPhaseLabel(1)).toBe('A相')
+    expect(displayInverterPhaseLabel('2')).toBe('B相')
+    expect(displayInverterPhaseLabel(3)).toBe('C相')
+    expect(displayInverterPhaseLabel(null)).toBe('—')
+  })
+})
+
 describe('energy Wh to kWh display', () => {
   it('scales Wh readings by 1000 for kWh labels', async () => {
     const { displayEnergyKwh, whToKwh } = await import('@/src/domain/monitoring')

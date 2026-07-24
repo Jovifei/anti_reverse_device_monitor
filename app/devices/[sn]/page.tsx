@@ -5,6 +5,8 @@ import { TelemetryChart, type ClientChartSeries } from '@/src/components/telemet
 import {
   CT_KPI_ALIASES,
   displayEnergyKwh,
+  displayInverterPhaseLabel,
+  displaySwitch,
   displayValue,
   findLatestMetric,
   formatDuration,
@@ -54,28 +56,25 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
   const activeAlerts = alarms.alerts.filter((item) => item.endedAt === null)
   const isLastKnown = !history.platform.isOnline
   const lastKnownAt = history.platform.lastSeenAt ?? device.lastReportedAt
-  const quality = [
-    ['电网电压', displayValue(findLatestMetric(latest, ['grid_voltage']), 'V')],
-    ['电网频率', displayValue(findLatestMetric(latest, ['grid_frequency']), 'Hz')]
-  ]
   const reverseHeading = reverseNow.length ? '严重告警：检测到功率反送电网' : '防逆流运行正常'
 
   return <main>
     <header className="page-header"><div><p className="eyebrow">CT 防逆流设备运行</p><h1>设备 SN：{canonicalSn}</h1><p className="muted">最近 7 天动态遥测数据，时间按 {process.env.APP_TIMEZONE || 'Asia/Shanghai'} 显示。</p></div><div className="page-header-actions"><span className="readonly-badge source-badge">数据来源：{sourceLabel}</span><DeviceSnSearch initialSn={canonicalSn} /></div></header>
 
-    <section className="panel ct-status-panel"><div className="panel-heading"><div><h2>CT 当前状态</h2><p className="muted">状态由最新遥测与服务端连通性判定。</p></div><span className={`badge ${history.platform.isOnline ? 'online' : 'offline'}`}>{history.platform.isOnline ? 'CT 在线' : 'CT 离线'}</span></div>{isLastKnown ? <p className="last-known-note">当前离线，以下状态和指标均为最后已知值；更新时间：{formatTime(lastKnownAt)}。</p> : null}<ul className="status-list status-list-compact"><li>软件版本号<br /><strong>{device.softwareVersion ?? EMPTY}</strong></li><li>SubG 版本号<br /><strong>{device.sub1gVersion ?? EMPTY}</strong></li><li>Sub1G 状态<br /><strong>{resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState))) ?? EMPTY}</strong></li><li>运行状态<br /><strong>{resolveStatusLabel('ct_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.state))) ?? EMPTY}</strong></li><li>工作模式<br /><strong>{resolveStatusLabel('work_mode', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.workMode))) ?? EMPTY}</strong></li></ul>
-      <div className="quality-inline">{quality.map(([label, value]) => <div key={label}><span className="label">{label}</span><strong>{value}</strong></div>)}</div>
-    </section>
-
-    <section className="card-grid power-hero-grid">
-      <MetricCard label="当前家庭负载功率" value={displayValue(findLatestMetric(latest, ['load_power', 'ct.load_power']), 'W')} hint={isLastKnown ? '最后已知值' : undefined} hero />
-      <MetricCard label="当前电网功率" value={displayValue(findLatestMetric(latest, ['grid_power', 'ct.grid_power']), 'W')} hint={isLastKnown ? '最后已知值' : undefined} hero />
-      <MetricCard label="微逆发电总功率" value={displayValue(findLatestMetric(latest, ['inverter_total_power', 'total_generation_power', 'micro_total_power']), 'W')} hint={isLastKnown ? '最后已知值' : undefined} hero />
-    </section>
-    <section className="card-grid energy-secondary-grid">
-      <MetricCard label="今日发电量" value={displayEnergyKwh(findLatestMetric(latest, CT_KPI_ALIASES.todayEnergy))} />
-      <MetricCard label="今日发电时长" value={displayValue(findLatestMetric(latest, CT_KPI_ALIASES.todayDuration), 'h')} />
-      <MetricCard label="累计发电量" value={displayEnergyKwh(findLatestMetric(latest, CT_KPI_ALIASES.totalEnergy))} />
+    <section className="panel ct-overview-panel">
+      <div className="panel-heading"><div><h2>CT 当前状态</h2><p className="muted">状态与关键功率、电量在同一面板展示。</p></div><span className={`badge ${history.platform.isOnline ? 'online' : 'offline'}`}>{history.platform.isOnline ? 'CT 在线' : 'CT 离线'}</span></div>
+      {isLastKnown ? <p className="last-known-note">当前离线，以下状态和指标均为最后已知值；更新时间：{formatTime(lastKnownAt)}。</p> : null}
+      <ul className="status-list status-list-compact"><li>软件版本号<br /><strong>{device.softwareVersion ?? EMPTY}</strong></li><li>SubG 版本号<br /><strong>{device.sub1gVersion ?? EMPTY}</strong></li><li>Sub1G 状态<br /><strong>{resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState))) ?? EMPTY}</strong></li><li>运行状态<br /><strong>{resolveStatusLabel('ct_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.state))) ?? EMPTY}</strong></li><li>工作模式<br /><strong>{resolveStatusLabel('work_mode', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.workMode))) ?? EMPTY}</strong></li></ul>
+      <div className="card-grid power-hero-grid overview-inner-grid">
+        <MetricCard label="当前家庭负载功率" value={displayValue(findLatestMetric(latest, ['load_power', 'ct.load_power']), 'W')} hint={isLastKnown ? '最后已知值' : undefined} hero />
+        <MetricCard label="当前电网功率" value={displayValue(findLatestMetric(latest, ['grid_power', 'ct.grid_power']), 'W')} hint={isLastKnown ? '最后已知值' : undefined} hero />
+        <MetricCard label="微逆发电总功率" value={displayValue(findLatestMetric(latest, ['inverter_total_power', 'total_generation_power', 'micro_total_power']), 'W')} hint={isLastKnown ? '最后已知值' : undefined} hero />
+      </div>
+      <div className="card-grid energy-secondary-grid overview-inner-grid">
+        <MetricCard label="今日发电量" value={displayEnergyKwh(findLatestMetric(latest, CT_KPI_ALIASES.todayEnergy))} />
+        <MetricCard label="今日发电时长" value={displayValue(findLatestMetric(latest, CT_KPI_ALIASES.todayDuration), 'h')} />
+        <MetricCard label="累计发电量" value={displayEnergyKwh(findLatestMetric(latest, CT_KPI_ALIASES.totalEnergy))} />
+      </div>
     </section>
 
     <section className={`reverse-safety-panel ${reverseNow.length ? 'is-danger' : ''}`} data-testid="reverse-safety-panel">
@@ -115,9 +114,6 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
     </section>
 
     <TelemetryChart title="功率总览（W）" series={charts.power} initialSelectedKeys={['load', 'grid', 'generation']} advancedKeys={['ct-a', 'ct-b', 'ct-c', 'inv-a', 'inv-b', 'inv-c']} height={510} />
-    <TelemetryChart title="电网电压与频率（V / Hz）" series={charts.grid} height={360} />
-
-    <section className="panel ct-presence-panel"><h2>CT 本体上下线与离线时长</h2><div className="two-column presence-columns"><div><h3>上下线时间</h3>{history.platform.transitions.length ? <div className="record-scroll"><ul className="record-list">{history.platform.transitions.map((item) => <li key={`${item.at}-${item.state}`}>{formatTime(item.at)}：{item.state === 'online' ? '上线' : '离线'}</li>)}</ul></div> : <p className="muted">当前窗口没有状态变化记录。</p>}</div><div><h3>离线时长</h3>{history.platform.offlineWindows.length ? <div className="record-scroll"><ul className="record-list">{history.platform.offlineWindows.map((item) => <li key={`${item.startAt}-${item.endAt}`}>{formatTime(item.startAt)} 至 {formatTime(item.endAt)} · {formatDuration(item.durationMinutes)}</li>)}</ul></div> : <p className="muted">当前窗口没有离线区间。</p>}</div></div></section>
 
     <section className="panel"><div className="inverter-section-title"><div><h2>微型逆变器 1–8</h2><p className="muted">固定显示 8 个通道；缺失属性使用“—”，不误判为故障。</p></div><span className="muted">固定 8 通道</span></div><div className="inverter-grid">{Array.from({ length: 8 }, (_, offset) => {
       const inverterIndex = offset + 1
@@ -136,10 +132,16 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
       const pv2Series = powerSeries.filter((item) => item.key === 'pv2')
       const temperatureSeries = chart?.temperature ?? []
       const energySeries = chart?.energy ?? []
+      const packetLossSeries = chart?.packetLoss ?? []
       const generating = isGenerating(onlineRaw, workRaw, power)
+      const phaseLabel = displayInverterPhaseLabel(binding?.phaseNum ?? numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.phase)))
       const value = (aliases: string[], unit = '') => displayValue(findLatestMetric(rows, aliases), unit)
       const energy = (aliases: string[]) => displayEnergyKwh(findLatestMetric(rows, aliases))
-      return <article key={inverterIndex} className={`inverter-card ${status.variant}`}><div className="inverter-head"><div><h3>微型逆变器 {inverterIndex}</h3><p className="inverter-meta">SN：{binding?.inverterSn ?? EMPTY}<br />软件 {binding?.softwareVersion ?? EMPTY}</p></div><span className={`badge ${status.variant}`}>{status.label}</span></div><div className="inverter-state-grid"><div><span>工作状态</span><strong>{getInverterWorkStatus(workRaw)}</strong></div><div><span>是否发电</span><strong>{status.variant === 'online' ? (generating ? '正在发电' : '否') : EMPTY}</strong></div></div><div className="inverter-metrics"><HistoryMetric label="总功率" value={value(['inverter_power', 'generation_power', 'total_power', 'power'], 'W')} title={`微型逆变器 ${inverterIndex} 功率历史`} series={powerSeries} /><HistoryMetric label="PV1" value={value(['pv1_power', 'pv1power'], 'W')} title={`微型逆变器 ${inverterIndex} PV1 功率历史`} series={pv1Series} /><HistoryMetric label="PV2" value={value(['pv2_power', 'pv2power'], 'W')} title={`微型逆变器 ${inverterIndex} PV2 功率历史`} series={pv2Series} /><HistoryMetric label="今日发电量" value={energy(INVERTER_KPI_ALIASES.todayEnergy)} title={`微型逆变器 ${inverterIndex} 今日发电量历史`} series={energySeries} /><div className="inverter-metric-cell"><span className="label">累计发电量</span><strong>{energy(INVERTER_KPI_ALIASES.totalEnergy)}</strong></div><div className="inverter-metric-cell"><span className="label">今日发电时长</span><strong>{value(INVERTER_KPI_ALIASES.todayDuration, 'h')}</strong></div><HistoryMetric label="内部温度" value={value(['internal_temperature', 'temperature'], '°C')} title={`微型逆变器 ${inverterIndex} 内部温度历史`} series={temperatureSeries} /><div className="inverter-metric-cell"><span className="label">丢包率</span><strong>{value(['packet_loss_rate', 'packet_loss'], '%')}</strong></div></div>{faultNames.length ? <div className="fault-list">{Array.from(new Set(faultNames)).slice(0, 3).map((name) => <span key={name} className="fault-name">{name}</span>)}</div> : <p className="inverter-meta">当前无故障</p>}{binding?.paired ? <Link className="card-link" href={`/devices/${encodeURIComponent(canonicalSn)}/inverters/${inverterIndex}`}>查看详情</Link> : <span className="inverter-meta">{binding?.paired === false ? '未配对通道' : '暂无遥测数据'}</span>}</article>
+      return <article key={inverterIndex} className={`inverter-card ${status.variant}`}><div className="inverter-head"><div><h3>微型逆变器 {inverterIndex}：{phaseLabel}</h3><p className="inverter-meta">SN：{binding?.inverterSn ?? EMPTY}<br />软件 {binding?.softwareVersion ?? EMPTY}</p></div><span className={`badge ${status.variant}`}>{status.label}</span></div><div className="inverter-state-grid"><div><span>工作状态</span><strong>{getInverterWorkStatus(workRaw)}</strong></div><div><span>是否发电</span><strong>{status.variant === 'online' ? (generating ? '正在发电' : '否') : EMPTY}</strong></div><div><span>防逆流开关</span><strong>{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.antiReverse))}</strong></div><div><span>发电开关</span><strong>{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.generationEnabled))}</strong></div></div><div className="inverter-metrics"><HistoryMetric label="总功率" value={value(['inverter_power', 'generation_power', 'total_power', 'power'], 'W')} title={`微型逆变器 ${inverterIndex} 功率历史`} series={powerSeries} /><HistoryMetric label="PV1" value={value(['pv1_power', 'pv1power'], 'W')} title={`微型逆变器 ${inverterIndex} PV1 功率历史`} series={pv1Series} /><HistoryMetric label="PV2" value={value(['pv2_power', 'pv2power'], 'W')} title={`微型逆变器 ${inverterIndex} PV2 功率历史`} series={pv2Series} /><HistoryMetric label="今日发电量" value={energy(INVERTER_KPI_ALIASES.todayEnergy)} title={`微型逆变器 ${inverterIndex} 今日发电量历史`} series={energySeries} /><div className="inverter-metric-cell"><span className="label">累计发电量</span><strong>{energy(INVERTER_KPI_ALIASES.totalEnergy)}</strong></div><div className="inverter-metric-cell"><span className="label">今日发电时长</span><strong>{value(INVERTER_KPI_ALIASES.todayDuration, 'h')}</strong></div><HistoryMetric label="内部温度" value={value(['internal_temperature', 'temperature'], '°C')} title={`微型逆变器 ${inverterIndex} 内部温度历史`} series={temperatureSeries} /><HistoryMetric label="丢包率" value={value(['packet_loss_rate', 'packet_loss'], '%')} title={`微型逆变器 ${inverterIndex} 丢包率历史`} series={packetLossSeries} /></div>{faultNames.length ? <div className="fault-list">{Array.from(new Set(faultNames)).slice(0, 3).map((name) => <span key={name} className="fault-name">{name}</span>)}</div> : <p className="inverter-meta">当前无故障</p>}{binding?.paired ? <Link className="card-link" href={`/devices/${encodeURIComponent(canonicalSn)}/inverters/${inverterIndex}`}>查看详情</Link> : <span className="inverter-meta">{binding?.paired === false ? '未配对通道' : '暂无遥测数据'}</span>}</article>
     })}</div></section>
+
+    <TelemetryChart title="电网电压与频率（V / Hz）" series={charts.grid} height={360} />
+
+    <section className="panel ct-presence-panel"><h2>CT 本体上下线与离线时长</h2><div className="presence-columns"><div><h3>上线时间</h3>{history.platform.transitions.filter((item) => item.state === 'online').length ? <div className="record-scroll"><ul className="record-list">{history.platform.transitions.filter((item) => item.state === 'online').map((item) => <li key={`${item.at}-online`}>{formatTime(item.at)}</li>)}</ul></div> : <p className="muted">当前窗口没有上线记录。</p>}</div><div><h3>下线时间</h3>{history.platform.transitions.filter((item) => item.state === 'offline').length ? <div className="record-scroll"><ul className="record-list">{history.platform.transitions.filter((item) => item.state === 'offline').map((item) => <li key={`${item.at}-offline`}>{formatTime(item.at)}</li>)}</ul></div> : <p className="muted">当前窗口没有下线记录。</p>}</div><div><h3>持续离线时间</h3>{history.platform.offlineWindows.length ? <div className="record-scroll"><ul className="record-list">{history.platform.offlineWindows.map((item) => <li key={`${item.startAt}-${item.endAt}`}>{formatTime(item.startAt)} 至 {formatTime(item.endAt)} · {formatDuration(item.durationMinutes)}</li>)}</ul></div> : <p className="muted">当前窗口没有离线区间。</p>}</div></div></section>
   </main>
 }

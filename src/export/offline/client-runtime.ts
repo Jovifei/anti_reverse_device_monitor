@@ -234,7 +234,7 @@ export function clientRuntimeSource(): string {
     const axisPlan = buildAxisPlan(visible);
     const unitByName = {};
     visible.forEach(function(item){ unitByName[item.label] = item.unit || ''; });
-    const enableDayNight = opts.dayNightBands != null ? opts.dayNightBands : visible.some(function(item){ return item.unit === 'W'; });
+    const enableDayNight = opts.dayNightBands != null ? opts.dayNightBands : visible.some(function(item){ return item.unit === 'W' || item.unit === 'kWh' || item.unit === '°C'; });
     const range = visibleSeriesTimeRange(visible);
     const bands = enableDayNight && range ? buildBeijingDayNightBands(range.startMs, range.endMs) : null;
     const dayNightSeries = (bands && bands.markAreaData.length) ? [{

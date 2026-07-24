@@ -24,10 +24,14 @@ export interface OfflinePhaseCard {
 export interface OfflineInverterCard {
   index: number
   sn: string
+  title: string
+  phaseLabel: string
   statusLabel: string
   statusVariant: 'online' | 'offline' | 'unpaired' | 'unknown'
   workState: string
   generating: string
+  antiReverse: string
+  generationEnabled: string
   power: string
   pv1: string
   pv2: string
@@ -44,6 +48,7 @@ export interface OfflineInverterCard {
     power: OfflineChartSeries[]
     temperature: OfflineChartSeries[]
     energy: OfflineChartSeries[]
+    packetLoss: OfflineChartSeries[]
   }
   detailHref?: string
 }
@@ -97,7 +102,8 @@ export interface OfflineDeviceViewModel {
   gridFrequency: string
   powerSeries: OfflineChartSeries[]
   gridSeries: OfflineChartSeries[]
-  platformTransitions: OfflineRecordItem[]
+  platformOnlineEvents: OfflineRecordItem[]
+  platformOfflineEvents: OfflineRecordItem[]
   platformOfflineWindows: OfflineRecordItem[]
   inverters: OfflineInverterCard[]
   overviewHref?: string
@@ -156,6 +162,7 @@ export interface OfflineInverterViewModel {
     power: OfflineChartSeries[]
     temperature: OfflineChartSeries[]
     energy: OfflineChartSeries[]
+    packetLoss: OfflineChartSeries[]
   }
   deviceHref: string
 }

@@ -3,6 +3,8 @@ import { faultDisplayNames, toHexMask } from '@/src/domain/faults'
 import {
   CT_KPI_ALIASES,
   displayEnergyKwh,
+  displayInverterPhaseLabel,
+  displaySwitch,
   displayValue,
   findLatestMetric,
   formatDuration,
@@ -122,13 +124,19 @@ export async function buildDeviceViewModel(
     const power = numericValue(powerRow)
     const faultInfo = latestFaultText(summary?.faults ?? [])
     const chartBundle = inverterCharts[offset]
+    const phaseRaw = binding?.phaseNum ?? numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.phase))
+    const phaseLabel = displayInverterPhaseLabel(phaseRaw)
     return {
       index: inverterIndex,
       sn: displayOrEmpty(binding?.inverterSn ?? summary?.inverterSn),
+      title: `微型逆变器 ${inverterIndex}：${phaseLabel}`,
+      phaseLabel,
       statusLabel: status.label,
       statusVariant: status.variant,
       workState: getInverterWorkStatus(workRaw),
       generating: isGenerating(onlineRaw, workRaw, power) ? '是' : onlineRaw === null ? EMPTY : '否',
+      antiReverse: displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.antiReverse)),
+      generationEnabled: displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.generationEnabled)),
       power: displayValue(powerRow, 'W'),
       pv1: displayValue(findLatestMetric(rows, ['pv1_power', 'pv1power']), 'W'),
       pv2: displayValue(findLatestMetric(rows, ['pv2_power', 'pv2power']), 'W'),
@@ -144,7 +152,8 @@ export async function buildDeviceViewModel(
       charts: {
         power: toOfflineSeries(chartBundle?.power ?? []),
         temperature: toOfflineSeries(chartBundle?.temperature ?? []),
-        energy: toOfflineSeries(chartBundle?.energy ?? [])
+        energy: toOfflineSeries(chartBundle?.energy ?? []),
+        packetLoss: toOfflineSeries(chartBundle?.packetLoss ?? [])
       },
       detailHref: options?.includeDetailLinks
         ? `./inverter-${safeDevice(canonicalSn)}-${inverterIndex}.html`
@@ -204,9 +213,12 @@ export async function buildDeviceViewModel(
     gridFrequency: displayValue(findLatestMetric(latest, ['grid_frequency']), 'Hz'),
     powerSeries,
     gridSeries: toOfflineSeries(charts.grid),
-    platformTransitions: history.platform.transitions.map((item) => ({
-      text: `${formatTime(item.at)}：${item.state === 'online' ? '上线' : '离线'}`
-    })),
+    platformOnlineEvents: history.platform.transitions
+      .filter((item) => item.state === 'online')
+      .map((item) => ({ text: formatTime(item.at) })),
+    platformOfflineEvents: history.platform.transitions
+      .filter((item) => item.state === 'offline')
+      .map((item) => ({ text: formatTime(item.at) })),
     platformOfflineWindows: history.platform.offlineWindows.map((item) => ({
       text: `${formatTime(item.startAt)} → ${formatTime(item.endAt)} · ${formatDuration(item.durationMinutes)}${item.endAt ? '' : '（持续中）'}`
     })),

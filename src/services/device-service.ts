@@ -88,6 +88,7 @@ export interface DeviceHistorySummary {
 const OFFLINE_THRESHOLD_MINUTES = 15
 const ACTIVE_WINDOW_DAYS = 7
 const INVERTER_TODAY_ENERGY_METRIC: MetricDefinition = { key: 'inverter-today-energy', label: '今日发电量', unit: 'kWh', color: '#8b5e34', aliases: ['today_energy', 'inverter_today_energy'] }
+const INVERTER_PACKET_LOSS_METRIC: MetricDefinition = { key: 'packet-loss', label: '丢包率', unit: '%', color: '#64748b', aliases: ['packet_loss_rate', 'packet_loss'] }
 
 function toMinutesSince(date: Date) {
   return Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
@@ -347,7 +348,8 @@ export class DeviceService {
         ...item,
         dailyReset: true,
         points: item.points.map(([at, value]) => [at, value / 1000] as [string, number])
-      }))
+      })),
+      packetLoss: this.toChartSeries(rows, [INVERTER_PACKET_LOSS_METRIC])
     }
   }
 

@@ -126,7 +126,7 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
       .map((item) => ({ ...item, points: item.points.filter(([at]) => new Date(at).getTime() >= cutoff) }))
       .filter((item) => item.points.length > 0)
   }, [days, selected, series])
-  const enableDayNight = dayNightBands ?? visible.some((item) => item.unit === 'W')
+  const enableDayNight = dayNightBands ?? visible.some((item) => item.unit === 'W' || item.unit === 'kWh' || item.unit === '°C')
 
   useEffect(() => {
     const container = containerRef.current

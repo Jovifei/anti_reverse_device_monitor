@@ -35,7 +35,11 @@ const INV_FIELD_MAP: Record<string, string> = {
   丢包率: 'packet_loss_rate',
   在线状态: 'online_state',
   故障参数: 'fault_param',
-  工作状态: 'work_state'
+  工作状态: 'work_state',
+  所在相: 'phase_num',
+  相位: 'phase_num',
+  防逆流开关: 'anti_reverse_enabled',
+  发电开关: 'generation_enabled'
 }
 
 function mapEventName(eventName: string): MappedMetric | null {
