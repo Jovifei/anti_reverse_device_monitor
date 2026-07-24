@@ -20,10 +20,14 @@
     "demo:seed": "tsx scripts/seed-demo.ts",
     "demo": "tsx scripts/start-demo.ts",
     "ui:capture": "tsx scripts/capture-ui-review.ts",
+    "export:html": "tsx scripts/export-offline-html.ts",
+    "export:html:demo": "tsx scripts/export-offline-html.ts --demo --all --bundle --single-file",
+    "export:html:excel": "tsx scripts/export-offline-html.ts --excel",
     "test:unit": "vitest run tests/unit",
     "test:integration": "tsx tests/integration/run.ts",
     "test:e2e:seed": "tsx tests/e2e/seed.ts",
     "test:e2e": "npm run test:e2e:seed && tsx tests/e2e/run.ts",
+    "test:offline-html": "tsx tests/e2e/run-offline-html.ts",
     "test": "npm run test:unit && npm run test:integration"
   },
   "dependencies": {

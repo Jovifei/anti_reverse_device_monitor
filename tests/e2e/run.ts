@@ -1,6 +1,9 @@
 import { execFileSync } from 'node:child_process'
 
-process.env.PLAYWRIGHT_BROWSERS_PATH = 'E:\\Claude_allow\\Download\\playwright-browsers'
+// Prefer an explicit path when provided; otherwise use Playwright's default browser cache.
+if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
+  delete process.env.PLAYWRIGHT_BROWSERS_PATH
+}
 
 try {
   const command: { file: string; args: string[] } = process.platform === 'win32'
