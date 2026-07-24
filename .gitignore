@@ -30,3 +30,27 @@ backups/
 test-results/
 playwright-report/
 docs/dependency-audit.raw.json
+# Added by code-review-graph
+.code-review-graph/
+CLAUDE.md
+GEMINI.md
+AGENTS.md
+
+# CodeGraph
+.codegraph/
+
+# Comet
+.comet/
+openspec/
+
+# AI IDE configs (Cursor, Windsurf, Kiro, Qoder, OpenCode, Gemini)
+.cursor/
+.cursorrules
+.windsurfrules
+.kiro/
+.qoder/
+QODER.md
+.opencode.json
+.mcp.json
+.gemini/
+.gemini/
