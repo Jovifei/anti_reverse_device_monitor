@@ -109,13 +109,19 @@ export async function exportOfflineHtml(options: ExportCliOptions) {
 
   const written: string[] = []
   const sourceOverride = options.sourceLabelOverride ?? (options.demo ? 'Demo SQLite' : options.excel ? 'Excel 导入' : undefined)
+  const filePrefix = options.demo ? 'demo-device-' : 'device-'
+  const deviceOptions = sns.map((sn) => ({
+    sn,
+    href: `./${filePrefix}${safeFileToken(sn)}.html`
+  }))
 
   if (options.singleFile) {
     for (const sn of sns) {
-      const vm = await buildDeviceViewModel(sn, options.days, { sourceLabelOverride: sourceOverride })
-      const fileName = options.demo
-        ? `demo-device-${safeFileToken(vm.deviceSn)}.html`
-        : `device-${safeFileToken(vm.deviceSn)}.html`
+      const vm = await buildDeviceViewModel(sn, options.days, {
+        sourceLabelOverride: sourceOverride,
+        deviceOptions
+      })
+      const fileName = `${filePrefix}${safeFileToken(vm.deviceSn)}.html`
       const filePath = path.join(outRoot, fileName)
       const html = renderOfflineHtmlDocument({
         vm,
@@ -150,7 +156,8 @@ export async function exportOfflineHtml(options: ExportCliOptions) {
     for (const sn of sns) {
       const deviceVm = await buildDeviceViewModel(sn, options.days, {
         sourceLabelOverride: sourceOverride,
-        includeDetailLinks: true
+        includeDetailLinks: true,
+        deviceOptions
       })
       const deviceFile = `device-${safeFileToken(deviceVm.deviceSn)}.html`
       const deviceHtml = renderOfflineHtmlDocument({

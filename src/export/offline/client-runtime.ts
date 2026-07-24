@@ -8,10 +8,51 @@ export function clientRuntimeSource(): string {
   function $(sel, root){ return (root||document).querySelector(sel); }
   function $all(sel, root){ return Array.from((root||document).querySelectorAll(sel)); }
 
-  function cutoffMs(days){ return Date.now() - days * 86400000; }
+  const TZ = (vm && vm.timezone) || 'Asia/Shanghai';
+
+  function partsInTz(ms){
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: TZ,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    });
+    const map = {};
+    for (const p of fmt.formatToParts(new Date(ms))) {
+      if (p.type !== 'literal') map[p.type] = p.value;
+    }
+    return map;
+  }
+
+  function formatAxisLabel(ms, days){
+    const p = partsInTz(ms);
+    if (days <= 1) return p.hour + ':' + p.minute;
+    if (days <= 3) return p.month + '-' + p.day + '\\n' + p.hour + ':' + p.minute;
+    return p.month + '-' + p.day;
+  }
+
+  function formatTooltipTime(ms){
+    const p = partsInTz(ms);
+    return p.year + '-' + p.month + '-' + p.day + ' ' + p.hour + ':' + p.minute + ':' + p.second;
+  }
+
+  function latestPointMs(series){
+    let max = 0;
+    for (const item of series || []) {
+      for (const point of item.points || []) {
+        const t = new Date(point[0]).getTime();
+        if (Number.isFinite(t) && t > max) max = t;
+      }
+    }
+    return max || Date.now();
+  }
+
+  function cutoffMs(days, series){
+    return latestPointMs(series) - days * 86400000;
+  }
 
   function preparePoints(series, days){
-    const cut = cutoffMs(days);
+    const cut = cutoffMs(days, series);
     return series.map(item => {
       let points = (item.points||[]).filter(p => new Date(p[0]).getTime() >= cut);
       if (item.dailyReset) {
@@ -20,7 +61,10 @@ export function clientRuntimeSource(): string {
           const point = points[i];
           if (i>0){
             const prev = points[i-1];
-            if (new Date(point[0]).getDate() !== new Date(prev[0]).getDate() && point[1] !== null && prev[1] !== null && point[1] < prev[1]) {
+            const curDay = partsInTz(new Date(point[0]).getTime());
+            const prevDay = partsInTz(new Date(prev[0]).getTime());
+            const sameDay = curDay.year === prevDay.year && curDay.month === prevDay.month && curDay.day === prevDay.day;
+            if (!sameDay && point[1] !== null && prev[1] !== null && point[1] < prev[1]) {
               out.push([point[0], null]);
             }
           }
@@ -32,11 +76,52 @@ export function clientRuntimeSource(): string {
     }).filter(item => item.points.some(p => p[1] !== null && p[1] !== undefined));
   }
 
+  function unitAxisName(unit){
+    if (unit === 'W') return '功率 (W)';
+    if (unit === 'V') return '电压 (V)';
+    if (unit === 'Hz') return '频率 (Hz)';
+    if (unit === '°C') return '温度 (°C)';
+    if (unit === 'kWh') return '电量 (kWh)';
+    if (unit === 'h') return '时长 (h)';
+    return unit || '';
+  }
+
+  function buildAxisPlan(visible){
+    const units = Array.from(new Set(visible.map(function(item){ return item.unit; }).filter(Boolean)));
+    const hasV = units.indexOf('V') >= 0;
+    const hasHz = units.indexOf('Hz') >= 0;
+    if (hasV && hasHz) {
+      return {
+        dual: true,
+        yAxis: [
+          { type:'value', name:'电压 (V)', nameLocation:'middle', nameGap:48, nameTextStyle:{ color:'#2563eb', fontWeight:700 }, axisLabel:{ color:'#7a8799' }, splitLine:{ lineStyle:{ color:'#e8edf4' } } },
+          { type:'value', name:'频率 (Hz)', nameLocation:'middle', nameGap:42, nameTextStyle:{ color:'#9333ea', fontWeight:700 }, axisLabel:{ color:'#7a8799' }, splitLine:{ show:false } }
+        ],
+        gridRight: 56
+      };
+    }
+    const name = unitAxisName(units[0] || '');
+    return {
+      dual: false,
+      yAxis: [{ type:'value', name:name, nameLocation:'middle', nameGap:52, nameTextStyle:{ color:'#43516a', fontWeight:700 }, axisLabel:{ color:'#7a8799' }, splitLine:{ lineStyle:{ color:'#e8edf4' } } }],
+      gridRight: 28
+    };
+  }
+
+  function yAxisIndexFor(item, dual){
+    if (!dual) return 0;
+    if (item.unit === 'Hz') return 1;
+    return 0;
+  }
+
   function renderChart(el, series, opts){
     opts = opts || {};
     const days = opts.days || state.days;
     const selected = opts.selected || new Set(series.filter(s => (opts.initialKeys ? opts.initialKeys.includes(s.key) : true)).map(s => s.key));
     const visible = preparePoints(series.filter(s => selected.has(s.key)), days);
+    const axisPlan = buildAxisPlan(visible);
+    const unitByName = {};
+    visible.forEach(function(item){ unitByName[item.label] = item.unit || ''; });
     let chart = state.charts.get(el);
     if (!chart) {
       chart = echarts.init(el);
@@ -46,24 +131,55 @@ export function clientRuntimeSource(): string {
     chart.setOption({
       animationDuration: 280,
       color: visible.map(item => item.markNegative ? '#4b5563' : item.color),
-      grid: { left: 62, right: 28, top: 42, bottom: 76 },
-      tooltip: { trigger: 'axis' },
+      grid: { left: 68, right: axisPlan.gridRight, top: 42, bottom: days <= 3 ? 98 : 84 },
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: '#17233a',
+        borderWidth: 0,
+        textStyle: { color: '#fff' },
+        formatter: function(params){
+          if (!params || !params.length) return '';
+          const head = '时间 ' + formatTooltipTime(params[0].value[0]);
+          const lines = params.filter(function(p){ return p.seriesType === 'line'; }).map(function(p){
+            const v = Array.isArray(p.value) ? p.value[1] : p.value;
+            const text = (v === null || v === undefined) ? '—' : Number(v).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+            const unit = unitByName[p.seriesName] || '';
+            return p.marker + p.seriesName + ': ' + text + (unit ? (' ' + unit) : '');
+          });
+          return [head].concat(lines).join('<br/>');
+        }
+      },
       legend: { top: 7, type: 'scroll' },
-      xAxis: { type: 'time', boundaryGap: false },
-      yAxis: { type: 'value' },
+      xAxis: {
+        type: 'time',
+        name: '时间',
+        nameLocation: 'middle',
+        nameGap: days <= 3 ? 36 : 28,
+        nameTextStyle: { color:'#43516a', fontWeight:700 },
+        boundaryGap: false,
+        axisLabel: {
+          hideOverlap: true,
+          color: '#7a8799',
+          formatter: function(value){ return formatAxisLabel(value, days); }
+        }
+      },
+      yAxis: axisPlan.yAxis,
       dataZoom: [
         { type:'inside', xAxisIndex:0, zoomOnMouseWheel:true, moveOnMouseMove:true, moveOnMouseWheel:true },
-        { type:'slider', xAxisIndex:0, height:24, bottom:16 }
+        { type:'slider', xAxisIndex:0, height:24, bottom:16, labelFormatter: function(value){ return formatAxisLabel(value, days); } }
       ],
       series: visible.flatMap(item => {
+        const yIndex = yAxisIndexFor(item, axisPlan.dual);
         const line = {
-          name: item.label, type:'line', showSymbol:false, smooth:0.16, connectNulls:false,
+          // Keep every reported sample as a line; hide per-point markers to avoid clutter.
+          name: item.label, type:'line', showSymbol:false, symbol:'none', smooth:0.12, connectNulls:false, sampling: null,
+          yAxisIndex: yIndex,
           lineStyle:{ width:2.25, color: item.markNegative ? '#4b5563' : item.color },
           data: item.points,
           markLine: item.markNegative ? { silent:true, symbol:'none', lineStyle:{ color:'#c92828', type:'dashed' }, label:{ formatter:'0 W 基准线', color:'#c92828' }, data:[{ yAxis:0 }] } : undefined
         };
         const negatives = item.markNegative ? item.points.filter(p => typeof p[1] === 'number' && p[1] < 0) : [];
-        const scatter = negatives.length ? [{ name: item.label + ' 负值点', type:'scatter', data:negatives, symbolSize:7, itemStyle:{ color:'#c92828' }, tooltip:{ show:false }, silent:true }] : [];
+        const scatter = negatives.length ? [{ name: item.label + ' 负值点', type:'scatter', yAxisIndex: yIndex, data:negatives, symbolSize:7, itemStyle:{ color:'#c92828' }, tooltip:{ show:false }, silent:true }] : [];
         return [line, ...scatter];
       })
     }, { notMerge:true });
@@ -92,7 +208,8 @@ export function clientRuntimeSource(): string {
     if (seriesBox) {
       seriesBox.innerHTML = series.map(s => {
         const adv = advancedKeys.includes(s.key) ? ' data-advanced="1"' : '';
-        return '<label'+adv+'><input type="checkbox" value="'+s.key+'" '+(selected.has(s.key)?'checked':'')+'/><i style="background:'+s.color+'"></i>'+s.label+'</label>';
+        const unit = s.unit ? (' (' + s.unit + ')') : '';
+        return '<label'+adv+'><input type="checkbox" value="'+s.key+'" '+(selected.has(s.key)?'checked':'')+'/><i style="background:'+s.color+'"></i>'+s.label+unit+'</label>';
       }).join('');
       seriesBox.addEventListener('change', (e) => {
         const t = e.target;
@@ -138,6 +255,21 @@ export function clientRuntimeSource(): string {
       } catch (_) {}
     });
   });
+
+  function bindDeviceSwitcher(){
+    const form = $('[data-device-switcher]');
+    if (!form) return;
+    const select = $('[data-device-select]', form);
+    if (!select) return;
+    select.addEventListener('change', function(){
+      const opt = select.options[select.selectedIndex];
+      const href = opt && opt.getAttribute('data-href');
+      if (href) window.location.href = href;
+    });
+    form.addEventListener('submit', function(event){ event.preventDefault(); });
+  }
+
+  bindDeviceSwitcher();
   window.addEventListener('resize', () => { state.charts.forEach(chart => chart.resize()); });
 })();`
 }

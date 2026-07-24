@@ -17,6 +17,36 @@ function recordList(items: Array<{ text: string }>, empty: string) {
   return `<ul class="record-list">${items.map((item) => `<li>${escapeHtml(item.text)}</li>`).join('')}</ul>`
 }
 
+function reverseAlertList(
+  items: Array<{
+    phase: string
+    startedAt: string
+    endedAt: string
+    duration: string
+    minimumPower: string
+    sampleCount: number
+    active: boolean
+  }>,
+  empty: string
+) {
+  if (!items.length) return `<p class="muted">${escapeHtml(empty)}</p>`
+  return `<div class="alert-table-wrap"><table class="alert-table">
+  <thead><tr><th>相</th><th>开始</th><th>恢复</th><th>持续</th><th>最低功率</th><th>样本</th></tr></thead>
+  <tbody>${items
+    .map(
+      (item) => `<tr class="${item.active ? 'is-active' : ''}">
+  <td><span class="alert-phase">${escapeHtml(item.phase)}</span></td>
+  <td>${escapeHtml(item.startedAt)}</td>
+  <td>${item.active ? `<span class="alert-ongoing">${escapeHtml(item.endedAt)}</span>` : escapeHtml(item.endedAt)}</td>
+  <td>${escapeHtml(item.duration)}</td>
+  <td class="danger-value">${escapeHtml(item.minimumPower)}</td>
+  <td>${item.sampleCount}</td>
+</tr>`
+    )
+    .join('')}
+  </tbody></table></div>`
+}
+
 function seriesAttr(series: unknown) {
   return escapeHtml(JSON.stringify(series))
 }
@@ -94,7 +124,19 @@ function renderDevice(vm: OfflineDeviceViewModel) {
     .join('')
 
   return `${vm.overviewHref ? `<p><a href="${escapeHtml(vm.overviewHref)}">← 返回总览</a></p>` : ''}
-<header class="page-header"><div><p class="eyebrow">CT 防逆流设备运行</p><h1>${escapeHtml(vm.title)}</h1><p class="muted">最近 ${vm.days} 天离线快照 · 时区 ${escapeHtml(vm.timezone)}</p></div>
+<header class="page-header"><div><p class="eyebrow">CT 防逆流设备运行</p>
+<form class="device-switcher" data-device-switcher>
+  <label for="device-sn-select">设备 SN</label>
+  <select id="device-sn-select" data-device-select aria-label="选择设备">
+    ${vm.deviceOptions
+      .map(
+        (item) =>
+          `<option value="${escapeHtml(item.sn)}" data-href="${escapeHtml(item.href)}" ${item.sn === vm.deviceSn ? 'selected' : ''}>${escapeHtml(item.sn)}</option>`
+      )
+      .join('')}
+  </select>
+</form>
+<p class="muted">最近 ${vm.days} 天离线快照 · 时区 ${escapeHtml(vm.timezone)}</p></div>
 <div><span class="readonly-badge">数据来源：${escapeHtml(vm.sourceLabel)}</span><p class="muted">最后上报：${escapeHtml(vm.lastReportedAt)}</p></div></header>
 
 <section class="reverse-safety-panel panel ${vm.reverseNow ? 'is-danger' : ''}" data-testid="reverse-safety-panel">
@@ -110,7 +152,7 @@ function renderDevice(vm: OfflineDeviceViewModel) {
   </button>`
     )
     .join('')}</div>
-  <h3>最近逆流告警记录</h3>${recordList(vm.reverseAlerts, '最近窗口没有检测到三相 CT 负功率。')}
+  <h3>最近逆流告警记录</h3>${reverseAlertList(vm.reverseAlerts, '最近窗口没有检测到三相 CT 负功率。')}
 </section>
 
 <section class="panel"><div class="panel-heading"><div><h2>CT 当前状态</h2></div><span class="badge ${vm.ctOnline ? 'online' : 'offline'}">${vm.ctOnline ? 'CT 在线' : 'CT 离线'}</span></div>
@@ -134,8 +176,8 @@ ${vm.isLastKnown ? `<p class="muted">当前离线，以下为最后已知值。<
 </section>
 
 <section class="panel"><h2>电网质量</h2><div class="quality-grid">${metricCard('电网电压', vm.gridVoltage)}${metricCard('电网频率', vm.gridFrequency)}</div></section>
-${chartPanel({ title: '功率总览', seriesKey: 'powerSeries', initialKeys: ['load', 'grid', 'generation'], advancedKeys: ['ct-a', 'ct-b', 'ct-c', 'inv-a', 'inv-b', 'inv-c'], height: 510 })}
-${chartPanel({ title: '电网电压与频率', seriesKey: 'gridSeries', height: 360 })}
+${chartPanel({ title: '功率总览（W）', seriesKey: 'powerSeries', initialKeys: ['load', 'grid', 'generation'], advancedKeys: ['ct-a', 'ct-b', 'ct-c', 'inv-a', 'inv-b', 'inv-c'], height: 510 })}
+${chartPanel({ title: '电网电压与频率（V / Hz）', seriesKey: 'gridSeries', height: 360 })}
 
 <section class="panel"><h2>CT 本体上下线与离线时长</h2><div class="two-column"><div><h3>状态变化</h3>${recordList(vm.platformTransitions, '当前窗口没有状态变化记录。')}</div><div><h3>离线区间</h3>${recordList(vm.platformOfflineWindows, '当前窗口没有离线区间。')}</div></div></section>
 
@@ -164,7 +206,9 @@ function renderInverter(vm: OfflineInverterViewModel) {
 <li>最新故障<br/><strong>${escapeHtml(vm.latestFault)}</strong></li>
 <li>故障码<br/><strong>${escapeHtml(vm.faultHex)}</strong></li>
 </ul></section>
-${chartPanel({ title: '功率曲线', seriesKey: 'charts.power', height: 420 })}
+${chartPanel({ title: '功率曲线（W）', seriesKey: 'charts.power', height: 420 })}
+${chartPanel({ title: '内部温度（°C）', seriesKey: 'charts.temperature', height: 360 })}
+${chartPanel({ title: '今日发电量（kWh）', seriesKey: 'charts.energy', height: 360 })}
 <section class="panel"><h3>故障变化</h3>${recordList(vm.faultChanges, '无故障变化记录。')}<h3>离线区间</h3>${recordList(vm.offlineWindows, '无离线区间。')}</section>`
 }
 

@@ -55,7 +55,37 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
       <div className="panel-heading"><div><h2>{reverseHeading}</h2><p>{reverseNow.length ? `当前逆流相：${reverseNow.map((item) => item.phase).join('、')} 相；负功率点以红色标识。` : 'A、B、C 三相当前均未检测到反送电网。'}</p></div><span className={`badge ${reverseNow.length ? 'danger' : 'online'}`}>{reverseNow.length ? `严重告警：${reverseNow.map((item) => `${item.phase} 相`).join('、')}正在反送电网` : '当前无逆流'}</span></div>
       {activeAlerts.length ? <p className="active-alert">受影响相：{activeAlerts.map((item) => item.phase).join('、')}；开始 {formatTime(activeAlerts[0].startedAt)}；已持续 {formatDuration(activeAlerts[0].durationMinutes)}。</p> : <p className="muted">当前没有持续中的逆流告警。</p>}
       <div className="phase-grid">{phaseRows.map(({ phase, row, series }) => { const value = numericValue(row); const reverse = value !== null && value < 0; const lastAlarm = alarms.alerts.find((item) => item.phase === phase); return <MetricHistoryDialog key={phase} label={`${phase} 相 CT 有功功率`} title={`${phase} 相 CT 有功功率历史`} subtitle="负功率点表示功率正在反送电网。" series={series as ClientChartSeries[]}><span className={`phase-card ${reverse ? 'danger' : ''}`}><span className="phase-label">{phase} 相 CT 有功功率</span><strong className="phase-value">{displayValue(row, 'W')}</strong><span className="phase-hint">{reverse ? '正在反送电网' : '当前相功率正常'}；查看 7 天曲线；最近告警：{lastAlarm ? formatTime(lastAlarm.startedAt) : EMPTY}</span></span></MetricHistoryDialog> })}</div>
-      <h3>最近 7 天逆流告警记录</h3>{alarms.alerts.length ? <ul className="record-list">{alarms.alerts.map((alert) => <li key={`${alert.phase}-${alert.startedAt}`}><strong>{alert.phase} 相严重告警</strong> · 开始 {formatTime(alert.startedAt)} · 恢复 {alert.endedAt ? formatTime(alert.endedAt) : '持续中'} · 持续 {formatDuration(alert.durationMinutes)} · 最低功率 <span className="danger-value">{alert.minimumPower} W</span> · 样本 {alert.sampleCount}</li>)}</ul> : <p className="muted">最近 7 天没有检测到三相 CT 负功率。</p>}
+      <h3>最近 7 天逆流告警记录</h3>
+      {alarms.alerts.length ? (
+        <div className="alert-table-wrap">
+          <table className="alert-table">
+            <thead>
+              <tr>
+                <th>相</th>
+                <th>开始</th>
+                <th>恢复</th>
+                <th>持续</th>
+                <th>最低功率</th>
+                <th>样本</th>
+              </tr>
+            </thead>
+            <tbody>
+              {alarms.alerts.map((alert) => (
+                <tr key={`${alert.phase}-${alert.startedAt}`} className={alert.endedAt ? undefined : 'is-active'}>
+                  <td><span className="alert-phase">{alert.phase} 相</span></td>
+                  <td>{formatTime(alert.startedAt)}</td>
+                  <td>{alert.endedAt ? formatTime(alert.endedAt) : <span className="alert-ongoing">持续中</span>}</td>
+                  <td>{formatDuration(alert.durationMinutes)}</td>
+                  <td className="danger-value">{alert.minimumPower} W</td>
+                  <td>{alert.sampleCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="muted">最近 7 天没有检测到三相 CT 负功率。</p>
+      )}
     </section>
 
     <section className="panel"><div className="panel-heading"><div><h2>CT 当前状态</h2><p className="muted">状态由最新遥测与服务端连通性判定。</p></div><span className={`badge ${history.platform.isOnline ? 'online' : 'offline'}`}>{history.platform.isOnline ? 'CT 在线' : 'CT 离线'}</span></div>{isLastKnown ? <p className="last-known-note">当前离线，以下状态和指标均为最后已知值；更新时间：{formatTime(lastKnownAt)}。</p> : null}<ul className="status-list"><li>{isLastKnown ? '最后已知上报' : '最后上报'}<br /><strong>{formatTime(device.lastReportedAt)}</strong></li><li>{isLastKnown ? '最后已知运行状态' : '运行状态'}<br /><strong>{resolveStatusLabel('ct_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.state))) ?? EMPTY}</strong></li><li>{isLastKnown ? '最后已知限流状态' : '限流状态'}<br /><strong>{resolveStatusLabel('limit_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.limitState))) ?? EMPTY}</strong></li><li>{isLastKnown ? '最后已知 Sub1G 状态' : 'Sub1G 状态'}<br /><strong>{resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState))) ?? EMPTY}</strong></li><li>{isLastKnown ? '最后已知工作模式' : '工作模式'}<br /><strong>{resolveStatusLabel('work_mode', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.workMode))) ?? EMPTY}</strong></li><li>当前状态持续<br /><strong>{formatDuration(currentStateMinutes)}</strong></li></ul></section>
@@ -64,7 +94,8 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
 
     <section className="panel"><h2>电网质量和三相 CT</h2>{isLastKnown ? <p className="last-known-note">电压、频率为最后已知值，更新时间：{formatTime(lastKnownAt)}。</p> : null}<div className="quality-grid">{quality.map(([label, value]) => <MetricCard key={label} label={label} value={value} hint={isLastKnown ? '最后已知值' : undefined} />)}</div></section>
 
-    <TelemetryChart title="功率总览" series={charts.power} initialSelectedKeys={['load', 'grid', 'generation']} advancedKeys={['ct-a', 'ct-b', 'ct-c', 'inv-a', 'inv-b', 'inv-c']} height={510} />
+    <TelemetryChart title="功率总览（W）" series={charts.power} initialSelectedKeys={['load', 'grid', 'generation']} advancedKeys={['ct-a', 'ct-b', 'ct-c', 'inv-a', 'inv-b', 'inv-c']} height={510} />
+    <TelemetryChart title="电网电压与频率（V / Hz）" series={charts.grid} height={360} />
 
     <section className="panel"><h2>CT 本体上下线与离线时长</h2><div className="two-column"><div><h3>状态变化</h3>{history.platform.transitions.length ? <ul className="record-list">{history.platform.transitions.map((item) => <li key={`${item.at}-${item.state}`}>{formatTime(item.at)}：{item.state === 'online' ? '上线' : '离线'}</li>)}</ul> : <p className="muted">当前窗口没有状态变化记录。</p>}</div><div><h3>离线区间</h3>{history.platform.offlineWindows.length ? <ul className="record-list">{history.platform.offlineWindows.map((item) => <li key={`${item.startAt}-${item.endAt}`}>{formatTime(item.startAt)} 至 {formatTime(item.endAt)} · {formatDuration(item.durationMinutes)}</li>)}</ul> : <p className="muted">当前窗口没有离线区间。</p>}</div></div></section>
 

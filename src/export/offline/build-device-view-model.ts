@@ -58,7 +58,11 @@ function latestFaultText(faults: Array<{ value: number | null; faults: Array<{ n
 export async function buildDeviceViewModel(
   sn: string,
   days = 7,
-  options?: { sourceLabelOverride?: string; includeDetailLinks?: boolean }
+  options?: {
+    sourceLabelOverride?: string
+    includeDetailLinks?: boolean
+    deviceOptions?: Array<{ sn: string; href: string }>
+  }
 ): Promise<OfflineDeviceViewModel> {
   const service = new DeviceService()
   const lookup = await service.resolveDeviceSn(sn)
@@ -168,8 +172,17 @@ export async function buildDeviceViewModel(
       : '当前没有持续中的逆流告警。',
     phases,
     reverseAlerts: alarms.alerts.map((alert) => ({
-      text: `${alert.phase} 相严重告警 · 开始 ${formatTime(alert.startedAt)} · 恢复 ${alert.endedAt ? formatTime(alert.endedAt) : '持续中'} · 持续 ${formatDuration(alert.durationMinutes)} · 最低功率 ${alert.minimumPower} W · 样本 ${alert.sampleCount}`
+      phase: `${alert.phase} 相`,
+      startedAt: formatTime(alert.startedAt),
+      endedAt: alert.endedAt ? formatTime(alert.endedAt) : '持续中',
+      duration: formatDuration(alert.durationMinutes),
+      minimumPower: `${alert.minimumPower} W`,
+      sampleCount: alert.sampleCount,
+      active: alert.endedAt === null
     })),
+    deviceOptions: options?.deviceOptions?.length
+      ? options.deviceOptions
+      : [{ sn: canonicalSn, href: `./device-${safeDevice(canonicalSn)}.html` }],
     ctState: resolveStatusLabel('ct_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.state))) ?? EMPTY,
     limitState: resolveStatusLabel('limit_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.limitState))) ?? EMPTY,
     sub1gState: resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState))) ?? EMPTY,

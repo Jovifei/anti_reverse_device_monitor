@@ -98,6 +98,15 @@ button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
 .reverse-safety-panel .panel-heading { margin: 0 0 12px; }
 .reverse-safety-panel .panel-heading p { margin: 6px 0 0; }
 .reverse-safety-panel .record-list { color: #43516a; }
+.alert-table-wrap { margin-top: 8px; overflow: auto; border: 1px solid #ead0d0; border-radius: 12px; background: #fff; }
+.alert-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+.alert-table th, .alert-table td { padding: 10px 12px; border-bottom: 1px solid #f0e4e4; text-align: left; font-size: 13px; white-space: nowrap; vertical-align: middle; }
+.alert-table th { background: #fff6f6; color: #8a3a3a; font-size: 12px; font-weight: 800; letter-spacing: .02em; }
+.alert-table tbody tr:last-child td { border-bottom: 0; }
+.alert-table tbody tr:hover { background: #fffaf8; }
+.alert-table tr.is-active { background: #fff0f0; }
+.alert-phase { display: inline-flex; align-items: center; justify-content: center; min-width: 46px; padding: 4px 8px; border-radius: 999px; background: var(--red-wash); color: var(--red); font-weight: 800; }
+.alert-ongoing { color: var(--red); font-weight: 700; }
 .reverse-safety-panel .phase-card { min-height: 118px; cursor: pointer; }
 .last-known-note { margin: 0 0 12px; padding: 9px 11px; border: 1px solid #d5dce5; border-radius: 9px; background: #f0f3f6; color: #5f6d7d; font-size: 12px; }
 .advanced-series { margin: 0 0 11px; }
