@@ -1,5 +1,6 @@
 import { faultDisplayNames, toHexMask } from '@/src/domain/faults'
 import {
+  displayEnergyKwh,
   displayPowerLimit,
   displaySwitch,
   displayValue,
@@ -83,8 +84,8 @@ export async function buildInverterViewModel(
     power: displayValue(powerRow, 'W'),
     pv1: displayValue(findLatestMetric(rows, ['pv1_power', 'pv1power']), 'W'),
     pv2: displayValue(findLatestMetric(rows, ['pv2_power', 'pv2power']), 'W'),
-    todayEnergy: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.todayEnergy), 'kWh'),
-    totalEnergy: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.totalEnergy), 'kWh'),
+    todayEnergy: displayEnergyKwh(findLatestMetric(rows, INVERTER_KPI_ALIASES.todayEnergy)),
+    totalEnergy: displayEnergyKwh(findLatestMetric(rows, INVERTER_KPI_ALIASES.totalEnergy)),
     todayDuration: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.todayDuration), 'h'),
     temperature: displayValue(findLatestMetric(rows, ['internal_temperature', 'temperature', 'temp']), '°C'),
     packetLoss: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.packetLoss), '%'),

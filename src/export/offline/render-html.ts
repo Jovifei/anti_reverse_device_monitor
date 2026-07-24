@@ -8,43 +8,45 @@ import type {
   OfflinePageViewModel
 } from '@/src/export/offline/types'
 
-function metricCard(label: string, value: string) {
-  return `<div class="metric-card"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div></div>`
+function metricCard(label: string, value: string, className = '') {
+  const cls = className ? ` metric-card ${className}` : ' metric-card'
+  return `<div class="${cls.trim()}"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div></div>`
 }
 
 function recordList(items: Array<{ text: string }>, empty: string) {
   if (!items.length) return `<p class="muted">${escapeHtml(empty)}</p>`
-  return `<ul class="record-list">${items.map((item) => `<li>${escapeHtml(item.text)}</li>`).join('')}</ul>`
+  return `<div class="record-scroll"><ul class="record-list">${items.map((item) => `<li>${escapeHtml(item.text)}</li>`).join('')}</ul></div>`
 }
 
 function reverseAlertList(
   items: Array<{
-    phase: string
+    phase: 'A' | 'B' | 'C'
     startedAt: string
     endedAt: string
     duration: string
     minimumPower: string
-    sampleCount: number
     active: boolean
   }>,
   empty: string
 ) {
   if (!items.length) return `<p class="muted">${escapeHtml(empty)}</p>`
-  return `<div class="alert-table-wrap"><table class="alert-table">
-  <thead><tr><th>相</th><th>开始</th><th>恢复</th><th>持续</th><th>最低功率</th><th>样本</th></tr></thead>
-  <tbody>${items
-    .map(
-      (item) => `<tr class="${item.active ? 'is-active' : ''}">
-  <td><span class="alert-phase">${escapeHtml(item.phase)}</span></td>
-  <td>${escapeHtml(item.startedAt)}</td>
-  <td>${item.active ? `<span class="alert-ongoing">${escapeHtml(item.endedAt)}</span>` : escapeHtml(item.endedAt)}</td>
-  <td>${escapeHtml(item.duration)}</td>
-  <td class="danger-value">${escapeHtml(item.minimumPower)}</td>
-  <td>${item.sampleCount}</td>
-</tr>`
-    )
-    .join('')}
-  </tbody></table></div>`
+  const phases: Array<'A' | 'B' | 'C'> = ['A', 'B', 'C']
+  return `<div class="alert-phase-grid">${phases
+    .map((phase) => {
+      const rows = items.filter((item) => item.phase === phase)
+      const body = rows.length
+        ? rows
+            .map(
+              (item) => `<article class="alert-card ${item.active ? 'is-active' : ''}">
+  <div class="alert-card-time"><span>${escapeHtml(item.startedAt)}</span><span class="alert-arrow">→</span><span class="${item.active ? 'alert-ongoing' : ''}">${escapeHtml(item.endedAt)}</span></div>
+  <div class="alert-card-meta"><span>持续 ${escapeHtml(item.duration)}</span><span class="danger-value">${escapeHtml(item.minimumPower)}</span></div>
+</article>`
+            )
+            .join('')
+        : `<p class="muted alert-empty">无告警</p>`
+      return `<section class="alert-phase-col"><h4>${phase} 相</h4><div class="alert-phase-scroll">${body}</div></section>`
+    })
+    .join('')}</div>`
 }
 
 function seriesAttr(series: unknown) {
@@ -64,6 +66,7 @@ function chartPanel(opts: {
     <label><input type="radio" name="days-${escapeHtml(opts.seriesKey)}" value="1"/> 1 天</label>
     <label><input type="radio" name="days-${escapeHtml(opts.seriesKey)}" value="3"/> 3 天</label>
     <label><input type="radio" name="days-${escapeHtml(opts.seriesKey)}" value="7" checked/> 7 天</label>
+    <span class="day-night-legend" hidden><i class="day"></i>昼 <i class="night"></i>夜 · 北京日出日落</span>
   </div>
   <div class="series-toggles"></div>
   <div class="chart-host" style="height:${opts.height ?? 430}px"></div>
@@ -115,7 +118,6 @@ function renderDevice(vm: OfflineDeviceViewModel) {
   <div class="inverter-metric"><span class="label">工作状态</span><strong>${escapeHtml(inv.workState)}</strong></div>
   <div class="inverter-metric"><span class="label">当前是否发电</span><strong>${escapeHtml(inv.generating)}</strong></div>
   <div class="inverter-metric"><span class="label">软件版本</span><strong>${escapeHtml(inv.softwareVersion)}</strong></div>
-  <div class="inverter-metric"><span class="label">硬件版本</span><strong>${escapeHtml(inv.hardwareVersion)}</strong></div>
   <div class="inverter-metric"><span class="label">最新故障</span><strong>${escapeHtml(inv.latestFault)}</strong></div>
   <div class="inverter-metric"><span class="label">故障码</span><strong>${escapeHtml(inv.faultHex)}</strong></div>
   ${inv.detailHref ? `<p><a href="${escapeHtml(inv.detailHref)}">打开微逆详情</a></p>` : ''}
@@ -139,9 +141,35 @@ function renderDevice(vm: OfflineDeviceViewModel) {
 <p class="muted">最近 ${vm.days} 天离线快照 · 时区 ${escapeHtml(vm.timezone)}</p></div>
 <div><span class="readonly-badge">数据来源：${escapeHtml(vm.sourceLabel)}</span><p class="muted">最后上报：${escapeHtml(vm.lastReportedAt)}</p></div></header>
 
+<section class="panel ct-status-panel"><div class="panel-heading"><div><h2>CT 当前状态</h2></div><span class="badge ${vm.ctOnline ? 'online' : 'offline'}">${vm.ctOnline ? 'CT 在线' : 'CT 离线'}</span></div>
+${vm.isLastKnown ? `<p class="muted">当前离线，以下为最后已知值。</p>` : ''}
+<ul class="status-list status-list-compact">
+  <li>软件版本号<br/><strong>${escapeHtml(vm.softwareVersion)}</strong></li>
+  <li>SubG 版本号<br/><strong>${escapeHtml(vm.sub1gVersion)}</strong></li>
+  <li>Sub1G 状态<br/><strong>${escapeHtml(vm.sub1gState)}</strong></li>
+  <li>运行状态<br/><strong>${escapeHtml(vm.ctState)}</strong></li>
+  <li>工作模式<br/><strong>${escapeHtml(vm.workMode)}</strong></li>
+</ul>
+<div class="quality-inline">
+  <div><span class="label">电网电压</span><strong>${escapeHtml(vm.gridVoltage)}</strong></div>
+  <div><span class="label">电网频率</span><strong>${escapeHtml(vm.gridFrequency)}</strong></div>
+</div>
+</section>
+
+<section class="card-grid power-hero-grid">
+  ${metricCard('当前家庭负载功率', vm.loadPower, 'is-hero')}
+  ${metricCard('当前电网功率', vm.gridPower, 'is-hero')}
+  ${metricCard('微逆发电总功率', vm.inverterTotalPower, 'is-hero')}
+</section>
+<section class="card-grid energy-secondary-grid">
+  ${metricCard('今日发电量', vm.todayEnergy)}
+  ${metricCard('今日发电时长', vm.todayDuration)}
+  ${metricCard('累计发电量', vm.totalEnergy)}
+</section>
+
 <section class="reverse-safety-panel panel ${vm.reverseNow ? 'is-danger' : ''}" data-testid="reverse-safety-panel">
   <div class="panel-heading"><div><h2>${escapeHtml(vm.reverseHeading)}</h2><p>${vm.reverseNow ? `当前逆流相：${escapeHtml(vm.reversePhases.join('、'))} 相` : 'A、B、C 三相当前均未检测到反送电网。'}</p></div>
-  <span class="badge ${vm.reverseNow ? 'danger' : 'online'}">${escapeHtml(vm.reverseBadge)}</span></div>
+  <span class="reverse-status-banner ${vm.reverseNow ? 'is-danger' : 'is-safe'}">${escapeHtml(vm.reverseBadge)}</span></div>
   <p class="${vm.reverseNow ? 'active-alert' : 'muted'}">${escapeHtml(vm.activeAlertText)}</p>
   <div class="phase-grid">${vm.phases
     .map(
@@ -155,31 +183,10 @@ function renderDevice(vm: OfflineDeviceViewModel) {
   <h3>最近逆流告警记录</h3>${reverseAlertList(vm.reverseAlerts, '最近窗口没有检测到三相 CT 负功率。')}
 </section>
 
-<section class="panel"><div class="panel-heading"><div><h2>CT 当前状态</h2></div><span class="badge ${vm.ctOnline ? 'online' : 'offline'}">${vm.ctOnline ? 'CT 在线' : 'CT 离线'}</span></div>
-${vm.isLastKnown ? `<p class="muted">当前离线，以下为最后已知值。</p>` : ''}
-<ul class="status-list">
-  <li>最后上报<br/><strong>${escapeHtml(vm.lastReportedAt)}</strong></li>
-  <li>运行状态<br/><strong>${escapeHtml(vm.ctState)}</strong></li>
-  <li>限流状态<br/><strong>${escapeHtml(vm.limitState)}</strong></li>
-  <li>Sub1G 状态<br/><strong>${escapeHtml(vm.sub1gState)}</strong></li>
-  <li>工作模式<br/><strong>${escapeHtml(vm.workMode)}</strong></li>
-  <li>当前状态持续<br/><strong>${escapeHtml(vm.ctStatusDuration)}</strong></li>
-</ul></section>
-
-<section class="card-grid">
-  ${metricCard('当前家庭负载功率', vm.loadPower)}
-  ${metricCard('当前电网功率', vm.gridPower)}
-  ${metricCard('微逆发电总功率', vm.inverterTotalPower)}
-  ${metricCard('今日发电量', vm.todayEnergy)}
-  ${metricCard('今日发电时长', vm.todayDuration)}
-  ${metricCard('累计发电量', vm.totalEnergy)}
-</section>
-
-<section class="panel"><h2>电网质量</h2><div class="quality-grid">${metricCard('电网电压', vm.gridVoltage)}${metricCard('电网频率', vm.gridFrequency)}</div></section>
 ${chartPanel({ title: '功率总览（W）', seriesKey: 'powerSeries', initialKeys: ['load', 'grid', 'generation'], advancedKeys: ['ct-a', 'ct-b', 'ct-c', 'inv-a', 'inv-b', 'inv-c'], height: 510 })}
 ${chartPanel({ title: '电网电压与频率（V / Hz）', seriesKey: 'gridSeries', height: 360 })}
 
-<section class="panel"><h2>CT 本体上下线与离线时长</h2><div class="two-column"><div><h3>状态变化</h3>${recordList(vm.platformTransitions, '当前窗口没有状态变化记录。')}</div><div><h3>离线区间</h3>${recordList(vm.platformOfflineWindows, '当前窗口没有离线区间。')}</div></div></section>
+<section class="panel ct-presence-panel"><h2>CT 本体上下线与离线时长</h2><div class="two-column presence-columns"><div><h3>上下线时间</h3>${recordList(vm.platformTransitions, '当前窗口没有状态变化记录。')}</div><div><h3>离线时长</h3>${recordList(vm.platformOfflineWindows, '当前窗口没有离线区间。')}</div></div></section>
 
 <section class="panel"><div class="panel-heading"><div><h2>微型逆变器 1～8</h2><p class="muted">固定 8 通道；缺失显示 —</p></div></div>
 <div class="inverter-grid">${inverterCards}</div></section>`
@@ -188,7 +195,7 @@ ${chartPanel({ title: '电网电压与频率（V / Hz）', seriesKey: 'gridSerie
 function renderInverter(vm: OfflineInverterViewModel) {
   return `<p><a href="${escapeHtml(vm.deviceHref)}">← 返回 CT ${escapeHtml(vm.deviceSn)}</a></p>
 <header class="page-header"><div><p class="eyebrow">微型逆变器详情</p><h1>${escapeHtml(vm.title)}</h1>
-<p class="muted">SN：${escapeHtml(vm.inverterSn)} · ${escapeHtml(vm.softwareVersion)} · ${escapeHtml(vm.hardwareVersion)} · ${escapeHtml(vm.sub1gVersion)}</p></div>
+<p class="muted">SN：${escapeHtml(vm.inverterSn)} · ${escapeHtml(vm.softwareVersion)} · ${escapeHtml(vm.sub1gVersion)}</p></div>
 <span class="readonly-badge">数据来源：${escapeHtml(vm.sourceLabel)}</span></header>
 <section class="card-grid">${metricCard('发电总功率', vm.power)}${metricCard('PV1', vm.pv1)}${metricCard('PV2', vm.pv2)}</section>
 <section class="card-grid">${metricCard('今日发电量', vm.todayEnergy)}${metricCard('累计发电量', vm.totalEnergy)}${metricCard('今日发电时长', vm.todayDuration)}</section>

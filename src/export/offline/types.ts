@@ -53,7 +53,7 @@ export interface OfflineRecordItem {
 }
 
 export interface OfflineReverseAlertItem {
-  phase: string
+  phase: 'A' | 'B' | 'C'
   startedAt: string
   endedAt: string
   duration: string
@@ -81,6 +81,8 @@ export interface OfflineDeviceViewModel {
   phases: OfflinePhaseCard[]
   reverseAlerts: OfflineReverseAlertItem[]
   deviceOptions: Array<{ sn: string; href: string }>
+  softwareVersion: string
+  sub1gVersion: string
   ctState: string
   limitState: string
   sub1gState: string

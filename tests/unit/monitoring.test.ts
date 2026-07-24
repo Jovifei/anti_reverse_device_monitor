@@ -30,3 +30,12 @@ describe('inverter configuration display', () => {
     expect(displayPowerLimit(row('power_limit', 0))).toBe('关闭')
   })
 })
+
+describe('energy Wh to kWh display', () => {
+  it('scales Wh readings by 1000 for kWh labels', async () => {
+    const { displayEnergyKwh, whToKwh } = await import('@/src/domain/monitoring')
+    expect(whToKwh(2368.07)).toBeCloseTo(2.36807, 5)
+    expect(displayEnergyKwh(row('today_energy', 2368.07))).toBe('2.37 kWh')
+    expect(displayEnergyKwh(row('total_energy', 266979.25))).toBe('266.98 kWh')
+  })
+})

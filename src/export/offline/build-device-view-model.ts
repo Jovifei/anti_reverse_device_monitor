@@ -2,10 +2,12 @@ import { resolveStatusLabel } from '@/src/domain/dictionaries'
 import { faultDisplayNames, toHexMask } from '@/src/domain/faults'
 import {
   CT_KPI_ALIASES,
+  displayEnergyKwh,
   displayValue,
   findLatestMetric,
   formatDuration,
   formatTime,
+  formatTimeShort,
   getInverterStatus,
   getInverterWorkStatus,
   INVERTER_KPI_ALIASES,
@@ -98,7 +100,7 @@ export async function buildDeviceViewModel(
       powerValue: value,
       reverse,
       series: powerSeries.filter((item) => item.key === key),
-      lastAlarmAt: lastAlarm ? formatTime(lastAlarm.startedAt) : EMPTY
+      lastAlarmAt: lastAlarm ? formatTimeShort(lastAlarm.startedAt) : EMPTY
     }
   })
   const reverseNow = phases.filter((item) => item.reverse)
@@ -130,8 +132,8 @@ export async function buildDeviceViewModel(
       power: displayValue(powerRow, 'W'),
       pv1: displayValue(findLatestMetric(rows, ['pv1_power', 'pv1power']), 'W'),
       pv2: displayValue(findLatestMetric(rows, ['pv2_power', 'pv2power']), 'W'),
-      todayEnergy: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.todayEnergy), 'kWh'),
-      totalEnergy: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.totalEnergy), 'kWh'),
+      todayEnergy: displayEnergyKwh(findLatestMetric(rows, INVERTER_KPI_ALIASES.todayEnergy)),
+      totalEnergy: displayEnergyKwh(findLatestMetric(rows, INVERTER_KPI_ALIASES.totalEnergy)),
       todayDuration: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.todayDuration), 'h'),
       temperature: displayValue(findLatestMetric(rows, ['internal_temperature', 'temperature', 'temp']), '°C'),
       packetLoss: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.packetLoss), '%'),
@@ -172,9 +174,9 @@ export async function buildDeviceViewModel(
       : '当前没有持续中的逆流告警。',
     phases,
     reverseAlerts: alarms.alerts.map((alert) => ({
-      phase: `${alert.phase} 相`,
-      startedAt: formatTime(alert.startedAt),
-      endedAt: alert.endedAt ? formatTime(alert.endedAt) : '持续中',
+      phase: alert.phase,
+      startedAt: formatTimeShort(alert.startedAt),
+      endedAt: alert.endedAt ? formatTimeShort(alert.endedAt) : '持续中',
       duration: formatDuration(alert.durationMinutes),
       minimumPower: `${alert.minimumPower} W`,
       sampleCount: alert.sampleCount,
@@ -183,6 +185,8 @@ export async function buildDeviceViewModel(
     deviceOptions: options?.deviceOptions?.length
       ? options.deviceOptions
       : [{ sn: canonicalSn, href: `./device-${safeDevice(canonicalSn)}.html` }],
+    softwareVersion: displayOrEmpty(device.softwareVersion),
+    sub1gVersion: displayOrEmpty(device.sub1gVersion),
     ctState: resolveStatusLabel('ct_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.state))) ?? EMPTY,
     limitState: resolveStatusLabel('limit_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.limitState))) ?? EMPTY,
     sub1gState: resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState))) ?? EMPTY,
@@ -193,9 +197,9 @@ export async function buildDeviceViewModel(
       findLatestMetric(latest, ['inverter_total_power', 'total_generation_power', 'micro_total_power']),
       'W'
     ),
-    todayEnergy: displayValue(findLatestMetric(latest, CT_KPI_ALIASES.todayEnergy), 'kWh'),
+    todayEnergy: displayEnergyKwh(findLatestMetric(latest, CT_KPI_ALIASES.todayEnergy)),
     todayDuration: displayValue(findLatestMetric(latest, CT_KPI_ALIASES.todayDuration), 'h'),
-    totalEnergy: displayValue(findLatestMetric(latest, CT_KPI_ALIASES.totalEnergy), 'kWh'),
+    totalEnergy: displayEnergyKwh(findLatestMetric(latest, CT_KPI_ALIASES.totalEnergy)),
     gridVoltage: displayValue(findLatestMetric(latest, ['grid_voltage']), 'V'),
     gridFrequency: displayValue(findLatestMetric(latest, ['grid_frequency']), 'Hz'),
     powerSeries,

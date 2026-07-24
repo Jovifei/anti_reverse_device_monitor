@@ -104,6 +104,24 @@ export function displayValue(row: MetricRow | undefined, unit = '') {
   return '—'
 }
 
+/** 原始遥测电量为 Wh，展示统一换算为 kWh（÷1000）。 */
+export function whToKwh(valueWh: number) {
+  return valueWh / 1000
+}
+
+export function displayEnergyKwh(row: MetricRow | undefined) {
+  const numeric = numericValue(row)
+  if (numeric !== null) {
+    return `${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(whToKwh(numeric))} kWh`
+  }
+  if (row?.valueText && row.valueText.trim()) return `${row.valueText} kWh`
+  return '—'
+}
+
+export function scaleEnergyPointsWhToKwh(points: Array<[string, number]>): Array<[string, number]> {
+  return points.map(([at, value]) => [at, whToKwh(value)])
+}
+
 export function findLatestMetric<T extends MetricRow>(rows: T[], aliases: string[]) {
   return rows.find((row) => metricMatches(row.metricKey, aliases))
 }
@@ -123,6 +141,17 @@ export function formatTime(value: Date | string | null | undefined) {
   return new Intl.DateTimeFormat('zh-CN', {
     timeZone: process.env.APP_TIMEZONE || 'Asia/Shanghai',
     year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).format(parsed)
+}
+
+/** Month-day + time without year, for compact alarm timelines. */
+export function formatTimeShort(value: Date | string | null | undefined) {
+  if (!value) return '—'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return '—'
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: process.env.APP_TIMEZONE || 'Asia/Shanghai',
+    month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
   }).format(parsed)
 }
 

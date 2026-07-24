@@ -26,9 +26,9 @@ export function clientRuntimeSource(): string {
 
   function formatAxisLabel(ms, days){
     const p = partsInTz(ms);
+    // Always show down to hour; day/hour layout depends on window width.
     if (days <= 1) return p.hour + ':' + p.minute;
-    if (days <= 3) return p.month + '-' + p.day + '\\n' + p.hour + ':' + p.minute;
-    return p.month + '-' + p.day;
+    return p.month + '-' + p.day + '\\n' + p.hour + ':' + p.minute;
   }
 
   function formatTooltipTime(ms){
@@ -114,6 +114,118 @@ export function clientRuntimeSource(): string {
     return 0;
   }
 
+  var BEIJING_LAT = 39.9042;
+  var BEIJING_LON = 116.4074;
+  var BEIJING_TZ = 8;
+  var DAY_COLOR = 'rgba(255, 236, 179, 0.38)';
+  var NIGHT_COLOR = 'rgba(148, 163, 184, 0.32)';
+
+  function rad(d){ return d * Math.PI / 180; }
+  function deg(r){ return r * 180 / Math.PI; }
+
+  function beijingParts(ms){
+    var fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year:'numeric', month:'2-digit', day:'2-digit' });
+    var map = {};
+    fmt.formatToParts(new Date(ms)).forEach(function(p){ if (p.type !== 'literal') map[p.type] = p.value; });
+    return { year: Number(map.year), month: Number(map.month), day: Number(map.day) };
+  }
+
+  function beijingSunriseSunsetMs(year, month, day){
+    var lat = BEIJING_LAT, lng = BEIJING_LON, timezone = BEIJING_TZ;
+    var n1 = Math.floor((275 * month) / 9);
+    var n2 = Math.floor((month + 9) / 12);
+    var n3 = 1 + Math.floor((year - 4 * Math.floor(year / 4) + 2) / 3);
+    var n = n1 - n2 * n3 + day - 30;
+    var lngHour = lng / 15;
+    function calc(isSunrise){
+      var t = isSunrise ? n + (6 - lngHour) / 24 : n + (18 - lngHour) / 24;
+      var mAnom = 0.9856 * t - 3.289;
+      var L = mAnom + 1.916 * Math.sin(rad(mAnom)) + 0.02 * Math.sin(rad(2 * mAnom)) + 282.634;
+      L = ((L % 360) + 360) % 360;
+      var ra = deg(Math.atan(0.91764 * Math.tan(rad(L))));
+      ra = ((ra % 360) + 360) % 360;
+      var lQuad = Math.floor(L / 90) * 90;
+      var raQuad = Math.floor(ra / 90) * 90;
+      ra = (ra + (lQuad - raQuad)) / 15;
+      var sinDec = 0.39782 * Math.sin(rad(L));
+      var cosDec = Math.cos(Math.asin(sinDec));
+      var cosH = (Math.cos(rad(90.833)) - sinDec * Math.sin(rad(lat))) / (cosDec * Math.cos(rad(lat)));
+      if (cosH > 1 || cosH < -1) return null;
+      var H = isSunrise ? (360 - deg(Math.acos(cosH))) / 15 : deg(Math.acos(cosH)) / 15;
+      var T = H + ra - 0.06571 * t - 6.622;
+      var ut = ((T - lngHour) % 24 + 24) % 24;
+      var local = ut + timezone;
+      var dayOffset = 0;
+      if (local >= 24) { local -= 24; dayOffset = 1; }
+      else if (local < 0) { local += 24; dayOffset = -1; }
+      var hours = Math.floor(local);
+      var minutesFloat = (local - hours) * 60;
+      var minutes = Math.floor(minutesFloat);
+      var seconds = Math.round((minutesFloat - minutes) * 60);
+      return Date.UTC(year, month - 1, day + dayOffset, hours - timezone, minutes, seconds);
+    }
+    var sunriseMs = calc(true);
+    var sunsetMs = calc(false);
+    if (sunriseMs === null || sunsetMs === null) return null;
+    return { sunriseMs: sunriseMs, sunsetMs: sunsetMs };
+  }
+
+  function clipBand(a, b, start, end){
+    var left = Math.max(a, start);
+    var right = Math.min(b, end);
+    if (!(right > left)) return null;
+    return [left, right];
+  }
+
+  function buildBeijingDayNightBands(rangeStartMs, rangeEndMs){
+    var markAreaData = [];
+    var sunriseLines = [];
+    var sunsetLines = [];
+    if (!(rangeEndMs > rangeStartMs)) return { markAreaData: markAreaData, sunriseLines: sunriseLines, sunsetLines: sunsetLines };
+    var first = beijingParts(rangeStartMs - 86400000);
+    var last = beijingParts(rangeEndMs + 86400000);
+    var cursor = Date.UTC(first.year, first.month - 1, first.day, 12 - BEIJING_TZ);
+    var endCursor = Date.UTC(last.year, last.month - 1, last.day, 12 - BEIJING_TZ);
+    var previousSunset = null;
+    while (cursor <= endCursor) {
+      var parts = beijingParts(cursor);
+      var sun = beijingSunriseSunsetMs(parts.year, parts.month, parts.day);
+      if (!sun) { cursor += 86400000; continue; }
+      if (previousSunset !== null) {
+        var nightA = clipBand(previousSunset, sun.sunriseMs, rangeStartMs, rangeEndMs);
+        if (nightA) markAreaData.push([{ xAxis: nightA[0], itemStyle: { color: NIGHT_COLOR } }, { xAxis: nightA[1] }]);
+      } else {
+        var nightB = clipBand(rangeStartMs, sun.sunriseMs, rangeStartMs, rangeEndMs);
+        if (nightB) markAreaData.push([{ xAxis: nightB[0], itemStyle: { color: NIGHT_COLOR } }, { xAxis: nightB[1] }]);
+      }
+      var day = clipBand(sun.sunriseMs, sun.sunsetMs, rangeStartMs, rangeEndMs);
+      if (day) markAreaData.push([{ xAxis: day[0], itemStyle: { color: DAY_COLOR } }, { xAxis: day[1] }]);
+      if (sun.sunriseMs >= rangeStartMs && sun.sunriseMs <= rangeEndMs) sunriseLines.push({ xAxis: sun.sunriseMs, name: '日出' });
+      if (sun.sunsetMs >= rangeStartMs && sun.sunsetMs <= rangeEndMs) sunsetLines.push({ xAxis: sun.sunsetMs, name: '日落' });
+      previousSunset = sun.sunsetMs;
+      cursor += 86400000;
+    }
+    if (previousSunset !== null) {
+      var nightC = clipBand(previousSunset, rangeEndMs, rangeStartMs, rangeEndMs);
+      if (nightC) markAreaData.push([{ xAxis: nightC[0], itemStyle: { color: NIGHT_COLOR } }, { xAxis: nightC[1] }]);
+    }
+    return { markAreaData: markAreaData, sunriseLines: sunriseLines, sunsetLines: sunsetLines };
+  }
+
+  function visibleSeriesTimeRange(visible){
+    var min = Infinity, max = -Infinity;
+    visible.forEach(function(item){
+      (item.points || []).forEach(function(point){
+        var t = new Date(point[0]).getTime();
+        if (!Number.isFinite(t)) return;
+        if (t < min) min = t;
+        if (t > max) max = t;
+      });
+    });
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+    return { startMs: min, endMs: max };
+  }
+
   function renderChart(el, series, opts){
     opts = opts || {};
     const days = opts.days || state.days;
@@ -122,6 +234,20 @@ export function clientRuntimeSource(): string {
     const axisPlan = buildAxisPlan(visible);
     const unitByName = {};
     visible.forEach(function(item){ unitByName[item.label] = item.unit || ''; });
+    const enableDayNight = opts.dayNightBands != null ? opts.dayNightBands : visible.some(function(item){ return item.unit === 'W'; });
+    const range = visibleSeriesTimeRange(visible);
+    const bands = enableDayNight && range ? buildBeijingDayNightBands(range.startMs, range.endMs) : null;
+    const dayNightSeries = (bands && bands.markAreaData.length) ? [{
+      name: '昼夜背景', type:'line', data:[], silent:true, tooltip:{ show:false },
+      markArea: { silent:true, data: bands.markAreaData },
+      markLine: days <= 1 ? {
+        silent:true, symbol:'none',
+        label:{ show:true, formatter:'{b}', color:'#8a6a1a', fontSize:10, position:'insideEndTop' },
+        lineStyle:{ color:'#d4a017', type:'dashed', width:1, opacity:0.85 },
+        data: bands.sunriseLines.map(function(item){ return { xAxis:item.xAxis, name:item.name }; })
+          .concat(bands.sunsetLines.map(function(item){ return { xAxis:item.xAxis, name:item.name, lineStyle:{ color:'#6b7280' } }; }))
+      } : undefined
+    }] : [];
     let chart = state.charts.get(el);
     if (!chart) {
       chart = echarts.init(el);
@@ -131,7 +257,7 @@ export function clientRuntimeSource(): string {
     chart.setOption({
       animationDuration: 280,
       color: visible.map(item => item.markNegative ? '#4b5563' : item.color),
-      grid: { left: 68, right: axisPlan.gridRight, top: 42, bottom: days <= 3 ? 98 : 84 },
+      grid: { left: 68, right: axisPlan.gridRight, top: 42, bottom: days <= 1 ? 84 : 98 },
       tooltip: {
         trigger: 'axis',
         backgroundColor: '#17233a',
@@ -140,7 +266,7 @@ export function clientRuntimeSource(): string {
         formatter: function(params){
           if (!params || !params.length) return '';
           const head = '时间 ' + formatTooltipTime(params[0].value[0]);
-          const lines = params.filter(function(p){ return p.seriesType === 'line'; }).map(function(p){
+          const lines = params.filter(function(p){ return p.seriesType === 'line' && p.seriesName !== '昼夜背景'; }).map(function(p){
             const v = Array.isArray(p.value) ? p.value[1] : p.value;
             const text = (v === null || v === undefined) ? '—' : Number(v).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
             const unit = unitByName[p.seriesName] || '';
@@ -149,12 +275,12 @@ export function clientRuntimeSource(): string {
           return [head].concat(lines).join('<br/>');
         }
       },
-      legend: { top: 7, type: 'scroll' },
+      legend: { top: 7, type: 'scroll', data: visible.map(function(item){ return item.label; }) },
       xAxis: {
         type: 'time',
         name: '时间',
         nameLocation: 'middle',
-        nameGap: days <= 3 ? 36 : 28,
+        nameGap: days <= 1 ? 28 : 36,
         nameTextStyle: { color:'#43516a', fontWeight:700 },
         boundaryGap: false,
         axisLabel: {
@@ -168,10 +294,9 @@ export function clientRuntimeSource(): string {
         { type:'inside', xAxisIndex:0, zoomOnMouseWheel:true, moveOnMouseMove:true, moveOnMouseWheel:true },
         { type:'slider', xAxisIndex:0, height:24, bottom:16, labelFormatter: function(value){ return formatAxisLabel(value, days); } }
       ],
-      series: visible.flatMap(item => {
+      series: dayNightSeries.concat(visible.flatMap(item => {
         const yIndex = yAxisIndexFor(item, axisPlan.dual);
         const line = {
-          // Keep every reported sample as a line; hide per-point markers to avoid clutter.
           name: item.label, type:'line', showSymbol:false, symbol:'none', smooth:0.12, connectNulls:false, sampling: null,
           yAxisIndex: yIndex,
           lineStyle:{ width:2.25, color: item.markNegative ? '#4b5563' : item.color },
@@ -181,9 +306,9 @@ export function clientRuntimeSource(): string {
         const negatives = item.markNegative ? item.points.filter(p => typeof p[1] === 'number' && p[1] < 0) : [];
         const scatter = negatives.length ? [{ name: item.label + ' 负值点', type:'scatter', yAxisIndex: yIndex, data:negatives, symbolSize:7, itemStyle:{ color:'#c92828' }, tooltip:{ show:false }, silent:true }] : [];
         return [line, ...scatter];
-      })
+      }))
     }, { notMerge:true });
-    return { chart, selected, days };
+    return { chart, selected, days, enableDayNight };
   }
 
   function bindChartPanel(panel){
@@ -198,7 +323,11 @@ export function clientRuntimeSource(): string {
     const dayBox = $('.day-controls', panel);
     const seriesBox = $('.series-toggles', panel);
     const resetBtn = $('.chart-reset', panel);
-    function paint(){ renderChart(host, series, { days, selected, initialKeys }); }
+    function paint(){
+      const result = renderChart(host, series, { days, selected, initialKeys });
+      const legend = $('.day-night-legend', panel);
+      if (legend) legend.hidden = !result.enableDayNight;
+    }
     if (dayBox) {
       dayBox.addEventListener('change', (e) => {
         const t = e.target;

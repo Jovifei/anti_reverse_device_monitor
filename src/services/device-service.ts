@@ -343,7 +343,11 @@ export class DeviceService {
       windowEnd: endAt.toISOString(),
       power: this.toChartSeries(rows, INVERTER_POWER_METRICS),
       temperature: this.toChartSeries(rows, [INVERTER_TEMPERATURE_METRIC]),
-      energy: this.toChartSeries(rows, [INVERTER_TODAY_ENERGY_METRIC]).map((item) => ({ ...item, dailyReset: true }))
+      energy: this.toChartSeries(rows, [INVERTER_TODAY_ENERGY_METRIC]).map((item) => ({
+        ...item,
+        dailyReset: true,
+        points: item.points.map(([at, value]) => [at, value / 1000] as [string, number])
+      }))
     }
   }
 
