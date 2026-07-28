@@ -11,6 +11,13 @@ export function clientRuntimeSource(): string {
   const TZ = (vm && vm.timezone) || 'Asia/Shanghai';
 
   function partsInTz(ms){
+    const date = new Date(ms);
+    // ECharts can ask an axis formatter to render an incomplete boundary while
+    // it is recalculating a time range. Never let an invalid boundary break an
+    // otherwise usable offline page.
+    if (!Number.isFinite(date.getTime())) {
+      return { year:'—', month:'—', day:'—', hour:'—', minute:'—', second:'—' };
+    }
     const fmt = new Intl.DateTimeFormat('en-CA', {
       timeZone: TZ,
       year: 'numeric', month: '2-digit', day: '2-digit',
@@ -18,7 +25,7 @@ export function clientRuntimeSource(): string {
       hour12: false
     });
     const map = {};
-    for (const p of fmt.formatToParts(new Date(ms))) {
+    for (const p of fmt.formatToParts(date)) {
       if (p.type !== 'literal') map[p.type] = p.value;
     }
     return map;
@@ -226,11 +233,26 @@ export function clientRuntimeSource(): string {
     return { startMs: min, endMs: max };
   }
 
+  function chartSeriesDisplayColor(item){
+    const canonical = {
+      load:'#1463d9', grid:'#0d9488', generation:'#ea580c',
+      'ct-a':'#2563eb', 'ct-b':'#7c3aed', 'ct-c':'#0891b2',
+      'inv-a':'#65a30d', 'inv-b':'#7c3aed', 'inv-c':'#4f46e5',
+      voltage:'#2563eb', frequency:'#9333ea',
+      power:'#ea580c', pv1:'#1463d9', pv2:'#0d9488', temperature:'#0f766e'
+    };
+    if (canonical[item.key]) return canonical[item.key];
+    const requested = String(item.color || '').trim().toLowerCase();
+    return ['#c92828','#dc2626','#ef4444','#e11d48','#be123c','#b91c1c','#c33131'].includes(requested) ? '#2563eb' : item.color;
+  }
+
   function renderChart(el, series, opts){
     opts = opts || {};
     const days = opts.days || state.days;
     const selected = opts.selected || new Set(series.filter(s => (opts.initialKeys ? opts.initialKeys.includes(s.key) : true)).map(s => s.key));
-    const visible = preparePoints(series.filter(s => selected.has(s.key)), days);
+    const visible = preparePoints(series.filter(s => selected.has(s.key)), days).map(function(item){
+      return Object.assign({}, item, { color: chartSeriesDisplayColor(item) });
+    });
     const axisPlan = buildAxisPlan(visible);
     const unitByName = {};
     visible.forEach(function(item){ unitByName[item.label] = item.unit || ''; });
@@ -310,6 +332,7 @@ export function clientRuntimeSource(): string {
       series: dayNightSeries.concat(visible.flatMap(item => {
         const yIndex = yAxisIndexFor(item, axisPlan.dual);
         const NEG = '#c92828';
+        const ZERO = '#94a3b8';
         if (!item.markNegative) {
           return [{
             name: item.label, type:'line', showSymbol:false, symbol:'none',
@@ -343,7 +366,7 @@ export function clientRuntimeSource(): string {
           yAxisIndex: yIndex,
           lineStyle:{ width:2.25, color: item.color },
           data: normal,
-          markLine: { silent:true, symbol:'none', lineStyle:{ color:NEG, type:'dashed' }, label:{ formatter:'0 W 基准线', color:NEG }, data:[{ yAxis:0 }] }
+          markLine: { silent:true, symbol:'none', lineStyle:{ color:ZERO, type:'dashed' }, label:{ formatter:'0 W 基准线', color:'#66788e' }, data:[{ yAxis:0 }] }
         }];
         if (warningDots.length) {
           layers.push({

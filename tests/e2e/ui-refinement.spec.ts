@@ -3,14 +3,20 @@ import { expect, test } from '@playwright/test'
 test.describe('CT and inverter monitoring refinements', () => {
   test('keeps the demo summary stable and labels the read-only source', async ({ page }) => {
     await page.goto('/devices')
-    await expect(page.locator('.overview-metrics .metric-card').nth(1).locator('.value')).toHaveText('2')
-    await expect(page.locator('.overview-metrics .metric-card').nth(2).locator('.value')).toHaveText('1')
-    await expect(page.locator('.overview-metrics .metric-card').nth(3).locator('.value')).toHaveText('1')
+    await expect(page.locator('.fleet-priority-card.critical strong')).toHaveText('1')
+    await expect(page.locator('.fleet-priority-card.warning strong')).toHaveText('1')
+    await expect(page.locator('.fleet-priority-card.online strong')).toHaveText('2 / 3')
+    await expect(page.locator('.fleet-risk-table tbody tr.reverse-row')).toContainText('严重逆流')
+    await expect(page.locator('.fleet-risk-table tbody tr.offline-row')).toContainText('离线')
+    await expect(page.locator('.fleet-risk-table thead')).toContainText('今日发电量')
+    await expect(page.locator('.fleet-risk-table thead')).toContainText('Sub1G')
+    await expect(page.locator('.fleet-risk-table thead')).toContainText('WiFi 信号')
+    await expect(page.locator('.fleet-risk-table')).not.toContainText('型号')
 
     await page.goto('/devices/DEMO-CT-ONLINE-001')
     await expect(page.getByText('数据来源：Demo SQLite')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'CT 当前状态' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: '电网质量和三相 CT' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '电网电压与频率（V / Hz）' })).toBeVisible()
     await expect(page.getByRole('heading', { name: '功率总览' })).toBeVisible()
     await expect(page.getByText('更多曲线')).toBeVisible()
     await expect(page.locator('.inverter-card')).toHaveCount(8)
@@ -43,7 +49,20 @@ test.describe('CT and inverter monitoring refinements', () => {
     await page.goto('/devices/DEMO-CT-OFFLINE-002')
     await expect(page.getByText('当前离线，以下状态和指标均为最后已知值')).toBeVisible()
     await expect(page.getByText('最后已知值').first()).toBeVisible()
-    await expect(page.getByText('最后已知 Sub1G 状态')).toBeVisible()
+    await expect(page.getByText('Sub1G 状态')).toBeVisible()
+  })
+
+  test('keeps the CT fleet table inside an internal mobile scroll area', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/devices')
+    const dimensions = await page.locator('.fleet-table-scroll').evaluate((node) => ({
+      documentScrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+      tableViewportWidth: node.clientWidth,
+      tableScrollWidth: node.scrollWidth
+    }))
+    expect(dimensions.documentScrollWidth).toBe(dimensions.viewportWidth)
+    expect(dimensions.tableScrollWidth).toBeGreaterThan(dimensions.tableViewportWidth)
   })
 
   test('opens desktop and mobile history dialogs without leaking body scroll', async ({ page }) => {

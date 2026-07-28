@@ -3,12 +3,18 @@ import { parseDeviceListQuery, parseSn, parseTelemetryQuery } from '@/src/domain
 import { parseSnLookup } from '@/src/domain/validation'
 import {
   CT_POWER_METRICS,
+  CT_KPI_ALIASES,
+  displayEnergyKwh,
+  displayValue,
+  findLatestMetric,
   GRID_QUALITY_METRICS,
   INVERTER_POWER_METRICS,
   INVERTER_TEMPERATURE_METRIC,
   type MetricDefinition,
-  metricMatches
+  metricMatches,
+  numericValue
 } from '@/src/domain/monitoring'
+import { resolveStatusLabel } from '@/src/domain/dictionaries'
 import { DeviceRepository } from '@/src/repositories/device-repository'
 import { TelemetryRepository } from '@/src/repositories/telemetry-repository'
 import {
@@ -24,6 +30,8 @@ export interface DeviceListResponse {
     onlineCtCount: number
     offlineCtCount: number
     criticalReverseFlowCount: number
+    actionableOfflineCount: number
+    staleOfflineCount: number
   }
   items: {
     id: number
@@ -36,6 +44,14 @@ export interface DeviceListResponse {
     isOnline: boolean
     reverseFlow: boolean
     reverseFlowPhases: Array<'A' | 'B' | 'C'>
+    reverseState: 'normal' | 'active' | 'unknown' | 'unknown-last-seen-reverse'
+    offlineMinutes: number | null
+    offlineAlert: boolean
+    todayEnergy: string
+    runtimeState: string
+    limitState: string
+    sub1gState: string
+    wifiSignal: string
   }[]
   page: number
   pageSize: number
@@ -88,6 +104,7 @@ export interface DeviceHistorySummary {
 
 const OFFLINE_THRESHOLD_MINUTES = 15
 const ACTIVE_WINDOW_DAYS = 7
+const OFFLINE_NOTICE_WINDOW_MINUTES = ACTIVE_WINDOW_DAYS * 24 * 60
 const INVERTER_TODAY_ENERGY_METRIC: MetricDefinition = { key: 'inverter-today-energy', label: '今日发电量', unit: 'kWh', color: '#8b5e34', aliases: ['today_energy', 'inverter_today_energy'] }
 const INVERTER_PACKET_LOSS_METRIC: MetricDefinition = {
   key: 'packet-loss',
@@ -126,7 +143,7 @@ export class DeviceService {
     const activeItems = records
       .filter((item) => item.platformOnline || (item.lastReportedAt !== null && item.lastReportedAt >= activeCutoff))
       .map((item) => {
-        const phaseMetric = (aliases: string[]) => item.latestRows.find((row) => metricMatches(row.metricKey, aliases))?.valueNumber ?? null
+        const phaseMetric = (aliases: string[]) => numericValue(findLatestMetric(item.latestRows, aliases))
         const phaseValues = [
           { phase: 'A' as const, value: phaseMetric(['active_power_ct1', 'ct.active_power.phase_a']) },
           { phase: 'B' as const, value: phaseMetric(['active_power_ct2', 'ct.active_power.phase_b']) },
@@ -134,6 +151,11 @@ export class DeviceService {
         ]
         const reverseFlowPhases = phaseValues.filter((item) => item.value !== null && item.value < 0).map((item) => item.phase)
         const isOnline = Boolean(item.platformOnline && item.lastReportedAt && item.lastReportedAt >= onlineCutoff)
+        const offlineMinutes = isOnline || !item.lastReportedAt ? null : toMinutesSince(item.lastReportedAt)
+        const offlineAlert = offlineMinutes !== null && offlineMinutes < OFFLINE_NOTICE_WINDOW_MINUTES
+        const reverseState = isOnline
+          ? (reverseFlowPhases.length ? 'active' : 'normal')
+          : (reverseFlowPhases.length ? 'unknown-last-seen-reverse' : 'unknown')
         const pairedInverters = item.inverterBindings.filter((binding) => binding.paired)
         const onlineInverterCount = pairedInverters.filter((binding) => binding.latestRows.some((row) => row.valueNumber === 2)).length
         return {
@@ -145,15 +167,25 @@ export class DeviceService {
           inverterCount: pairedInverters.length,
           onlineInverterCount,
           isOnline,
-          reverseFlow: reverseFlowPhases.length > 0,
-          reverseFlowPhases
+          reverseFlow: reverseState === 'active',
+          reverseFlowPhases,
+          reverseState,
+          offlineMinutes,
+          offlineAlert,
+          todayEnergy: displayEnergyKwh(findLatestMetric(item.latestRows, CT_KPI_ALIASES.todayEnergy)),
+          runtimeState: resolveStatusLabel('ct_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.state))) ?? '—',
+          limitState: resolveStatusLabel('limit_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.limitState))) ?? '—',
+          sub1gState: resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.sub1gState))) ?? '—',
+          wifiSignal: displayValue(findLatestMetric(item.latestRows, ['wifi_signal_strength']))
         }
       })
     const summary = {
       activeTotal: activeItems.length,
       onlineCtCount: activeItems.filter((item) => item.isOnline).length,
       offlineCtCount: activeItems.filter((item) => !item.isOnline).length,
-      criticalReverseFlowCount: activeItems.filter((item) => item.reverseFlow).length
+      criticalReverseFlowCount: activeItems.filter((item) => item.reverseFlow).length,
+      actionableOfflineCount: activeItems.filter((item) => item.offlineAlert).length,
+      staleOfflineCount: activeItems.filter((item) => !item.isOnline && !item.offlineAlert).length
     }
     const matchingItems = activeItems.filter((item) => {
       if (parsed.q && !item.deviceSn.toLowerCase().includes(parsed.q.toLowerCase())) return false

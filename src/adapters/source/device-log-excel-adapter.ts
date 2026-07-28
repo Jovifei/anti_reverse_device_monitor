@@ -42,6 +42,23 @@ const INV_FIELD_MAP: Record<string, string> = {
   发电开关: 'generation_enabled'
 }
 
+// 设备日志在固件版本间会使用不同的中文字段名。保留这些映射，
+// 让离线导出中的当前配置与原始上报日志保持一致。
+Object.assign(CT_NAME_MAP, {
+  限流状态: { metricKey: 'limit_state', siid: '2', piid: '23' },
+  工作模式: { metricKey: 'work_mode', siid: '2', piid: '24' },
+  信道频率: { metricKey: 'channel_frequency', siid: '2', piid: '25' },
+  wifi信号强度: { metricKey: 'wifi_signal_strength', siid: '2', piid: '26' },
+  已绑定设备列表: { metricKey: 'bound_device_list', siid: '2', piid: '27' }
+})
+
+Object.assign(INV_FIELD_MAP, {
+  '所在的（A、B、C）相': 'phase_num',
+  信道频率: 'channel_frequency',
+  功率限制: 'power_limit',
+  限流功率: 'power_limit'
+})
+
 function mapEventName(eventName: string): MappedMetric | null {
   const direct = CT_NAME_MAP[eventName]
   if (direct) return direct

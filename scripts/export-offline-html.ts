@@ -2,8 +2,6 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { parseExportArgs, printExportHelp } from '@/src/export/offline/cli'
-import { withTempSqliteFromExcel } from '@/src/export/offline/excel-temp-import'
-import { exportOfflineHtml } from '@/src/export/offline/package-export'
 
 function toDbUrl(dbPath: string) {
   const absolute = path.isAbsolute(dbPath) ? dbPath : path.join(process.cwd(), dbPath)
@@ -52,10 +50,15 @@ async function main() {
       }
     }
 
-    const runExport = async () => exportOfflineHtml(options)
+    // Prisma reads APP_DATABASE_URL while its modules are initialized. Delay all
+    // database-backed imports until the caller has selected the SQLite source.
+    const runExport = async () => {
+      const { exportOfflineHtml } = await import('@/src/export/offline/package-export')
+      return exportOfflineHtml(options)
+    }
 
     const result = options.excel
-      ? await withTempSqliteFromExcel(options.excel, options.sn, async () => {
+      ? await (await import('@/src/export/offline/excel-temp-import')).withTempSqliteFromExcel(options.excel, options.sn, async () => {
           options.sourceLabelOverride = 'Excel 导入'
           if (!options.sn) options.all = true
           return runExport()

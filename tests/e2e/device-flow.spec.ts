@@ -3,8 +3,9 @@ import { expect, test } from '@playwright/test'
 test('overview keeps online, offline, and reverse-flow CT scenarios', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveURL(/\/devices$/)
-  await expect(page.locator('.offline-row')).toBeVisible()
-  await expect(page.locator('.reverse-row')).toBeVisible()
+  await expect(page.locator('.fleet-risk-table tbody tr.offline-row')).toBeVisible()
+  await expect(page.locator('.fleet-risk-table tbody tr.reverse-row')).toBeVisible()
+  await expect(page.locator('.fleet-risk-table tbody tr')).toHaveCount(3)
 })
 
 test('inverter detail presents units, switches, duration, and decoded faults', async ({ page }) => {

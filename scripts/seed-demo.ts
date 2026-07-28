@@ -104,6 +104,7 @@ async function main() {
       addMetric(rows, null, 'limit_state', 0, reportedAt)
       addMetric(rows, null, 'sub1g_state', 4, reportedAt)
       addMetric(rows, null, 'work_mode', 1, reportedAt)
+      addMetric(rows, null, 'wifi_signal_strength', mode === 'offline' ? 38 : mode === 'reverse' ? 71 : 82, reportedAt)
       rows.forEach((row) => append(deviceId, row))
     }
 

@@ -16,7 +16,7 @@ import {
   type MetricRow
 } from '@/src/domain/monitoring'
 import { displayOrEmpty, mapSourceLabel, safeFileToken, withDailyResetSeries } from '@/src/export/offline/html-utils'
-import type { OfflineChartSeries, OfflineInverterViewModel } from '@/src/export/offline/types'
+import type { OfflineChartSeries, OfflineDeviceViewModel, OfflineInverterCard, OfflineInverterViewModel } from '@/src/export/offline/types'
 import { EMPTY } from '@/src/export/offline/types'
 import { DeviceService, type ChartSeries } from '@/src/services/device-service'
 import { prisma } from '@/src/lib/prisma'
@@ -34,6 +34,65 @@ function toOfflineSeries(series: ChartSeries[]): OfflineChartSeries[] {
       points: item.points
     })
   )
+}
+
+/**
+ * Retained offline CT pages already contain a complete inverter card snapshot
+ * and its chart series. Rehydrate a detail view from that evidence rather than
+ * requiring a second source import or giving only one CT detail pages.
+ */
+export function hasInverterDetailData(inverter: OfflineInverterCard) {
+  return inverter.statusVariant !== 'unknown' || [
+    inverter.power,
+    inverter.pv1,
+    inverter.pv2,
+    inverter.todayEnergy,
+    inverter.totalEnergy,
+    inverter.temperature,
+    inverter.packetLoss
+  ].some((value) => value !== EMPTY)
+}
+
+export function buildInverterViewModelFromDevice(
+  device: OfflineDeviceViewModel,
+  inverter: OfflineInverterCard
+): OfflineInverterViewModel {
+  return {
+    kind: 'inverter',
+    title: `微型逆变器 ${inverter.index}：${inverter.phaseLabel}`,
+    deviceSn: device.deviceSn,
+    inverterIndex: inverter.index,
+    inverterSn: inverter.sn,
+    sourceLabel: device.sourceLabel,
+    softwareVersion: inverter.softwareVersion,
+    hardwareVersion: inverter.hardwareVersion,
+    sub1gVersion: device.sub1gVersion,
+    statusLabel: inverter.statusLabel,
+    statusVariant: inverter.statusVariant,
+    workState: inverter.workState,
+    generating: inverter.generating,
+    power: inverter.power,
+    pv1: inverter.pv1,
+    pv2: inverter.pv2,
+    todayEnergy: inverter.todayEnergy,
+    totalEnergy: inverter.totalEnergy,
+    todayDuration: inverter.todayDuration,
+    temperature: inverter.temperature,
+    packetLoss: inverter.packetLoss,
+    phase: inverter.phaseLabel,
+    connectionPoint: EMPTY,
+    antiReverse: inverter.antiReverse,
+    generationEnabled: inverter.generationEnabled,
+    powerLimit: EMPTY,
+    latestFault: inverter.latestFault,
+    faultHex: inverter.faultHex,
+    faultChanges: [],
+    offlineWindows: inverter.statusVariant === 'offline'
+      ? [{ text: `当前显示为最后已知值；CT 最后上报：${device.lastReportedAt}` }]
+      : [],
+    charts: inverter.charts,
+    deviceHref: `./device-${safeFileToken(device.deviceSn)}.html`
+  }
 }
 
 export async function buildInverterViewModel(
@@ -91,7 +150,7 @@ export async function buildInverterViewModel(
     todayDuration: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.todayDuration), 'h'),
     temperature: displayValue(findLatestMetric(rows, ['internal_temperature', 'temperature', 'temp']), '°C'),
     packetLoss: displayValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.packetLoss), '%'),
-    phase: displayInverterPhaseLabel(summary.phaseNum ?? numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.phase))),
+    phase: displayInverterPhaseLabel(numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.phase)) ?? summary.phaseNum),
     connectionPoint: displayOrEmpty(summary.connectionPoint),
     antiReverse: displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.antiReverse)),
     generationEnabled: displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.generationEnabled)),

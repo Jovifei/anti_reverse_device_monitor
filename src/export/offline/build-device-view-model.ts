@@ -125,7 +125,9 @@ export async function buildDeviceViewModel(
     const power = numericValue(powerRow)
     const faultInfo = latestFaultText(summary?.faults ?? [])
     const chartBundle = inverterCharts[offset]
-    const phaseRaw = binding?.phaseNum ?? numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.phase))
+    // A freshly created local binding starts with phase 0. Prefer an actual
+    // telemetry report so the card reflects the device's reported A/B/C phase.
+    const phaseRaw = numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.phase)) ?? binding?.phaseNum
     const phaseLabel = displayInverterPhaseLabel(phaseRaw)
     return {
       index: inverterIndex,
@@ -212,6 +214,7 @@ export async function buildDeviceViewModel(
     totalEnergy: displayEnergyKwh(findLatestMetric(latest, CT_KPI_ALIASES.totalEnergy)),
     gridVoltage: displayValue(findLatestMetric(latest, ['grid_voltage']), 'V'),
     gridFrequency: displayValue(findLatestMetric(latest, ['grid_frequency']), 'Hz'),
+    wifiSignal: displayValue(findLatestMetric(latest, ['wifi_signal_strength'])),
     powerSeries,
     gridSeries: toOfflineSeries(charts.grid),
     platformOnlineEvents: history.platform.transitions

@@ -82,7 +82,7 @@ export class TelemetryRepository {
 
         const latest = await tx.deviceLatest.findFirst({
           where: { deviceId: device.id, inverterId, metricKey: row.metricKey },
-          select: { id: true }
+          select: { id: true, reportedAt: true }
         })
         const latestData = {
             valueNumber: row.valueNumber ?? null,
@@ -90,9 +90,12 @@ export class TelemetryRepository {
             reportedAt: row.reportedAt,
             receivedAt: row.receivedAt
         }
-        if (latest) {
+        // Imports are not guaranteed to be chronological. Keep the newest
+        // observation rather than letting a later-processed historical row
+        // overwrite the current dashboard value.
+        if (latest && row.reportedAt >= latest.reportedAt) {
           await tx.deviceLatest.update({ where: { id: latest.id }, data: latestData })
-        } else {
+        } else if (!latest) {
           await tx.deviceLatest.create({ data: {
             deviceId: device.id,
             inverterId,

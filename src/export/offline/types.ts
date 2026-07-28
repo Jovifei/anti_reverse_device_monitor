@@ -102,6 +102,7 @@ export interface OfflineDeviceViewModel {
   totalEnergy: string
   gridVoltage: string
   gridFrequency: string
+  wifiSignal: string
   powerSeries: OfflineChartSeries[]
   gridSeries: OfflineChartSeries[]
   platformOnlineEvents: OfflineRecordItem[]
@@ -113,11 +114,17 @@ export interface OfflineDeviceViewModel {
 
 export interface OfflineOverviewItem {
   deviceSn: string
-  productModel: string
   isOnline: boolean
   lastReportedAt: string
-  reverseFlow: boolean
+  offlineDuration: string
+  offlineAlert: boolean
+  reverseState: 'normal' | 'active' | 'unknown' | 'unknown-last-seen-reverse'
   reversePhases: string
+  todayEnergy: string
+  runtimeState: string
+  limitState: string
+  sub1gState: string
+  wifiSignal: string
   href: string
 }
 
@@ -126,7 +133,14 @@ export interface OfflineOverviewViewModel {
   title: string
   sourceLabel: string
   items: OfflineOverviewItem[]
-  summary: { activeTotal: number; onlineCtCount: number; offlineCtCount: number; criticalReverseFlowCount: number }
+  summary: {
+    activeTotal: number
+    onlineCtCount: number
+    offlineCtCount: number
+    criticalReverseFlowCount: number
+    actionableOfflineCount: number
+    staleOfflineCount: number
+  }
 }
 
 export interface OfflineInverterViewModel {

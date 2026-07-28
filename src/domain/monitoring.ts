@@ -18,15 +18,23 @@ export interface MetricDefinition {
   step?: 'start' | 'middle' | 'end'
 }
 
+/** Alarm red is reserved for rendered negative-power evidence, never a normal series identity. */
+export const NEGATIVE_POWER_ALERT_COLOR = '#c92828'
+export const NON_ALERT_CHART_FALLBACK_COLOR = '#2563eb'
+
+const LEGACY_ALERT_SERIES_COLORS = new Set([
+  '#c92828', '#dc2626', '#ef4444', '#e11d48', '#be123c', '#b91c1c', '#c33131'
+])
+
 export const CT_POWER_METRICS: MetricDefinition[] = [
   { key: 'load', label: '家庭负载功率', unit: 'W', aliases: ['load_power', 'ct.load_power'], color: '#1463d9' },
   { key: 'grid', label: '电网功率', unit: 'W', aliases: ['grid_power', 'ct.grid_power'], color: '#0d9488', markNegative: true },
   { key: 'generation', label: '微逆发电总功率', unit: 'W', aliases: ['inverter_total_power', 'total_generation_power', 'micro_total_power'], color: '#ea580c' },
-  { key: 'ct-a', label: 'A相 CT 有功功率', unit: 'W', aliases: ['active_power_ct1', 'ct.active_power.phase_a'], color: '#dc2626', markNegative: true },
+  { key: 'ct-a', label: 'A相 CT 有功功率', unit: 'W', aliases: ['active_power_ct1', 'ct.active_power.phase_a'], color: '#2563eb', markNegative: true },
   { key: 'ct-b', label: 'B相 CT 有功功率', unit: 'W', aliases: ['active_power_ct2', 'ct.active_power.phase_b'], color: '#7c3aed', markNegative: true },
   { key: 'ct-c', label: 'C相 CT 有功功率', unit: 'W', aliases: ['active_power_ct3', 'ct.active_power.phase_c'], color: '#0891b2', markNegative: true },
   { key: 'inv-a', label: 'A相微逆当前功率', unit: 'W', aliases: ['active_power_inv1', 'inverter_power_ct1'], color: '#65a30d' },
-  { key: 'inv-b', label: 'B相微逆当前功率', unit: 'W', aliases: ['active_power_inv2', 'inverter_power_ct2'], color: '#be123c' },
+  { key: 'inv-b', label: 'B相微逆当前功率', unit: 'W', aliases: ['active_power_inv2', 'inverter_power_ct2'], color: '#7c3aed' },
   { key: 'inv-c', label: 'C相微逆当前功率', unit: 'W', aliases: ['active_power_inv3', 'inverter_power_ct3'], color: '#4f46e5' }
 ]
 
@@ -46,7 +54,28 @@ export const INVERTER_TEMPERATURE_METRIC: MetricDefinition = {
   label: '内部温度',
   unit: '°C',
   aliases: ['internal_temperature', 'temperature', 'temp'],
-  color: '#dc2626'
+  color: '#0f766e'
+}
+
+const CANONICAL_CHART_COLORS: Record<string, string> = Object.fromEntries(
+  [
+    ...CT_POWER_METRICS,
+    ...GRID_QUALITY_METRICS,
+    ...INVERTER_POWER_METRICS,
+    INVERTER_TEMPERATURE_METRIC
+  ].map((metric) => [metric.key, metric.color])
+)
+
+/**
+ * Canonicalize chart series received from any source, including retained offline
+ * review snapshots. A stale red series color must not turn normal telemetry into
+ * an alert; actual negative values are rendered by a separate alert layer.
+ */
+export function chartSeriesDisplayColor(key: string, requestedColor: string) {
+  const canonical = CANONICAL_CHART_COLORS[key]
+  if (canonical) return canonical
+  const normalized = requestedColor.trim().toLowerCase()
+  return LEGACY_ALERT_SERIES_COLORS.has(normalized) ? NON_ALERT_CHART_FALLBACK_COLOR : requestedColor
 }
 
 export const CT_KPI_ALIASES = {

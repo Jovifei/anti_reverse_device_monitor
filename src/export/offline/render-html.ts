@@ -1,6 +1,8 @@
 import { clientRuntimeSource } from '@/src/export/offline/client-runtime'
+import { normalizeOfflineChartPalette } from '@/src/export/offline/chart-palette'
 import { escapeHtml } from '@/src/export/offline/html-utils'
 import { offlineStyles } from '@/src/export/offline/styles'
+import { EMPTY } from '@/src/export/offline/types'
 import type {
   OfflineDeviceViewModel,
   OfflineInverterViewModel,
@@ -11,6 +13,24 @@ import type {
 function metricCard(label: string, value: string, className = '') {
   const cls = className ? ` metric-card ${className}` : ' metric-card'
   return `<div class="${cls.trim()}"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div></div>`
+}
+
+function hasReportedValue(value: string | undefined) {
+  return Boolean(value && value.trim() && value !== EMPTY)
+}
+
+function compactFactStrip(
+  items: Array<{ label: string; value: string | undefined }>,
+  className: string,
+  emptyText: string
+) {
+  const reported = items.filter((item) => hasReportedValue(item.value))
+  if (!reported.length) return `<p class="${className}-empty">${escapeHtml(emptyText)}</p>`
+  return `<dl class="${className}" data-testid="${className}">${reported
+    .map(
+      (item) => `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(item.value ?? EMPTY)}</dd></div>`
+    )
+    .join('')}</dl>`
 }
 
 function recordList(items: Array<{ text: string }>, empty: string) {
@@ -74,31 +94,67 @@ function chartPanel(opts: {
 }
 
 function renderOverview(vm: OfflineOverviewViewModel) {
-  return `<header class="page-header"><div><p class="eyebrow">Offline Bundle</p><h1>${escapeHtml(vm.title)}</h1><p class="muted">双击本地 HTML 即可查看，无需服务与网络。</p></div><span class="readonly-badge">数据来源：${escapeHtml(vm.sourceLabel)}</span></header>
-<section class="card-grid">
-  ${metricCard('活跃设备', String(vm.summary.activeTotal))}
-  ${metricCard('在线 CT', String(vm.summary.onlineCtCount))}
-  ${metricCard('离线 CT', String(vm.summary.offlineCtCount))}
-  ${metricCard('严重逆流', String(vm.summary.criticalReverseFlowCount))}
+  const reverseItems = vm.items.filter((item) => item.reverseState === 'active')
+  const offlineItems = vm.items.filter((item) => item.offlineAlert)
+  const reverseSummary = reverseItems.length
+    ? `发现 ${reverseItems.length} 台在线 CT 正在逆流`
+    : '未发现在线 CT 逆流'
+  const offlineSummary = offlineItems.length
+    ? `${offlineItems.length} 台 CT 离线不足 7 天，需要确认`
+    : '没有需要提醒的离线 CT'
+  const reverseLabel = (item: OfflineOverviewViewModel['items'][number]) => {
+    if (item.reverseState === 'active') return `严重逆流：${item.reversePhases} 相`
+    if (item.reverseState === 'unknown-last-seen-reverse') return `当前逆流未知；离线前观测到 ${item.reversePhases} 相逆流`
+    if (item.reverseState === 'unknown') return 'CT 已离线，当前逆流状态未知'
+    return '三相当前未检测到逆流'
+  }
+  const offlineLabel = (item: OfflineOverviewViewModel['items'][number]) => {
+    if (item.isOnline) return '在线上报中'
+    if (item.offlineAlert) return `离线 ${item.offlineDuration}，请处理`
+    return `离线 ${item.offlineDuration}，已停止提醒`
+  }
+  return `<header class="page-header"><div><p class="eyebrow">Offline fleet review</p><h1>${escapeHtml(vm.title)}</h1><p class="muted">先处理在线逆流，再处理离线不足 7 天的 CT。超过 7 天的离线设备保留记录，但不再触发提醒。</p></div><div class="header-actions"><span class="readonly-badge">数据来源：${escapeHtml(vm.sourceLabel)}</span></div></header>
+<section class="fleet-risk-rack" aria-label="优先处理状态">
+  <article class="fleet-risk critical ${reverseItems.length ? 'is-active' : ''}"><span>逆流优先级</span><strong>${vm.summary.criticalReverseFlowCount}</strong><p>${escapeHtml(reverseSummary)}</p></article>
+  <article class="fleet-risk warning ${offlineItems.length ? 'is-active' : ''}"><span>待处理离线</span><strong>${vm.summary.actionableOfflineCount}</strong><p>${escapeHtml(offlineSummary)}</p></article>
+  <article class="fleet-risk neutral"><span>在线 / CT 总数</span><strong>${vm.summary.onlineCtCount} / ${vm.summary.activeTotal}</strong><p>${vm.summary.staleOfflineCount ? `${vm.summary.staleOfflineCount} 台离线超过 7 天，停止提醒` : '没有停止提醒的离线 CT'}</p></article>
 </section>
-<section class="panel"><h2>设备列表</h2>
-<table class="device-table"><thead><tr><th>SN</th><th>型号</th><th>状态</th><th>最后上报</th><th>逆流</th><th>打开</th></tr></thead><tbody>
-${vm.items
-  .map(
-    (item) => `<tr>
-  <td>${escapeHtml(item.deviceSn)}</td>
-  <td>${escapeHtml(item.productModel)}</td>
-  <td><span class="badge ${item.isOnline ? 'online' : 'offline'}">${item.isOnline ? '在线' : '离线'}</span></td>
-  <td>${escapeHtml(item.lastReportedAt)}</td>
-  <td>${item.reverseFlow ? `<span class="danger-value">${escapeHtml(item.reversePhases)} 相</span>` : '无'}</td>
-  <td><a href="${escapeHtml(item.href)}">CT 面板</a></td>
-</tr>`
-  )
-  .join('')}
-</tbody></table></section>`
+<section class="fleet-section"><div class="panel-heading"><div><p class="eyebrow">CT fleet</p><h2>CT 风险与运行概览</h2><p class="muted">每行是一台 CT，每列是一个关键运行指标；不展示型号。</p></div><span class="readonly-badge">共 ${vm.items.length} 台</span></div><div class="fleet-table-scroll" tabindex="0" aria-label="CT 风险与运行概览表格，可横向滚动查看全部指标"><table class="fleet-risk-table"><caption>CT 风险与运行概览</caption><thead><tr><th scope="col">CT SN</th><th scope="col">通信状态</th><th scope="col">当前逆流状态</th><th scope="col">今日发电量</th><th scope="col">运行状态</th><th scope="col">限流状态</th><th scope="col">Sub1G</th><th scope="col">WiFi 信号</th><th scope="col">最后上报</th><th scope="col">详情</th></tr></thead><tbody>
+${vm.items.map((item) => `<tr class="${item.reverseState === 'active' ? 'reverse-row' : ''} ${item.offlineAlert ? 'offline-row' : ''}" data-device-sn="${escapeHtml(item.deviceSn)}">
+  <th scope="row"><a class="fleet-table-sn" href="${escapeHtml(item.href)}">${escapeHtml(item.deviceSn)}</a><span class="fleet-table-subtext">${escapeHtml(offlineLabel(item))}</span></th>
+  <td><span class="badge ${item.isOnline ? 'online' : 'offline'}">${item.isOnline ? 'CT 在线' : 'CT 离线'}</span></td>
+  <td><span class="fleet-table-reverse ${item.reverseState === 'active' ? 'danger-value' : ''}">${escapeHtml(reverseLabel(item))}</span></td>
+  <td class="fleet-table-value">${escapeHtml(item.todayEnergy)}</td>
+  <td>${escapeHtml(item.runtimeState)}</td>
+  <td>${escapeHtml(item.limitState)}</td>
+  <td>${escapeHtml(item.sub1gState)}</td>
+  <td>${escapeHtml(item.wifiSignal)}</td>
+  <td><time>${escapeHtml(item.lastReportedAt)}</time></td>
+  <td><a class="fleet-table-action" href="${escapeHtml(item.href)}">查看详情</a></td>
+</tr>`).join('')}
+</tbody></table></div></section>`
 }
 
 function renderDevice(vm: OfflineDeviceViewModel) {
+  const runtimeFacts = compactFactStrip(
+    [
+      { label: '运行状态', value: vm.ctState },
+      { label: '工作模式', value: vm.workMode },
+      { label: '限流状态', value: vm.limitState }
+    ],
+    'ct-runtime-facts',
+    '运行状态暂无上报。'
+  )
+  const versionFacts = compactFactStrip(
+    [
+      { label: '软件版本', value: vm.softwareVersion },
+      { label: 'SubG 版本', value: vm.sub1gVersion },
+      { label: 'Sub1G 状态', value: vm.sub1gState },
+      { label: 'WiFi 信号强度', value: vm.wifiSignal }
+    ],
+    'ct-version-facts',
+    '版本与通信状态暂无上报。'
+  )
   const inverterCards = vm.inverters
     .map((inv) => {
       const clickable = (label: string, value: string, series: unknown, title: string) =>
@@ -145,27 +201,16 @@ function renderDevice(vm: OfflineDeviceViewModel) {
   </select>
 </form>
 <p class="muted">最近 ${vm.days} 天离线快照 · 时区 ${escapeHtml(vm.timezone)}</p></div>
-<div><span class="readonly-badge">数据来源：${escapeHtml(vm.sourceLabel)}</span><p class="muted">最后上报：${escapeHtml(vm.lastReportedAt)}</p></div></header>
+<div class="header-actions"><span class="readonly-badge">数据来源：${escapeHtml(vm.sourceLabel)}</span><p class="muted">最后上报：${escapeHtml(vm.lastReportedAt)}</p></div></header>
 
-<section class="panel ct-overview-panel"><div class="panel-heading"><div><h2>CT 当前状态</h2></div><span class="badge ${vm.ctOnline ? 'online' : 'offline'}">${vm.ctOnline ? 'CT 在线' : 'CT 离线'}</span></div>
-${vm.isLastKnown ? `<p class="muted">当前离线，以下为最后已知值。</p>` : ''}
-<ul class="status-list status-list-compact">
-  <li>软件版本号<br/><strong>${escapeHtml(vm.softwareVersion)}</strong></li>
-  <li>SubG 版本号<br/><strong>${escapeHtml(vm.sub1gVersion)}</strong></li>
-  <li>Sub1G 状态<br/><strong>${escapeHtml(vm.sub1gState)}</strong></li>
-  <li>运行状态<br/><strong>${escapeHtml(vm.ctState)}</strong></li>
-  <li>工作模式<br/><strong>${escapeHtml(vm.workMode)}</strong></li>
-</ul>
+<section class="panel ct-overview-panel"><div class="ct-overview-heading"><div><p class="eyebrow">CT runtime summary</p><h2>CT 运行摘要</h2>${vm.isLastKnown ? `<p class="muted">当前离线；功率与状态均为最后已知值。</p>` : `<p class="muted">运行、通信与功率快照来自最后一次上报。</p>`}</div><div class="ct-overview-state"><span class="badge ${vm.ctOnline ? 'online' : 'offline'}">${vm.ctOnline ? 'CT 在线' : 'CT 离线'}</span><span>状态持续 ${escapeHtml(vm.ctStatusDuration)}</span></div></div>
+<div class="ct-fact-band"><div><p class="ct-fact-label">运行与策略</p>${runtimeFacts}</div><div><p class="ct-fact-label">版本与通信</p>${versionFacts}</div></div>
 <div class="card-grid power-hero-grid overview-inner-grid">
   ${metricCard('当前家庭负载功率', vm.loadPower, 'is-hero')}
   ${metricCard('当前电网功率', vm.gridPower, 'is-hero')}
   ${metricCard('微逆发电总功率', vm.inverterTotalPower, 'is-hero')}
 </div>
-<div class="card-grid energy-secondary-grid overview-inner-grid">
-  ${metricCard('今日发电量', vm.todayEnergy)}
-  ${metricCard('今日发电时长', vm.todayDuration)}
-  ${metricCard('累计发电量', vm.totalEnergy)}
-</div>
+<dl class="energy-summary-strip" aria-label="发电量摘要"><div><dt>今日发电量</dt><dd>${escapeHtml(vm.todayEnergy)}</dd></div><div><dt>今日发电时长</dt><dd>${escapeHtml(vm.todayDuration)}</dd></div><div><dt>累计发电量</dt><dd>${escapeHtml(vm.totalEnergy)}</dd></div></dl>
 </section>
 
 <section class="reverse-safety-panel panel ${vm.reverseNow ? 'is-danger' : ''}" data-testid="reverse-safety-panel">
@@ -235,22 +280,23 @@ export function renderOfflineHtmlDocument(options: {
   echartsSrc?: string
   title?: string
 }): string {
-  const title = options.title || (options.vm.kind === 'overview' ? options.vm.title : options.vm.kind === 'device' ? options.vm.title : options.vm.title)
+  const vm = normalizeOfflineChartPalette(options.vm)
+  const title = options.title || vm.title
   const echartsTag = options.embedEcharts
     ? `<script>${options.echartsSource}\n</script>`
     : `<script src="${escapeHtml(options.echartsSrc || './assets/echarts.min.js')}"></script>`
 
   // For inverter pages, flatten nested charts onto vm for runtime series keys
   const runtimeVm =
-    options.vm.kind === 'inverter'
+    vm.kind === 'inverter'
       ? {
-          ...options.vm,
-          'charts.power': options.vm.charts.power,
-          'charts.temperature': options.vm.charts.temperature,
-          'charts.energy': options.vm.charts.energy,
-          'charts.packetLoss': options.vm.charts.packetLoss
+          ...vm,
+          'charts.power': vm.charts.power,
+          'charts.temperature': vm.charts.temperature,
+          'charts.energy': vm.charts.energy,
+          'charts.packetLoss': vm.charts.packetLoss
         }
-      : options.vm
+      : vm
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -258,14 +304,11 @@ export function renderOfflineHtmlDocument(options: {
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${escapeHtml(title)}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>${offlineStyles()}</style>
 </head>
 <body>
 <main>
-${pageBody(options.vm)}
+${pageBody(vm)}
 </main>
 <script>window.__OFFLINE_VM__ = ${JSON.stringify(runtimeVm).replace(/</g, '\\u003c')};</script>
 ${echartsTag}

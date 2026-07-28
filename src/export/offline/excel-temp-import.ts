@@ -5,9 +5,7 @@ import path from 'node:path'
 import { DeviceLogExcelAdapter, isDeviceLogExcel } from '@/src/adapters/source/device-log-excel-adapter'
 import { ExcelSourceAdapter } from '@/src/adapters/source/excel-adapter'
 import { parseSn } from '@/src/domain/validation'
-import { DeviceRepository } from '@/src/repositories/device-repository'
-import { TelemetryRepository } from '@/src/repositories/telemetry-repository'
-import { Prisma, PrismaClient } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 
 function normalizeMetricKey(input: string): string {
   return input.trim().toLowerCase()
@@ -18,9 +16,14 @@ export async function importExcelToDatabase(filePath: string, overrideSn?: strin
   const useDeviceLog = isDeviceLogExcel(filePath)
   const adapter = useDeviceLog ? new DeviceLogExcelAdapter(filePath) : new ExcelSourceAdapter(filePath)
   const adapterRows = await adapter.read()
+  // Do not import repositories before withTempSqliteFromExcel sets APP_DATABASE_URL.
+  const [{ DeviceRepository }, { TelemetryRepository }, { prisma }] = await Promise.all([
+    import('@/src/repositories/device-repository'),
+    import('@/src/repositories/telemetry-repository'),
+    import('@/src/lib/prisma')
+  ])
   const deviceRepo = new DeviceRepository()
   const telemetryRepo = new TelemetryRepository()
-  const { prisma } = await import('@/src/lib/prisma')
   const batch = await prisma.importBatch.create({
     data: { source: 'excel', fileName: path.basename(filePath), status: 'running' }
   })
@@ -126,8 +129,11 @@ export async function withTempSqliteFromExcel<T>(
     return await run()
   } finally {
     try {
-      const client = new PrismaClient()
-      await client.$disconnect()
+      // Callers may lazily import view-model builders inside the callback.
+      // Disconnect the shared singleton that opened the temporary SQLite file,
+      // rather than a new client that never held the file handle.
+      const { prisma } = await import('@/src/lib/prisma')
+      await prisma.$disconnect()
     } catch {
       // ignore
     }

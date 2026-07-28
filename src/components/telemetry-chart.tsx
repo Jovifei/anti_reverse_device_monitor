@@ -3,8 +3,11 @@
 import * as echarts from 'echarts'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { buildBeijingDayNightBands, seriesNeedsDayNightBands, visibleSeriesTimeRange } from '@/src/domain/beijing-sun'
+import { chartSeriesDisplayColor, NEGATIVE_POWER_ALERT_COLOR } from '@/src/domain/monitoring'
 
-const NEGATIVE_WARN_COLOR = '#c92828'
+/** Red is reserved for actual negative-power reverse-flow evidence only. */
+const NEGATIVE_WARN_COLOR = NEGATIVE_POWER_ALERT_COLOR
+const ZERO_REFERENCE_COLOR = '#94a3b8'
 
 type ChartPoint = [string, number | null]
 
@@ -147,7 +150,11 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
     const cutoff = latest - days * 86_400_000
     return series
       .filter((item) => selected.has(item.key))
-      .map((item) => ({ ...item, points: item.points.filter(([at]) => new Date(at).getTime() >= cutoff) }))
+      .map((item) => ({
+        ...item,
+        color: chartSeriesDisplayColor(item.key, item.color),
+        points: item.points.filter(([at]) => new Date(at).getTime() >= cutoff)
+      }))
       .filter((item) => item.points.length > 0)
   }, [days, selected, series])
   const enableDayNight = dayNightBands ?? seriesNeedsDayNightBands(visible.map((item) => item.unit))
@@ -296,8 +303,8 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
           const zeroLine = {
             silent: true,
             symbol: 'none' as const,
-            lineStyle: { color: NEGATIVE_WARN_COLOR, type: 'dashed' as const },
-            label: { formatter: '0 W 基准线', color: NEGATIVE_WARN_COLOR },
+            lineStyle: { color: ZERO_REFERENCE_COLOR, type: 'dashed' as const },
+            label: { formatter: '0 W 基准线', color: '#66788e' },
             data: [{ yAxis: 0 }]
           }
           // Primary series blanks negatives so only the red warning stroke/points remain visible there.
@@ -354,7 +361,7 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
 
   const primarySeries = advancedKeys.length ? series.filter((item) => !advancedKeys.includes(item.key)) : series
   const extraSeries = advancedKeys.length ? series.filter((item) => advancedKeys.includes(item.key)) : []
-  const renderToggle = (item: ClientChartSeries) => <label key={item.key}><input type="checkbox" checked={selected.has(item.key)} onChange={() => toggle(item.key)} disabled={item.points.length === 0} /><i style={{ backgroundColor: item.color }} />{item.label}{item.unit ? ` (${item.unit})` : ''}</label>
+  const renderToggle = (item: ClientChartSeries) => <label key={item.key}><input type="checkbox" checked={selected.has(item.key)} onChange={() => toggle(item.key)} disabled={item.points.length === 0} /><i style={{ backgroundColor: chartSeriesDisplayColor(item.key, item.color) }} />{item.label}{item.unit ? ` (${item.unit})` : ''}</label>
 
   return <section className="chart-panel">
     <div className="panel-heading"><h2>{title}</h2><button type="button" className="secondary-button" onClick={() => chartRef.current?.dispatchAction({ type: 'dataZoom', start: 0, end: 100 })}>复位缩放</button></div>
