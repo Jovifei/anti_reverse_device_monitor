@@ -386,6 +386,37 @@ export class TelemetryRepository {
     })
   }
 
+  async getLatestReportedAt({
+    deviceSn,
+    inverterIndex
+  }: {
+    deviceSn: string
+    inverterIndex?: number | null
+  }) {
+    const device = await this.db.device.findUnique({ where: { deviceSn }, select: { id: true } })
+    if (!device) return null
+
+    let inverterId: number | null | undefined
+    if (inverterIndex) {
+      const binding = await this.db.inverterBinding.findFirst({
+        where: { deviceId: device.id, inverterIndex },
+        select: { id: true }
+      })
+      if (!binding) return null
+      inverterId = binding.id
+    }
+
+    const row = await this.db.telemetry.findFirst({
+      where: {
+        deviceId: device.id,
+        ...(inverterId !== undefined ? { inverterId } : {})
+      },
+      orderBy: { reportedAt: 'desc' },
+      select: { reportedAt: true }
+    })
+    return row?.reportedAt ?? null
+  }
+
   async getLatestBefore({
     deviceSn,
     metricKey,

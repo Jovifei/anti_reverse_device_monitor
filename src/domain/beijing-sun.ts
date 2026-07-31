@@ -105,8 +105,8 @@ export type DayNightBandPlan = {
   sunsetLines: Array<{ xAxis: number; name: string }>
 }
 
-const DAY_COLOR = 'rgba(255, 236, 179, 0.38)'
-const NIGHT_COLOR = 'rgba(148, 163, 184, 0.32)'
+export const DAY_BAND_COLOR = 'rgba(255, 236, 179, 0.38)'
+export const NIGHT_BAND_COLOR = 'rgba(148, 163, 184, 0.32)'
 
 function clipBand(a: number, b: number, start: number, end: number): [number, number] | null {
   const left = Math.max(a, start)
@@ -143,18 +143,18 @@ export function buildBeijingDayNightBands(rangeStartMs: number, rangeEndMs: numb
     if (previousSunset !== null) {
       const night = clipBand(previousSunset, sun.sunriseMs, rangeStartMs, rangeEndMs)
       if (night) {
-        markAreaData.push([{ xAxis: night[0], itemStyle: { color: NIGHT_COLOR } }, { xAxis: night[1] }])
+        markAreaData.push([{ xAxis: night[0], itemStyle: { color: NIGHT_BAND_COLOR } }, { xAxis: night[1] }])
       }
     } else {
       const night = clipBand(rangeStartMs, sun.sunriseMs, rangeStartMs, rangeEndMs)
       if (night) {
-        markAreaData.push([{ xAxis: night[0], itemStyle: { color: NIGHT_COLOR } }, { xAxis: night[1] }])
+        markAreaData.push([{ xAxis: night[0], itemStyle: { color: NIGHT_BAND_COLOR } }, { xAxis: night[1] }])
       }
     }
 
     const day = clipBand(sun.sunriseMs, sun.sunsetMs, rangeStartMs, rangeEndMs)
     if (day) {
-      markAreaData.push([{ xAxis: day[0], itemStyle: { color: DAY_COLOR } }, { xAxis: day[1] }])
+      markAreaData.push([{ xAxis: day[0], itemStyle: { color: DAY_BAND_COLOR } }, { xAxis: day[1] }])
     }
 
     if (sun.sunriseMs >= rangeStartMs && sun.sunriseMs <= rangeEndMs) {
@@ -171,7 +171,7 @@ export function buildBeijingDayNightBands(rangeStartMs: number, rangeEndMs: numb
   if (previousSunset !== null) {
     const night = clipBand(previousSunset, rangeEndMs, rangeStartMs, rangeEndMs)
     if (night) {
-      markAreaData.push([{ xAxis: night[0], itemStyle: { color: NIGHT_COLOR } }, { xAxis: night[1] }])
+      markAreaData.push([{ xAxis: night[0], itemStyle: { color: NIGHT_BAND_COLOR } }, { xAxis: night[1] }])
     }
   }
 

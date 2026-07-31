@@ -356,11 +356,10 @@ export class DeviceService {
 
   async getDeviceChartData(sn: string, rawQuery: unknown) {
     const parsed = parseTelemetryQuery(rawQuery)
-    const endAt = new Date()
-    const startAt = new Date(endAt)
-    startAt.setDate(endAt.getDate() - parsed.days)
+    const deviceSn = parseSn(sn)
+    const { startAt, endAt } = await this.resolveChartWindow(deviceSn, parsed.days)
     const rows = await this.telemetryRepository.listTelemetryWindow({
-      deviceSn: parseSn(sn), startAt, endAt
+      deviceSn, startAt, endAt
     })
     return {
       windowStart: startAt.toISOString(),
@@ -372,12 +371,11 @@ export class DeviceService {
 
   async getInverterChartData(sn: string, rawIndex: string | number, rawQuery: unknown) {
     const parsed = parseTelemetryQuery(rawQuery)
+    const deviceSn = parseSn(sn)
     const inverterIndex = parseIndex(rawIndex)
-    const endAt = new Date()
-    const startAt = new Date(endAt)
-    startAt.setDate(endAt.getDate() - parsed.days)
+    const { startAt, endAt } = await this.resolveChartWindow(deviceSn, parsed.days, inverterIndex)
     const rows = await this.telemetryRepository.listTelemetryWindow({
-      deviceSn: parseSn(sn), inverterIndex, startAt, endAt
+      deviceSn, inverterIndex, startAt, endAt
     })
     return {
       windowStart: startAt.toISOString(),
@@ -395,15 +393,13 @@ export class DeviceService {
 
   async getReverseFlowAlarms(sn: string, rawQuery: unknown) {
     const parsed = parseTelemetryQuery(rawQuery)
-    const now = new Date()
-    const startAt = new Date(now)
-    startAt.setDate(now.getDate() - parsed.days)
     const deviceSn = parseSn(sn)
+    const { startAt, endAt } = await this.resolveChartWindow(deviceSn, parsed.days)
 
     const rows = await this.telemetryRepository.listTelemetryWindow({
       deviceSn,
       startAt,
-      endAt: now
+      endAt
     })
     const phases = [
       { phase: 'A' as const, aliases: ['active_power_ct1', 'ct.active_power.phase_a'] },
@@ -438,7 +434,7 @@ export class DeviceService {
         intervals.push({
           phase, sampleCount: active.sampleCount, minimumPower: active.minimumPower, severity: 'critical',
           startedAt: active.startedAt.toISOString(), endedAt: null,
-          durationMinutes: Math.max(0, Math.round((now.getTime() - active.startedAt.getTime()) / 60_000))
+          durationMinutes: Math.max(0, Math.round((endAt.getTime() - active.startedAt.getTime()) / 60_000))
         })
       }
       return intervals
@@ -449,6 +445,18 @@ export class DeviceService {
       days: parsed.days,
       alerts: alarms.sort((left, right) => right.startedAt.localeCompare(left.startedAt))
     }
+  }
+
+  /** 以设备最新上报时间为窗口终点，避免离线历史数据相对墙钟“过期”后只剩尾段。 */
+  private async resolveChartWindow(deviceSn: string, days: number, inverterIndex?: number) {
+    const latest = await this.telemetryRepository.getLatestReportedAt({
+      deviceSn,
+      inverterIndex
+    })
+    const endAt = latest ?? new Date()
+    const startAt = new Date(endAt)
+    startAt.setDate(endAt.getDate() - days)
+    return { startAt, endAt }
   }
 
   private toChartSeries(

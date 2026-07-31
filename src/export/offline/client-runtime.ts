@@ -219,24 +219,15 @@ export function clientRuntimeSource(): string {
     return { markAreaData: markAreaData, sunriseLines: sunriseLines, sunsetLines: sunsetLines };
   }
 
-  function visibleSeriesTimeRange(visible){
-    var min = Infinity, max = -Infinity;
-    visible.forEach(function(item){
-      (item.points || []).forEach(function(point){
-        var t = new Date(point[0]).getTime();
-        if (!Number.isFinite(t)) return;
-        if (t < min) min = t;
-        if (t > max) max = t;
-      });
-    });
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
-    return { startMs: min, endMs: max };
+  function axisWindowFor(series, days){
+    var endMs = latestPointMs(series) || Date.now();
+    return { startMs: endMs - days * 86400000, endMs: endMs };
   }
 
   function chartSeriesDisplayColor(item){
     const canonical = {
       load:'#1463d9', grid:'#0d9488', generation:'#ea580c',
-      'ct-a':'#2563eb', 'ct-b':'#7c3aed', 'ct-c':'#0891b2',
+      'ct-a':'#A67C00', 'ct-b':'#168449', 'ct-c':'#1463d9',
       'inv-a':'#65a30d', 'inv-b':'#7c3aed', 'inv-c':'#4f46e5',
       voltage:'#2563eb', frequency:'#9333ea',
       power:'#ea580c', pv1:'#1463d9', pv2:'#0d9488', temperature:'#0f766e'
@@ -259,8 +250,8 @@ export function clientRuntimeSource(): string {
     const enableDayNight = opts.dayNightBands != null ? opts.dayNightBands : visible.some(function(item){
       return item.unit === 'W' || item.unit === 'kWh' || item.unit === '°C' || item.unit === '%' || item.unit === 'V' || item.unit === 'Hz';
     });
-    const range = visibleSeriesTimeRange(visible);
-    const bands = enableDayNight && range ? buildBeijingDayNightBands(range.startMs, range.endMs) : null;
+    const axisWindow = axisWindowFor(series.filter(function(s){ return selected.has(s.key); }), days);
+    const bands = enableDayNight ? buildBeijingDayNightBands(axisWindow.startMs, axisWindow.endMs) : null;
     const dayNightSeries = (bands && bands.markAreaData.length) ? [{
       name: '昼夜背景', type:'line', data:[], silent:true, tooltip:{ show:false },
       markArea: { silent:true, data: bands.markAreaData },
@@ -295,9 +286,9 @@ export function clientRuntimeSource(): string {
           }).map(function(p){
             var v = Array.isArray(p.value) ? p.value[1] : p.value;
             if ((v === null || v === undefined) && p.seriesName && Array.isArray(p.value)) {
-              var series = visible.find(function(entry){ return entry.label === p.seriesName; });
+              var seriesItem = visible.find(function(entry){ return entry.label === p.seriesName; });
               var ts = p.value[0];
-              var hit = series && (series.points || []).find(function(point){
+              var hit = seriesItem && (seriesItem.points || []).find(function(point){
                 return point[0] === ts || new Date(point[0]).getTime() === new Date(ts).getTime();
               });
               if (hit) v = hit[1];
@@ -313,6 +304,8 @@ export function clientRuntimeSource(): string {
       legend: { top: 7, type: 'scroll', data: visible.map(function(item){ return item.label; }) },
       xAxis: {
         type: 'time',
+        min: axisWindow.startMs,
+        max: axisWindow.endMs,
         name: '时间',
         nameLocation: 'middle',
         nameGap: days <= 1 ? 28 : 36,
@@ -326,8 +319,8 @@ export function clientRuntimeSource(): string {
       },
       yAxis: axisPlan.yAxis,
       dataZoom: [
-        { type:'inside', xAxisIndex:0, zoomOnMouseWheel:true, moveOnMouseMove:true, moveOnMouseWheel:true },
-        { type:'slider', xAxisIndex:0, height:24, bottom:16, labelFormatter: function(value){ return formatAxisLabel(value, days); } }
+        { type:'inside', xAxisIndex:0, start:0, end:100, zoomOnMouseWheel:true, moveOnMouseMove:true, moveOnMouseWheel:true },
+        { type:'slider', xAxisIndex:0, start:0, end:100, height:24, bottom:16, labelFormatter: function(value){ return formatAxisLabel(value, days); } }
       ],
       series: dayNightSeries.concat(visible.flatMap(item => {
         const yIndex = yAxisIndexFor(item, axisPlan.dual);

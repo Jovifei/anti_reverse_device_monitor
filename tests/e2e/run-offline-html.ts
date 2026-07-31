@@ -59,7 +59,7 @@ async function main() {
     const host = document.querySelector('.dialog .chart-host')
     return api && host ? JSON.stringify(api.getInstanceByDom(host)?.getOption().series ?? []) : ''
   })
-  if (!normalPhaseOption.includes('#2563eb') || normalPhaseOption.includes('#c92828')) {
+  if (!normalPhaseOption.includes('#A67C00') || normalPhaseOption.includes('#c92828')) {
     throw new Error('正常 A 相曲线未使用非告警色，或错误出现红色逆流层')
   }
   await page.screenshot({ path: path.join(reviewDir, 'offline-phase-dialog.png') })

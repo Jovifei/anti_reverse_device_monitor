@@ -91,7 +91,8 @@ export function buildInverterViewModelFromDevice(
       ? [{ text: `当前显示为最后已知值；CT 最后上报：${device.lastReportedAt}` }]
       : [],
     charts: inverter.charts,
-    deviceHref: `./device-${safeFileToken(device.deviceSn)}.html`
+    deviceHref: `./device-${safeFileToken(device.deviceSn)}.html`,
+    overviewHref: './index.html'
   }
 }
 
@@ -169,6 +170,7 @@ export async function buildInverterViewModel(
       energy: toOfflineSeries(charts.energy),
       packetLoss: toOfflineSeries(charts.packetLoss ?? [])
     },
-    deviceHref: `./device-${safeFileToken(deviceSn)}.html`
+    deviceHref: `./device-${safeFileToken(deviceSn)}.html`,
+    overviewHref: './index.html'
   }
 }

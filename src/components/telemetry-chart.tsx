@@ -2,7 +2,7 @@
 
 import * as echarts from 'echarts'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { buildBeijingDayNightBands, seriesNeedsDayNightBands, visibleSeriesTimeRange } from '@/src/domain/beijing-sun'
+import { buildBeijingDayNightBands, seriesNeedsDayNightBands } from '@/src/domain/beijing-sun'
 import { chartSeriesDisplayColor, NEGATIVE_POWER_ALERT_COLOR } from '@/src/domain/monitoring'
 
 /** Red is reserved for actual negative-power reverse-flow evidence only. */
@@ -139,7 +139,7 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
   const chartRef = useRef<echarts.ECharts | null>(null)
   const [days, setDays] = useState(7)
   const [selected, setSelected] = useState(() => new Set(initialSelectedKeys ?? series.filter((item) => item.points.length > 0).map((item) => item.key)))
-  const visible = useMemo(() => {
+  const axisWindow = useMemo(() => {
     const latest = series.reduce((max, item) => {
       for (const [at] of item.points) {
         const t = new Date(at).getTime()
@@ -147,16 +147,21 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
       }
       return max
     }, 0) || Date.now()
-    const cutoff = latest - days * 86_400_000
+    return { startMs: latest - days * 86_400_000, endMs: latest }
+  }, [days, series])
+  const visible = useMemo(() => {
     return series
       .filter((item) => selected.has(item.key))
       .map((item) => ({
         ...item,
         color: chartSeriesDisplayColor(item.key, item.color),
-        points: item.points.filter(([at]) => new Date(at).getTime() >= cutoff)
+        points: item.points.filter(([at]) => {
+          const t = new Date(at).getTime()
+          return t >= axisWindow.startMs && t <= axisWindow.endMs
+        })
       }))
       .filter((item) => item.points.length > 0)
-  }, [days, selected, series])
+  }, [axisWindow, selected, series])
   const enableDayNight = dayNightBands ?? seriesNeedsDayNightBands(visible.map((item) => item.unit))
 
   useEffect(() => {
@@ -181,8 +186,7 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
     if (!chart) return
     const axisPlan = buildAxisPlan(visible)
     const unitByName = Object.fromEntries(visible.map((item) => [item.label, item.unit || '']))
-    const range = visibleSeriesTimeRange(visible.map((item) => item.points))
-    const bands = enableDayNight && range ? buildBeijingDayNightBands(range.startMs, range.endMs) : null
+    const bands = enableDayNight ? buildBeijingDayNightBands(axisWindow.startMs, axisWindow.endMs) : null
     const showSunLabels = days <= 1
     const dayNightSeries = bands && bands.markAreaData.length
       ? [{
@@ -234,8 +238,8 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
               let raw = Array.isArray(row.value) ? row.value[1] : null
               if ((raw === null || raw === undefined) && row.seriesName && Array.isArray(row.value)) {
                 const series = visible.find((entry) => entry.label === row.seriesName)
-                const ts = row.value[0]
-                const hit = series?.points.find((point) => point[0] === ts || new Date(point[0]).getTime() === new Date(ts).getTime())
+                const pointTs = row.value[0]
+                const hit = series?.points.find((point) => point[0] === pointTs || new Date(point[0]).getTime() === new Date(pointTs).getTime())
                 if (hit) raw = hit[1]
               }
               const text = raw === null || raw === undefined ? '—' : Number(raw).toLocaleString('zh-CN', { maximumFractionDigits: 2 })
@@ -249,6 +253,8 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
       legend: { top: 7, type: 'scroll', textStyle: { color: '#667085' }, data: visible.map((item) => item.label) },
       xAxis: {
         type: 'time',
+        min: axisWindow.startMs,
+        max: axisWindow.endMs,
         name: '时间',
         nameLocation: 'middle',
         nameGap: days <= 1 ? 28 : 36,
@@ -263,8 +269,8 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
       },
       yAxis: axisPlan.yAxis,
       dataZoom: [
-        { type: 'inside', xAxisIndex: 0, zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: true },
-        { type: 'slider', xAxisIndex: 0, height: 24, bottom: 16, labelFormatter: (value: number) => formatAxisLabel(value, days) }
+        { type: 'inside', xAxisIndex: 0, start: 0, end: 100, zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: true },
+        { type: 'slider', xAxisIndex: 0, start: 0, end: 100, height: 24, bottom: 16, labelFormatter: (value: number) => formatAxisLabel(value, days) }
       ],
       series: [
         ...dayNightSeries,
@@ -348,7 +354,7 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
         })
       ]
     }, { notMerge: true })
-  }, [visible, days, enableDayNight])
+  }, [visible, days, enableDayNight, axisWindow])
 
   function toggle(key: string) {
     setSelected((current) => {

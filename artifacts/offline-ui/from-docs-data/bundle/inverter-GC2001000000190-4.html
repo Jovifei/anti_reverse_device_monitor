@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>防逆流设备离线总览</title>
+<title>微型逆变器 4</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
@@ -43,50 +43,75 @@ button{border:1px solid var(--blue);border-radius:9px;background:var(--blue);col
 </head>
 <body>
 <main>
-<header class="page-header"><div><p class="eyebrow">Offline fleet review</p><h1>防逆流设备离线总览</h1><p class="muted">先处理在线逆流，再处理离线不足 7 天的 CT。超过 7 天的离线设备保留记录，但不再触发提醒。</p></div><div class="header-actions"><span class="readonly-badge">数据来源：Demo SQLite</span></div></header>
-<section class="fleet-risk-rack" aria-label="优先处理状态">
-  <article class="fleet-risk critical "><span>逆流优先级</span><strong>0</strong><p>未发现在线 CT 逆流</p></article>
-  <article class="fleet-risk warning is-active"><span>待处理离线</span><strong>3</strong><p>3 台 CT 离线不足 7 天，需要确认</p></article>
-  <article class="fleet-risk neutral"><span>在线 / CT 总数</span><strong>0 / 3</strong><p>没有停止提醒的离线 CT</p></article>
+<header class="page-header"><div>
+<p class="nav-back"><a class="utility-link" href="./device-GC2001000000190.html">← 返回 CT GC2001000000190</a>
+ <a class="utility-link" href="./index.html">防逆流设备主页</a></p>
+<p class="eyebrow">微型逆变器详情</p><h1>微型逆变器 4</h1>
+<p class="muted">SN：— · — · —</p></div>
+<span class="readonly-badge">数据来源：Excel 导入</span></header>
+<section class="card-grid"><div class="metric-card"><div class="label">发电总功率</div><div class="value">—</div></div><div class="metric-card"><div class="label">PV1</div><div class="value">—</div></div><div class="metric-card"><div class="label">PV2</div><div class="value">—</div></div></section>
+<section class="card-grid"><div class="metric-card"><div class="label">今日发电量</div><div class="value">—</div></div><div class="metric-card"><div class="label">累计发电量</div><div class="value">—</div></div><div class="metric-card"><div class="label">今日发电时长</div><div class="value">—</div></div></section>
+<section class="panel"><ul class="status-list">
+<li>在线状态<br/><strong><span class="badge offline">离线</span></strong></li>
+<li>工作状态<br/><strong>—</strong></li>
+<li>当前是否发电<br/><strong>否</strong></li>
+<li>内部温度<br/><strong>—</strong></li>
+<li>丢包率<br/><strong>—</strong></li>
+<li>所在相<br/><strong>—</strong></li>
+<li>接入点<br/><strong>—</strong></li>
+<li>防逆流开关<br/><strong>—</strong></li>
+<li>发电开关<br/><strong>—</strong></li>
+<li>功率限制<br/><strong>—</strong></li>
+<li>最新故障<br/><strong>当前无故障</strong></li>
+<li>故障码<br/><strong>0x00000000</strong></li>
+</ul></section>
+<section class="chart-panel" data-chart-panel data-series-key="charts.power" data-initial-keys="" data-advanced-keys="">
+  <div class="panel-heading"><h2>功率曲线（W）</h2><button type="button" class="chart-reset">复位</button></div>
+  <div class="chart-controls day-controls">
+    <label><input type="radio" name="days-charts.power" value="1"/> 1 天</label>
+    <label><input type="radio" name="days-charts.power" value="3"/> 3 天</label>
+    <label><input type="radio" name="days-charts.power" value="7" checked/> 7 天</label>
+    <span class="day-night-legend" hidden><i class="day"></i>昼 <i class="night"></i>夜 · 北京日出日落</span>
+  </div>
+  <div class="series-toggles"></div>
+  <div class="chart-host" style="height:420px"></div>
 </section>
-<section class="fleet-section"><div class="panel-heading"><div><p class="eyebrow">CT fleet</p><h2>CT 风险与运行概览</h2><p class="muted">每行是一台 CT，每列是一个关键运行指标；不展示型号。</p></div><span class="readonly-badge">共 3 台</span></div><div class="fleet-table-scroll" tabindex="0" aria-label="CT 风险与运行概览表格，可横向滚动查看全部指标"><table class="fleet-risk-table"><caption>CT 风险与运行概览</caption><thead><tr><th scope="col">CT SN</th><th scope="col">通信状态</th><th scope="col">当前逆流状态</th><th scope="col">今日发电量</th><th scope="col">运行状态</th><th scope="col">限流状态</th><th scope="col">Sub1G</th><th scope="col">WiFi 信号</th><th scope="col">最后上报</th><th scope="col">详情</th></tr></thead><tbody>
-<tr class=" offline-row" data-device-sn="GC2001000000190">
-  <th scope="row"><a class="fleet-table-sn" href="./device-GC2001000000190.html">GC2001000000190</a><span class="fleet-table-subtext">离线 57 分钟，请处理</span></th>
-  <td><span class="badge offline">CT 离线</span></td>
-  <td><span class="fleet-table-reverse ">CT 已离线，当前逆流状态未知</span></td>
-  <td class="fleet-table-value">1.78 kWh</td>
-  <td>等待安装电流环</td>
-  <td>—</td>
-  <td>—</td>
-  <td>68</td>
-  <td><time>2026/07/31 10:21:02</time></td>
-  <td><a class="fleet-table-action" href="./device-GC2001000000190.html">查看详情</a></td>
-</tr><tr class=" offline-row" data-device-sn="GC2001000000252">
-  <th scope="row"><a class="fleet-table-sn" href="./device-GC2001000000252.html">GC2001000000252</a><span class="fleet-table-subtext">离线 59 分钟，请处理</span></th>
-  <td><span class="badge offline">CT 离线</span></td>
-  <td><span class="fleet-table-reverse ">CT 已离线，当前逆流状态未知</span></td>
-  <td class="fleet-table-value">7.94 kWh</td>
-  <td>等待安装电流环</td>
-  <td>—</td>
-  <td>—</td>
-  <td>70</td>
-  <td><time>2026/07/31 10:19:45</time></td>
-  <td><a class="fleet-table-action" href="./device-GC2001000000252.html">查看详情</a></td>
-</tr><tr class=" offline-row" data-device-sn="GC2001000000457">
-  <th scope="row"><a class="fleet-table-sn" href="./device-GC2001000000457.html">GC2001000000457</a><span class="fleet-table-subtext">离线 58 分钟，请处理</span></th>
-  <td><span class="badge offline">CT 离线</span></td>
-  <td><span class="fleet-table-reverse ">CT 已离线，当前逆流状态未知</span></td>
-  <td class="fleet-table-value">8.36 kWh</td>
-  <td>等待安装电流环</td>
-  <td>—</td>
-  <td>—</td>
-  <td>76</td>
-  <td><time>2026/07/31 10:20:42</time></td>
-  <td><a class="fleet-table-action" href="./device-GC2001000000457.html">查看详情</a></td>
-</tr>
-</tbody></table></div></section>
+<section class="chart-panel" data-chart-panel data-series-key="charts.temperature" data-initial-keys="" data-advanced-keys="">
+  <div class="panel-heading"><h2>内部温度（°C）</h2><button type="button" class="chart-reset">复位</button></div>
+  <div class="chart-controls day-controls">
+    <label><input type="radio" name="days-charts.temperature" value="1"/> 1 天</label>
+    <label><input type="radio" name="days-charts.temperature" value="3"/> 3 天</label>
+    <label><input type="radio" name="days-charts.temperature" value="7" checked/> 7 天</label>
+    <span class="day-night-legend" hidden><i class="day"></i>昼 <i class="night"></i>夜 · 北京日出日落</span>
+  </div>
+  <div class="series-toggles"></div>
+  <div class="chart-host" style="height:360px"></div>
+</section>
+<section class="chart-panel" data-chart-panel data-series-key="charts.energy" data-initial-keys="" data-advanced-keys="">
+  <div class="panel-heading"><h2>今日发电量（kWh）</h2><button type="button" class="chart-reset">复位</button></div>
+  <div class="chart-controls day-controls">
+    <label><input type="radio" name="days-charts.energy" value="1"/> 1 天</label>
+    <label><input type="radio" name="days-charts.energy" value="3"/> 3 天</label>
+    <label><input type="radio" name="days-charts.energy" value="7" checked/> 7 天</label>
+    <span class="day-night-legend" hidden><i class="day"></i>昼 <i class="night"></i>夜 · 北京日出日落</span>
+  </div>
+  <div class="series-toggles"></div>
+  <div class="chart-host" style="height:360px"></div>
+</section>
+<section class="chart-panel" data-chart-panel data-series-key="charts.packetLoss" data-initial-keys="" data-advanced-keys="">
+  <div class="panel-heading"><h2>丢包率（%）</h2><button type="button" class="chart-reset">复位</button></div>
+  <div class="chart-controls day-controls">
+    <label><input type="radio" name="days-charts.packetLoss" value="1"/> 1 天</label>
+    <label><input type="radio" name="days-charts.packetLoss" value="3"/> 3 天</label>
+    <label><input type="radio" name="days-charts.packetLoss" value="7" checked/> 7 天</label>
+    <span class="day-night-legend" hidden><i class="day"></i>昼 <i class="night"></i>夜 · 北京日出日落</span>
+  </div>
+  <div class="series-toggles"></div>
+  <div class="chart-host" style="height:360px"></div>
+</section>
+<section class="panel"><h3>故障变化</h3><div class="record-scroll"><ul class="record-list"><li>2026/07/29 15:33:40 · appeared · PV1 输入欠压 · 0x00000400</li><li>2026/07/29 15:39:54 · appeared · 电网1级欠压、一级电网频率问题、PV1 输入欠压 · 0x00000414</li><li>2026/07/29 15:39:57 · appeared · 电网1级欠压、电网2级欠压、一级电网频率问题、PV1 输入欠压 · 0x0000041C</li><li>2026/07/30 13:59:11 · recovered · — · 0x00000000</li></ul></div><h3>离线区间</h3><div class="record-scroll"><ul class="record-list"><li>下线 2026/07/30 13:59:11 · 恢复 2026/07/31 11:18:31 · 21 小时 19 分钟</li></ul></div></section>
 </main>
-<script>window.__OFFLINE_VM__ = {"kind":"overview","title":"防逆流设备离线总览","sourceLabel":"Demo SQLite","items":[{"deviceSn":"GC2001000000190","isOnline":false,"lastReportedAt":"2026/07/31 10:21:02","offlineDuration":"57 分钟","offlineAlert":true,"reverseState":"unknown","reversePhases":"—","todayEnergy":"1.78 kWh","runtimeState":"等待安装电流环","limitState":"—","sub1gState":"—","wifiSignal":"68","href":"./device-GC2001000000190.html"},{"deviceSn":"GC2001000000252","isOnline":false,"lastReportedAt":"2026/07/31 10:19:45","offlineDuration":"59 分钟","offlineAlert":true,"reverseState":"unknown","reversePhases":"—","todayEnergy":"7.94 kWh","runtimeState":"等待安装电流环","limitState":"—","sub1gState":"—","wifiSignal":"70","href":"./device-GC2001000000252.html"},{"deviceSn":"GC2001000000457","isOnline":false,"lastReportedAt":"2026/07/31 10:20:42","offlineDuration":"58 分钟","offlineAlert":true,"reverseState":"unknown","reversePhases":"—","todayEnergy":"8.36 kWh","runtimeState":"等待安装电流环","limitState":"—","sub1gState":"—","wifiSignal":"76","href":"./device-GC2001000000457.html"}],"summary":{"activeTotal":3,"onlineCtCount":0,"offlineCtCount":3,"criticalReverseFlowCount":0,"actionableOfflineCount":3,"staleOfflineCount":0}};</script>
+<script>window.__OFFLINE_VM__ = {"kind":"inverter","title":"微型逆变器 4","deviceSn":"GC2001000000190","inverterIndex":4,"inverterSn":"—","sourceLabel":"Excel 导入","softwareVersion":"—","hardwareVersion":"—","sub1gVersion":"—","statusLabel":"离线","statusVariant":"offline","workState":"—","generating":"否","power":"—","pv1":"—","pv2":"—","todayEnergy":"—","totalEnergy":"—","todayDuration":"—","temperature":"—","packetLoss":"—","phase":"—","connectionPoint":"—","antiReverse":"—","generationEnabled":"—","powerLimit":"—","latestFault":"当前无故障","faultHex":"0x00000000","faultChanges":[{"text":"2026/07/29 15:33:40 · appeared · PV1 输入欠压 · 0x00000400"},{"text":"2026/07/29 15:39:54 · appeared · 电网1级欠压、一级电网频率问题、PV1 输入欠压 · 0x00000414"},{"text":"2026/07/29 15:39:57 · appeared · 电网1级欠压、电网2级欠压、一级电网频率问题、PV1 输入欠压 · 0x0000041C"},{"text":"2026/07/30 13:59:11 · recovered · — · 0x00000000"}],"offlineWindows":[{"text":"下线 2026/07/30 13:59:11 · 恢复 2026/07/31 11:18:31 · 21 小时 19 分钟"}],"charts":{"power":[{"key":"power","label":"发电总功率","unit":"W","color":"#ea580c","points":[]},{"key":"pv1","label":"PV1 功率","unit":"W","color":"#1463d9","points":[]},{"key":"pv2","label":"PV2 功率","unit":"W","color":"#0d9488","points":[]}],"temperature":[{"key":"temperature","label":"内部温度","unit":"°C","color":"#0f766e","points":[]}],"energy":[{"key":"inverter-today-energy","label":"今日发电量","unit":"kWh","color":"#8b5e34","dailyReset":true,"points":[]}],"packetLoss":[{"key":"packet-loss","label":"丢包率","unit":"%","color":"#64748b","step":"end","points":[]}]},"deviceHref":"./device-GC2001000000190.html","overviewHref":"./index.html","charts.power":[{"key":"power","label":"发电总功率","unit":"W","color":"#ea580c","points":[]},{"key":"pv1","label":"PV1 功率","unit":"W","color":"#1463d9","points":[]},{"key":"pv2","label":"PV2 功率","unit":"W","color":"#0d9488","points":[]}],"charts.temperature":[{"key":"temperature","label":"内部温度","unit":"°C","color":"#0f766e","points":[]}],"charts.energy":[{"key":"inverter-today-energy","label":"今日发电量","unit":"kWh","color":"#8b5e34","dailyReset":true,"points":[]}],"charts.packetLoss":[{"key":"packet-loss","label":"丢包率","unit":"%","color":"#64748b","step":"end","points":[]}]};</script>
 <script src="./assets/echarts.min.js"></script>
 <script>(() => {
   const vm = window.__OFFLINE_VM__;

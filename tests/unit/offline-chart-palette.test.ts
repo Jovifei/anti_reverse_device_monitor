@@ -15,8 +15,8 @@ describe('offline chart palette normalization', () => {
     } as unknown as OfflineDeviceViewModel
 
     const normalized = normalizeOfflineChartPalette(vm) as OfflineDeviceViewModel
-    expect(normalized.powerSeries[0]?.color).toBe('#2563eb')
-    expect(normalized.phases[0]?.series[0]?.color).toBe('#2563eb')
+    expect(normalized.powerSeries[0]?.color).toBe('#A67C00')
+    expect(normalized.phases[0]?.series[0]?.color).toBe('#A67C00')
     expect(normalized.inverters[0]?.charts.power[0]?.color).toBe('#7c3aed')
     expect(normalized.inverters[0]?.charts.temperature[0]?.color).toBe('#0f766e')
   })

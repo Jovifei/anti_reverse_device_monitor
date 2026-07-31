@@ -158,9 +158,11 @@ export async function buildDeviceViewModel(
         energy: toOfflineSeries(chartBundle?.energy ?? []),
         packetLoss: toOfflineSeries(chartBundle?.packetLoss ?? [])
       },
-      detailHref: options?.includeDetailLinks
-        ? `./inverter-${safeDevice(canonicalSn)}-${inverterIndex}.html`
-        : undefined
+      detailHref:
+        options?.includeDetailLinks &&
+        !(status.variant === 'unknown' && displayOrEmpty(binding?.inverterSn ?? summary?.inverterSn) === EMPTY && displayValue(powerRow, 'W') === EMPTY)
+          ? `./inverter-${safeDevice(canonicalSn)}-${inverterIndex}.html`
+          : undefined
     }
   })
 
@@ -205,6 +207,10 @@ export async function buildDeviceViewModel(
     workMode: resolveStatusLabel('work_mode', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.workMode))) ?? EMPTY,
     loadPower: displayValue(findLatestMetric(latest, ['load_power', 'ct.load_power']), 'W'),
     gridPower: displayValue(findLatestMetric(latest, ['grid_power', 'ct.grid_power']), 'W'),
+    gridPowerNegative: (() => {
+      const value = numericValue(findLatestMetric(latest, ['grid_power', 'ct.grid_power']))
+      return value !== null && value < 0
+    })(),
     inverterTotalPower: displayValue(
       findLatestMetric(latest, ['inverter_total_power', 'total_generation_power', 'micro_total_power']),
       'W'

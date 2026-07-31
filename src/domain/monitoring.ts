@@ -30,9 +30,9 @@ export const CT_POWER_METRICS: MetricDefinition[] = [
   { key: 'load', label: '家庭负载功率', unit: 'W', aliases: ['load_power', 'ct.load_power'], color: '#1463d9' },
   { key: 'grid', label: '电网功率', unit: 'W', aliases: ['grid_power', 'ct.grid_power'], color: '#0d9488', markNegative: true },
   { key: 'generation', label: '微逆发电总功率', unit: 'W', aliases: ['inverter_total_power', 'total_generation_power', 'micro_total_power'], color: '#ea580c' },
-  { key: 'ct-a', label: 'A相 CT 有功功率', unit: 'W', aliases: ['active_power_ct1', 'ct.active_power.phase_a'], color: '#2563eb', markNegative: true },
-  { key: 'ct-b', label: 'B相 CT 有功功率', unit: 'W', aliases: ['active_power_ct2', 'ct.active_power.phase_b'], color: '#7c3aed', markNegative: true },
-  { key: 'ct-c', label: 'C相 CT 有功功率', unit: 'W', aliases: ['active_power_ct3', 'ct.active_power.phase_c'], color: '#0891b2', markNegative: true },
+  { key: 'ct-a', label: 'A相 CT 有功功率', unit: 'W', aliases: ['active_power_ct1', 'ct.active_power.phase_a'], color: '#A67C00', markNegative: true },
+  { key: 'ct-b', label: 'B相 CT 有功功率', unit: 'W', aliases: ['active_power_ct2', 'ct.active_power.phase_b'], color: '#168449', markNegative: true },
+  { key: 'ct-c', label: 'C相 CT 有功功率', unit: 'W', aliases: ['active_power_ct3', 'ct.active_power.phase_c'], color: '#1463d9', markNegative: true },
   { key: 'inv-a', label: 'A相微逆当前功率', unit: 'W', aliases: ['active_power_inv1', 'inverter_power_ct1'], color: '#65a30d' },
   { key: 'inv-b', label: 'B相微逆当前功率', unit: 'W', aliases: ['active_power_inv2', 'inverter_power_ct2'], color: '#7c3aed' },
   { key: 'inv-c', label: 'C相微逆当前功率', unit: 'W', aliases: ['active_power_inv3', 'inverter_power_ct3'], color: '#4f46e5' }

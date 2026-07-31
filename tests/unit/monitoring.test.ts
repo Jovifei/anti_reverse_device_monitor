@@ -55,14 +55,14 @@ describe('CT history chart alarm colors', () => {
     const regularPowerKeys = ['ct-a', 'ct-b', 'ct-c', 'inv-a', 'inv-b', 'inv-c']
     const colors = CT_POWER_METRICS.filter((item) => regularPowerKeys.includes(item.key)).map((item) => item.color)
 
-    expect(colors).toEqual(['#2563eb', '#7c3aed', '#0891b2', '#65a30d', '#7c3aed', '#4f46e5'])
+    expect(colors).toEqual(['#A67C00', '#168449', '#1463d9', '#65a30d', '#7c3aed', '#4f46e5'])
     expect(colors).not.toContain('#c92828')
     expect(colors).not.toContain('#dc2626')
     expect(CT_POWER_METRICS.filter((item) => item.markNegative).map((item) => item.key)).toEqual(['grid', 'ct-a', 'ct-b', 'ct-c'])
   })
 
   it('overrides stale alert identity colors before normal chart rendering', () => {
-    expect(chartSeriesDisplayColor('ct-a', '#dc2626')).toBe('#2563eb')
+    expect(chartSeriesDisplayColor('ct-a', '#dc2626')).toBe('#A67C00')
     expect(chartSeriesDisplayColor('inv-b', '#be123c')).toBe('#7c3aed')
     expect(chartSeriesDisplayColor('temperature', '#dc2626')).toBe('#0f766e')
     expect(chartSeriesDisplayColor('unknown-series', '#c92828')).toBe('#2563eb')

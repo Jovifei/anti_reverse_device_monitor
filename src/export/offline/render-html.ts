@@ -182,13 +182,17 @@ function renderDevice(vm: OfflineDeviceViewModel) {
   <div class="inverter-metric"><span class="label">软件版本</span><strong>${escapeHtml(inv.softwareVersion)}</strong></div>
   <div class="inverter-metric"><span class="label">最新故障</span><strong>${escapeHtml(inv.latestFault)}</strong></div>
   <div class="inverter-metric"><span class="label">故障码</span><strong>${escapeHtml(inv.faultHex)}</strong></div>
-  ${inv.detailHref ? `<p><a href="${escapeHtml(inv.detailHref)}">打开微逆详情</a></p>` : ''}
+  ${
+    inv.detailHref
+      ? `<a class="card-link" href="${escapeHtml(inv.detailHref)}">查看微逆详情</a>`
+      : `<span class="inverter-meta">暂无详情页</span>`
+  }
 </article>`
     })
     .join('')
 
-  return `${vm.overviewHref ? `<p><a href="${escapeHtml(vm.overviewHref)}">← 返回总览</a></p>` : ''}
-<header class="page-header"><div><p class="eyebrow">CT 防逆流设备运行</p>
+  return `<header class="page-header"><div><p class="eyebrow">CT 防逆流设备运行</p>
+${vm.overviewHref ? `<p class="nav-back"><a class="utility-link" href="${escapeHtml(vm.overviewHref)}">← 返回防逆流设备主页</a></p>` : ''}
 <form class="device-switcher" data-device-switcher>
   <label for="device-sn-select">设备 SN</label>
   <select id="device-sn-select" data-device-select aria-label="选择设备">
@@ -205,12 +209,18 @@ function renderDevice(vm: OfflineDeviceViewModel) {
 
 <section class="panel ct-overview-panel"><div class="ct-overview-heading"><div><p class="eyebrow">CT runtime summary</p><h2>CT 运行摘要</h2>${vm.isLastKnown ? `<p class="muted">当前离线；功率与状态均为最后已知值。</p>` : `<p class="muted">运行、通信与功率快照来自最后一次上报。</p>`}</div><div class="ct-overview-state"><span class="badge ${vm.ctOnline ? 'online' : 'offline'}">${vm.ctOnline ? 'CT 在线' : 'CT 离线'}</span><span>状态持续 ${escapeHtml(vm.ctStatusDuration)}</span></div></div>
 <div class="ct-fact-band"><div><p class="ct-fact-label">运行与策略</p>${runtimeFacts}</div><div><p class="ct-fact-label">版本与通信</p>${versionFacts}</div></div>
+<div class="ct-kpi-band" aria-label="功率与发电量摘要">
 <div class="card-grid power-hero-grid overview-inner-grid">
   ${metricCard('当前家庭负载功率', vm.loadPower, 'is-hero')}
-  ${metricCard('当前电网功率', vm.gridPower, 'is-hero')}
   ${metricCard('微逆发电总功率', vm.inverterTotalPower, 'is-hero')}
+  ${metricCard('当前电网功率', vm.gridPower, `is-hero${vm.gridPowerNegative ? ' is-danger' : ''}`)}
 </div>
-<dl class="energy-summary-strip" aria-label="发电量摘要"><div><dt>今日发电量</dt><dd>${escapeHtml(vm.todayEnergy)}</dd></div><div><dt>今日发电时长</dt><dd>${escapeHtml(vm.todayDuration)}</dd></div><div><dt>累计发电量</dt><dd>${escapeHtml(vm.totalEnergy)}</dd></div></dl>
+<div class="card-grid energy-secondary-grid overview-inner-grid">
+  ${metricCard('今日发电时长', vm.todayDuration, 'is-hero')}
+  ${metricCard('今日发电量', vm.todayEnergy, 'is-hero')}
+  ${metricCard('累计发电量', vm.totalEnergy, 'is-hero')}
+</div>
+</div>
 </section>
 
 <section class="reverse-safety-panel panel ${vm.reverseNow ? 'is-danger' : ''}" data-testid="reverse-safety-panel">
@@ -219,7 +229,7 @@ function renderDevice(vm: OfflineDeviceViewModel) {
   <p class="${vm.reverseNow ? 'active-alert' : 'muted'}">${escapeHtml(vm.activeAlertText)}</p>
   <div class="phase-grid">${vm.phases
     .map(
-      (phase) => `<button type="button" class="phase-card ${phase.reverse ? 'danger' : ''}" data-open-series='${seriesAttr(phase.series)}' data-dialog-title="${escapeHtml(phase.phase)} 相 CT 有功功率历史">
+      (phase) => `<button type="button" class="phase-card phase-${escapeHtml(phase.phase.toLowerCase())} ${phase.reverse ? 'danger' : ''}" data-open-series='${seriesAttr(phase.series)}' data-dialog-title="${escapeHtml(phase.phase)} 相 CT 有功功率历史">
     <span class="phase-label">${escapeHtml(phase.phase)} 相 CT 有功功率</span>
     <strong class="phase-value">${escapeHtml(phase.powerText)}</strong>
     <span class="phase-hint">${phase.reverse ? '正在反送电网' : '当前相功率正常'}；最近告警：${escapeHtml(phase.lastAlarmAt)}</span>
@@ -240,8 +250,10 @@ ${chartPanel({ title: '电网电压与频率（V / Hz）', seriesKey: 'gridSerie
 }
 
 function renderInverter(vm: OfflineInverterViewModel) {
-  return `<p><a href="${escapeHtml(vm.deviceHref)}">← 返回 CT ${escapeHtml(vm.deviceSn)}</a></p>
-<header class="page-header"><div><p class="eyebrow">微型逆变器详情</p><h1>${escapeHtml(vm.title)}</h1>
+  return `<header class="page-header"><div>
+<p class="nav-back"><a class="utility-link" href="${escapeHtml(vm.deviceHref)}">← 返回 CT ${escapeHtml(vm.deviceSn)}</a>
+${vm.overviewHref ? ` <a class="utility-link" href="${escapeHtml(vm.overviewHref)}">防逆流设备主页</a>` : ''}</p>
+<p class="eyebrow">微型逆变器详情</p><h1>${escapeHtml(vm.title)}</h1>
 <p class="muted">SN：${escapeHtml(vm.inverterSn)} · ${escapeHtml(vm.softwareVersion)} · ${escapeHtml(vm.sub1gVersion)}</p></div>
 <span class="readonly-badge">数据来源：${escapeHtml(vm.sourceLabel)}</span></header>
 <section class="card-grid">${metricCard('发电总功率', vm.power)}${metricCard('PV1', vm.pv1)}${metricCard('PV2', vm.pv2)}</section>
@@ -304,6 +316,9 @@ export function renderOfflineHtmlDocument(options: {
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${escapeHtml(title)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>${offlineStyles()}</style>
 </head>
 <body>

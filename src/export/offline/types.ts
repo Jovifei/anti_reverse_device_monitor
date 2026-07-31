@@ -96,6 +96,7 @@ export interface OfflineDeviceViewModel {
   workMode: string
   loadPower: string
   gridPower: string
+  gridPowerNegative: boolean
   inverterTotalPower: string
   todayEnergy: string
   todayDuration: string
@@ -181,6 +182,7 @@ export interface OfflineInverterViewModel {
     packetLoss: OfflineChartSeries[]
   }
   deviceHref: string
+  overviewHref?: string
 }
 
 export type OfflinePageViewModel = OfflineDeviceViewModel | OfflineOverviewViewModel | OfflineInverterViewModel
