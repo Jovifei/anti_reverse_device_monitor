@@ -15,6 +15,8 @@ export interface SourceDevice { sourceRecordId: string; deviceSn: string; report
 export interface SourceTelemetryRecord {
   sourceRecordId: string
   deviceSn: string
+  /** Company Mongo device_id when known; stored on Device.productModel for UI fallback. */
+  sourceDeviceId?: string
   siid: string
   piid: string
   inverterIndex: number | null

@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "devices": [
+    {
+      "sn": "GC2001000000252",
+      "device_id": "69c4e61a495848939ee23928",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    },
+    {
+      "sn": "GC2001000000457",
+      "device_id": "69c4e417495848939eb67a46",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    }
+  ]
+}

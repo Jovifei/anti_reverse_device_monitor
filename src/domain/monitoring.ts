@@ -111,7 +111,12 @@ export function metricMatches(metricKey: string, aliases: string[]) {
   const actual = normalizedMetricKey(metricKey)
   return aliases.some((alias) => {
     const normalizedAlias = normalizedMetricKey(alias)
-    return actual === normalizedAlias || actual.endsWith(`.${normalizedAlias}`) || actual.endsWith(normalizedAlias)
+    if (actual === normalizedAlias) return true
+    // Multi-segment aliases may match a dotted suffix (`device.ct.state` ↔ `ct_state`).
+    // Single-segment aliases (`state`, `power`) stay exact-only so `limit_state`
+    // never resolves as runtime `state`.
+    if (!normalizedAlias.includes('.')) return false
+    return actual.endsWith(`.${normalizedAlias}`)
   })
 }
 
@@ -119,7 +124,10 @@ export function numericValue(row: MetricRow | undefined): number | null {
   if (!row) return null
   if (row.valueNumber !== null && Number.isFinite(row.valueNumber)) return row.valueNumber
   if (row.valueText === null || row.valueText.trim() === '') return null
-  const parsed = Number(row.valueText)
+  const text = row.valueText.trim().toLowerCase()
+  if (text === 'true' || text === 'on' || text === 'yes') return 1
+  if (text === 'false' || text === 'off' || text === 'no') return 0
+  const parsed = Number(text)
   return Number.isFinite(parsed) ? parsed : null
 }
 
@@ -154,6 +162,9 @@ export function scaleEnergyPointsWhToKwh(points: Array<[string, number]>): Array
 }
 
 export function findLatestMetric<T extends MetricRow>(rows: T[], aliases: string[]) {
+  const normalizedAliases = aliases.map((alias) => normalizedMetricKey(alias))
+  const exact = rows.find((row) => normalizedAliases.includes(normalizedMetricKey(row.metricKey)))
+  if (exact) return exact
   return rows.find((row) => metricMatches(row.metricKey, aliases))
 }
 
@@ -186,6 +197,50 @@ export function formatTimeShort(value: Date | string | null | undefined) {
   }).format(parsed)
 }
 
+function appTimeZone() {
+  return process.env.APP_TIMEZONE || 'Asia/Shanghai'
+}
+
+/** Calendar day label in app timezone, e.g. 2026/07/24. */
+export function formatDateOnly(value: Date | string | null | undefined) {
+  if (!value) return '—'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return '—'
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: appTimeZone(),
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(parsed)
+}
+
+/** Clock time only in app timezone, e.g. 18:48:13. */
+export function formatClockTime(value: Date | string | null | undefined) {
+  if (!value) return '—'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return '—'
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: appTimeZone(),
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).format(parsed)
+}
+
+/** Group items by local calendar day (newest day first). */
+export function groupByLocalDate<T>(items: T[], getAt: (item: T) => Date | string) {
+  const buckets = new Map<string, T[]>()
+  for (const item of items) {
+    const key = formatDateOnly(getAt(item))
+    if (key === '—') continue
+    const list = buckets.get(key)
+    if (list) list.push(item)
+    else buckets.set(key, [item])
+  }
+  return Array.from(buckets.entries()).map(([date, dayItems]) => ({ date, items: dayItems }))
+}
+
 export function getInverterStatus(raw: number | null) {
   const label = resolveStatusLabel('inverter_online_state', raw) ?? '无数据'
   if (raw === 2) return { label, variant: 'online' as const }
@@ -200,9 +255,30 @@ export function getInverterWorkStatus(raw: number | null) {
 
 export function displaySwitch(row: MetricRow | undefined) {
   const value = numericValue(row)
-  if (value === 1) return '\u5f00\u542f'
-  if (value === 0) return '\u5173\u95ed'
+  if (value === 1) return '开启'
+  if (value === 0) return '关闭'
   return displayValue(row)
+}
+
+/** WiFi RSSI 展示：优先数字，可附带简易格数。 */
+export function displayWifiSignal(row: MetricRow | undefined) {
+  const value = numericValue(row)
+  if (value === null) {
+    const text = row?.valueText?.trim()
+    return text || '—'
+  }
+  return String(value)
+}
+
+export function wifiSignalBars(raw: number | null): 0 | 1 | 2 | 3 | 4 {
+  if (raw === null || !Number.isFinite(raw)) return 0
+  // 设备日志常见 0–100 强度；若是负 RSSI（dBm）则换算。
+  const score = raw < 0 ? Math.max(0, Math.min(100, 2 * (raw + 100))) : raw
+  if (score >= 75) return 4
+  if (score >= 50) return 3
+  if (score >= 25) return 2
+  if (score > 0) return 1
+  return 0
 }
 
 /** 微逆所在相：1/2/3 → A/B/C 相，便于与 CT 三相对照。 */

@@ -1,0 +1,33 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.docker
+    environment:
+      APP_DATABASE_URL: file:./data/device-monitor.db
+      SOURCE_DB_ENABLED: ${SOURCE_DB_ENABLED:-true}
+      SOURCE_DB_TYPE: mongodb
+    volumes:
+      - app-data:/app/data
+      - ./config/devices.json:/app/config/devices.json:ro
+    restart: unless-stopped
+
+  # Production sync: docker compose --profile sync run --rm sync
+  sync:
+    profiles: ["sync"]
+    build: .
+    env_file:
+      - .env.docker
+    environment:
+      APP_DATABASE_URL: file:./data/device-monitor.db
+      SOURCE_DB_ENABLED: "true"
+      SOURCE_DB_TYPE: mongodb
+    volumes:
+      - app-data:/app/data
+      - ./config/devices.json:/app/config/devices.json:ro
+    command: ["npm", "run", "source:sync"]
+
+volumes:
+  app-data:

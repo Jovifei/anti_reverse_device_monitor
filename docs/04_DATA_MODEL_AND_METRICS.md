@@ -227,3 +227,9 @@ OR active_power_ct3 < 0
 - `config/fault_dictionary.json`
 
 代码必须从配置或领域模块读取，不应把中文故障名称散落在 React 组件中。
+
+## 7. 固件 SIID / PIID 与是否上报
+
+防逆流 CT 产品属性完整对照（主动上报 vs IoT 运行参数、监控映射）见：
+
+- [CT_SIID_PIID_REPORTING.md](./CT_SIID_PIID_REPORTING.md)

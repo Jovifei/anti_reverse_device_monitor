@@ -56,6 +56,8 @@ anti_reverse_device_monitor_delivery_v1/
 | `02_REQUIREMENTS_SPEC.md` | 页面和业务需求 | 项目总览 |
 | `03_SYSTEM_ARCHITECTURE.md` | 技术架构和模块 | 需求 |
 | `04_DATA_MODEL_AND_METRICS.md` | 表结构、指标键和规则 | 架构、需求 |
+| `CT_SIID_PIID_REPORTING.md` | 固件 siid/piid、是否上报、如何查看 | 数据模型、Mongo 只读源 |
+| `MONGODB_READONLY_SOURCE.md` | Mongo 只读同步与联调 | 架构、安全 |
 | `05_CURRENT_STATUS_AND_DELIVERABLES.md` | 已完成与未完成 | 原型 |
 | `06_PHASE_ROADMAP.md` | 一期、二期和后续计划 | 架构、状态 |
 | `07_ACCEPTANCE_CRITERIA.md` | 如何判断完成 | 需求、路线 |

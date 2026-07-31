@@ -1,4 +1,4 @@
-﻿import { Prisma, PrismaClient } from '@prisma/client'
+import { Prisma, PrismaClient } from '@prisma/client'
 import { prisma } from '@/src/lib/prisma'
 import { hasCriticalFault } from '@/src/domain/faults'
 
@@ -31,8 +31,14 @@ export class TelemetryRepository {
   ) {
     const results = await this.db.$transaction(async (tx) => {
       const savedRows = []
-
+      // Same device/metric/time can arrive from different Mongo docs; keep last in-batch.
+      const deduped = new Map<string, (typeof rows)[number]>()
       for (const row of rows) {
+        const key = `${row.deviceSn}|${row.inverterIndex ?? 0}|${row.metricKey}|${row.reportedAt.toISOString()}`
+        deduped.set(key, row)
+      }
+
+      for (const row of deduped.values()) {
         const device = await tx.device.findUnique({
           where: { deviceSn: row.deviceSn }
         })
@@ -53,21 +59,85 @@ export class TelemetryRepository {
           inverterId = binding?.id ?? null
         }
 
-        const created = await tx.telemetry.create({
-          data: {
-            deviceId: device.id,
-            inverterId: inverterId,
-            siid: row.siid ?? '0',
-            piid: row.piid ?? '0',
-            metricKey: row.metricKey,
-            reportedAt: row.reportedAt,
-            receivedAt: row.receivedAt,
-            valueNumber: row.valueNumber ?? null,
-            valueText: row.valueText ?? null,
-            sourceRecordId: row.sourceRecordId,
-            sourceName: row.sourceName ?? 'excel'
+        const telemetryData = {
+          deviceId: device.id,
+          inverterId: inverterId,
+          siid: row.siid ?? '0',
+          piid: row.piid ?? '0',
+          metricKey: row.metricKey,
+          reportedAt: row.reportedAt,
+          receivedAt: row.receivedAt,
+          valueNumber: row.valueNumber ?? null,
+          valueText: row.valueText ?? null,
+          sourceRecordId: row.sourceRecordId,
+          sourceName: row.sourceName ?? 'excel'
+        }
+
+        const valueUpdate = {
+          valueNumber: telemetryData.valueNumber,
+          valueText: telemetryData.valueText,
+          receivedAt: telemetryData.receivedAt,
+          metricKey: telemetryData.metricKey,
+          siid: telemetryData.siid,
+          piid: telemetryData.piid,
+          inverterId: telemetryData.inverterId,
+          reportedAt: telemetryData.reportedAt
+        }
+
+        let created
+        const bySource = await tx.telemetry.findUnique({ where: { sourceRecordId: row.sourceRecordId } })
+        if (bySource) {
+          created = await tx.telemetry.update({ where: { id: bySource.id }, data: valueUpdate })
+        } else {
+          const byNatural = await tx.telemetry.findFirst({
+            where: {
+              deviceId: device.id,
+              inverterId,
+              metricKey: row.metricKey,
+              reportedAt: row.reportedAt
+            }
+          })
+          if (byNatural) {
+            // Keep existing sourceRecordId to avoid unique collisions across re-syncs.
+            created = await tx.telemetry.update({
+              where: { id: byNatural.id },
+              data: {
+                valueNumber: valueUpdate.valueNumber,
+                valueText: valueUpdate.valueText,
+                receivedAt: valueUpdate.receivedAt,
+                siid: valueUpdate.siid,
+                piid: valueUpdate.piid
+              }
+            })
+          } else {
+            try {
+              created = await tx.telemetry.create({ data: telemetryData })
+            } catch (error) {
+              if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
+                throw error
+              }
+              const raced = await tx.telemetry.findFirst({
+                where: {
+                  deviceId: device.id,
+                  inverterId,
+                  metricKey: row.metricKey,
+                  reportedAt: row.reportedAt
+                }
+              })
+              if (!raced) throw error
+              created = await tx.telemetry.update({
+                where: { id: raced.id },
+                data: {
+                  valueNumber: valueUpdate.valueNumber,
+                  valueText: valueUpdate.valueText,
+                  receivedAt: valueUpdate.receivedAt,
+                  siid: valueUpdate.siid,
+                  piid: valueUpdate.piid
+                }
+              })
+            }
           }
-        })
+        }
 
         if (!device.lastReportedAt || row.reportedAt > device.lastReportedAt) {
           await tx.device.update({
@@ -232,6 +302,17 @@ export class TelemetryRepository {
     const device = await this.db.device.findUnique({ where: { deviceSn }, select: { id: true } })
     if (!device) return false
     return Boolean(await this.db.telemetry.findFirst({ where: { deviceId: device.id }, select: { id: true } }))
+  }
+
+  async getLatestSourceNameForDevice(deviceSn: string) {
+    const device = await this.db.device.findUnique({ where: { deviceSn }, select: { id: true } })
+    if (!device) return null
+    const row = await this.db.telemetry.findFirst({
+      where: { deviceId: device.id },
+      orderBy: [{ reportedAt: 'desc' }, { id: 'desc' }],
+      select: { sourceName: true }
+    })
+    return row?.sourceName ?? null
   }
 
   async listTelemetryByMetric({

@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "timezone": "Asia/Shanghai",
+  "comment": "CT SIID2/3 from wifi.c; inverter SIID 4–11 auto-mapped in expand-device-log.ts via INV_PIID",
+  "fields": {
+    "2_1": { "metricKey": "ct_state", "siid": "2", "piid": "1", "inverterIndex": null },
+    "2_2": { "metricKey": "active_power_ct1", "siid": "2", "piid": "2", "inverterIndex": null },
+    "2_3": { "metricKey": "active_power_ct2", "siid": "2", "piid": "3", "inverterIndex": null },
+    "2_4": { "metricKey": "active_power_ct3", "siid": "2", "piid": "4", "inverterIndex": null },
+    "2_5": { "metricKey": "active_power_inv1", "siid": "2", "piid": "5", "inverterIndex": null },
+    "2_6": { "metricKey": "active_power_inv2", "siid": "2", "piid": "6", "inverterIndex": null },
+    "2_7": { "metricKey": "active_power_inv3", "siid": "2", "piid": "7", "inverterIndex": null },
+    "2_8": { "metricKey": "inverter_total_power", "siid": "2", "piid": "8", "inverterIndex": null },
+    "2_9": { "metricKey": "load_power", "siid": "2", "piid": "9", "inverterIndex": null },
+    "2_10": { "metricKey": "grid_power", "siid": "2", "piid": "10", "inverterIndex": null },
+    "2_11": { "metricKey": "today_duration", "siid": "2", "piid": "11", "inverterIndex": null },
+    "2_12": { "metricKey": "today_energy", "siid": "2", "piid": "12", "inverterIndex": null },
+    "2_13": { "metricKey": "total_energy", "siid": "2", "piid": "13", "inverterIndex": null },
+    "2_14": { "metricKey": "limit_state", "siid": "2", "piid": "14", "inverterIndex": null },
+    "2_15": { "metricKey": "phase_sequence", "siid": "2", "piid": "15", "inverterIndex": null },
+    "2_16": { "metricKey": "grid_voltage", "siid": "2", "piid": "16", "inverterIndex": null },
+    "2_17": { "metricKey": "grid_frequency", "siid": "2", "piid": "17", "inverterIndex": null },
+    "2_21": { "metricKey": "sub1g_state", "siid": "2", "piid": "21", "inverterIndex": null },
+    "2_26": { "metricKey": "wifi_signal_strength", "siid": "2", "piid": "26", "inverterIndex": null },
+    "3_10": { "metricKey": "work_mode", "siid": "3", "piid": "10", "inverterIndex": null },
+    "3_11": { "metricKey": "to_grid_power_limit", "siid": "3", "piid": "11", "inverterIndex": null },
+    "3_15": { "metricKey": "sub1g_channel", "siid": "3", "piid": "15", "inverterIndex": null }
+  }
+}

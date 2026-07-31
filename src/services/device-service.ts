@@ -1,3 +1,5 @@
+import { promises as fs } from 'node:fs'
+import path from 'node:path'
 import { decodeFaultMask, hasCriticalFault } from '@/src/domain/faults'
 import { parseDeviceListQuery, parseSn, parseTelemetryQuery } from '@/src/domain/validation'
 import { parseSnLookup } from '@/src/domain/validation'
@@ -211,7 +213,29 @@ export class DeviceService {
   }
 
   async getDeviceDataSourceLabel(sn: string) {
-    return (await this.telemetryRepository.hasTelemetryForDevice(parseSn(sn))) ? 'Demo SQLite' : '暂无数据'
+    const sourceName = await this.telemetryRepository.getLatestSourceNameForDevice(parseSn(sn))
+    if (!sourceName) return '暂无数据'
+    const name = sourceName.toLowerCase()
+    if (name.includes('mongo')) return 'Mongo 设备日志'
+    if (name.includes('excel')) return 'Excel 导入'
+    if (name.includes('demo') || name.includes('ui-demo')) return 'Demo SQLite'
+    if (name.includes('company') || name.includes('source') || name.includes('sync')) return '公司数据库同步'
+    return sourceName
+  }
+
+  async findRawExcelForDevice(sn: string) {
+    const deviceSn = parseSn(sn)
+    const dataDir = path.join(process.cwd(), 'docs', 'data')
+    try {
+      const entries = await fs.readdir(dataDir)
+      const matches = entries
+        .filter((name) => name.includes(deviceSn) && /\.xlsx$/i.test(name))
+        .sort((a, b) => b.localeCompare(a))
+      if (!matches.length) return null
+      return { fileName: matches[0], relativePath: path.join('docs', 'data', matches[0]) }
+    } catch {
+      return null
+    }
   }
 
   async resolveDeviceSn(rawSn: string) {

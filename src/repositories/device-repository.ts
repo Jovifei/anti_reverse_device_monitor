@@ -1,4 +1,4 @@
-﻿import { Prisma, PrismaClient } from '@prisma/client'
+import { Prisma, PrismaClient } from '@prisma/client'
 import { prisma } from '@/src/lib/prisma'
 
 export interface DeviceWithSummary {
@@ -170,6 +170,19 @@ export class DeviceRepository {
     lastReportedAt?: Date | null
     macAddress?: string | null
   }) {
+    const optionalUpdate: Prisma.DeviceUncheckedUpdateInput = {
+      updatedAt: new Date()
+    }
+    if (payload.productModel !== undefined) optionalUpdate.productModel = payload.productModel
+    if (payload.softwareVersion !== undefined) optionalUpdate.softwareVersion = payload.softwareVersion
+    if (payload.hardwareVersion !== undefined) optionalUpdate.hardwareVersion = payload.hardwareVersion
+    if (payload.productConfig !== undefined) optionalUpdate.productConfig = payload.productConfig
+    if (payload.sub1gVersion !== undefined) optionalUpdate.sub1gVersion = payload.sub1gVersion
+    if (payload.sub1gAddress !== undefined) optionalUpdate.sub1gAddress = payload.sub1gAddress
+    if (payload.platformOnline !== undefined) optionalUpdate.platformOnline = payload.platformOnline ?? false
+    if (payload.lastReportedAt !== undefined) optionalUpdate.lastReportedAt = payload.lastReportedAt
+    if (payload.macAddress !== undefined) optionalUpdate.macAddress = payload.macAddress
+
     const data: Prisma.DeviceUncheckedCreateInput = {
       deviceSn: payload.deviceSn,
       productModel: payload.productModel ?? null,
@@ -185,18 +198,7 @@ export class DeviceRepository {
 
     return this.db.device.upsert({
       where: { deviceSn: payload.deviceSn },
-      update: {
-        productModel: payload.productModel ?? null,
-        softwareVersion: payload.softwareVersion ?? null,
-        hardwareVersion: payload.hardwareVersion ?? null,
-        productConfig: payload.productConfig ?? null,
-        sub1gVersion: payload.sub1gVersion ?? null,
-        sub1gAddress: payload.sub1gAddress ?? null,
-        platformOnline: payload.platformOnline ?? false,
-        lastReportedAt: payload.lastReportedAt ?? null,
-        macAddress: payload.macAddress ?? null,
-        updatedAt: new Date()
-      },
+      update: optionalUpdate,
       create: data
     })
   }
@@ -214,7 +216,8 @@ export class DeviceRepository {
         }
       },
       update: {
-        inverterSn: params.inverterSn ?? null
+        paired: true,
+        ...(params.inverterSn !== undefined ? { inverterSn: params.inverterSn } : {})
       },
       create: {
         deviceId: params.deviceId,
@@ -231,6 +234,15 @@ export class DeviceRepository {
 
   async findSnByExact(deviceSn: string) {
     const row = await this.db.device.findUnique({ where: { deviceSn }, select: { deviceSn: true } })
+    return row?.deviceSn ?? null
+  }
+
+  async findSnByProductModel(productModel: string) {
+    const row = await this.db.device.findFirst({
+      where: { productModel },
+      select: { deviceSn: true },
+      orderBy: { deviceSn: 'asc' }
+    })
     return row?.deviceSn ?? null
   }
 

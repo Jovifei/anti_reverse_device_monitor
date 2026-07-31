@@ -33,7 +33,7 @@
 - `npm run export:html:demo`
 - `npm run test:offline-html`
 
-详细验收记录见 [一期验收报告](docs/PHASE1_ACCEPTANCE_REPORT.md)。公司数据源接入步骤见 [二期 Adapter 指南](docs/PHASE2_SOURCE_ADAPTER_GUIDE.md)。离线 HTML 导出见 [离线导出指南](docs/OFFLINE_HTML_EXPORT_GUIDE.md)。
+详细验收记录见 [一期验收报告](docs/PHASE1_ACCEPTANCE_REPORT.md)。公司数据源接入步骤见 [二期 Adapter 指南](docs/PHASE2_SOURCE_ADAPTER_GUIDE.md)。Mongo 日志只读接入见 [Mongo 只读说明](docs/MONGODB_READONLY_SOURCE.md)。Docker 部署见同文档「Docker」节。离线 HTML 导出见 [离线导出指南](docs/OFFLINE_HTML_EXPORT_GUIDE.md)。
 
 ## 离线 HTML 快照
 

@@ -64,6 +64,7 @@ export function mapSourceLabel(sourceName: string | null | undefined, override?:
   if (!name) return '本地数据库'
   if (name.includes('demo') || name.includes('ui-demo')) return 'Demo SQLite'
   if (name.includes('excel')) return 'Excel 导入'
+  if (name.includes('mongo')) return 'Mongo 设备日志'
   if (name.includes('company') || name.includes('source') || name.includes('sync')) return '公司数据库同步'
   return '本地数据库'
 }

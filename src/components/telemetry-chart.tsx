@@ -51,7 +51,12 @@ type Props = {
   dayNightBands?: boolean
 }
 
+function coerceMs(ms: number) {
+  return Number.isFinite(ms) ? ms : Date.now()
+}
+
 function partsInTz(ms: number) {
+  const safe = coerceMs(ms)
   const fmt = new Intl.DateTimeFormat('en-CA', {
     timeZone: process.env.APP_TIMEZONE || 'Asia/Shanghai',
     year: 'numeric', month: '2-digit', day: '2-digit',
@@ -59,7 +64,7 @@ function partsInTz(ms: number) {
     hour12: false
   })
   const map: Record<string, string> = {}
-  for (const part of fmt.formatToParts(new Date(ms))) {
+  for (const part of fmt.formatToParts(new Date(safe))) {
     if (part.type !== 'literal') map[part.type] = part.value
   }
   return map
@@ -97,6 +102,7 @@ function buildAxisPlan(visible: ClientChartSeries[]) {
       yAxis: [
         {
           type: 'value' as const,
+          scale: true,
           name: '电压 (V)',
           nameLocation: 'middle' as const,
           nameGap: 48,
@@ -106,6 +112,7 @@ function buildAxisPlan(visible: ClientChartSeries[]) {
         },
         {
           type: 'value' as const,
+          scale: true,
           name: '频率 (Hz)',
           nameLocation: 'middle' as const,
           nameGap: 42,
@@ -122,6 +129,7 @@ function buildAxisPlan(visible: ClientChartSeries[]) {
     yAxis: [
       {
         type: 'value' as const,
+        scale: true,
         name: unitAxisName(units[0] || ''),
         nameLocation: 'middle' as const,
         nameGap: 52,
@@ -137,6 +145,9 @@ function buildAxisPlan(visible: ClientChartSeries[]) {
 export function TelemetryChart({ title, series, height = 430, initialSelectedKeys, advancedKeys = [], dayNightBands }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<echarts.ECharts | null>(null)
+  const zoomRef = useRef({ start: 0, end: 100 })
+  const daysRef = useRef(7)
+  const radioName = useMemo(() => `days-${title.replace(/\W+/g, '-').toLowerCase()}`, [title])
   const [days, setDays] = useState(7)
   const [selected, setSelected] = useState(() => new Set(initialSelectedKeys ?? series.filter((item) => item.points.length > 0).map((item) => item.key)))
   const axisWindow = useMemo(() => {
@@ -169,12 +180,31 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
     if (!container) return
     const chart = echarts.init(container)
     chartRef.current = chart
-    const observer = new ResizeObserver(() => chart.resize())
+    let resizeRaf = 0
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(resizeRaf)
+      resizeRaf = requestAnimationFrame(() => {
+        if (!chart.isDisposed()) chart.resize()
+      })
+    })
     observer.observe(container)
-    const reset = () => chart.dispatchAction({ type: 'dataZoom', start: 0, end: 100 })
+    const onZoom = (event: unknown) => {
+      const payload = event as { start?: number; end?: number; batch?: Array<{ start?: number; end?: number }> }
+      const batch = payload.batch?.[0]
+      const start = batch?.start ?? payload.start
+      const end = batch?.end ?? payload.end
+      if (typeof start === 'number' && typeof end === 'number') zoomRef.current = { start, end }
+    }
+    chart.on('datazoom', onZoom)
+    const reset = () => {
+      zoomRef.current = { start: 0, end: 100 }
+      if (!chart.isDisposed()) chart.dispatchAction({ type: 'dataZoom', start: 0, end: 100 })
+    }
     container.addEventListener('dblclick', reset)
     return () => {
+      cancelAnimationFrame(resizeRaf)
       container.removeEventListener('dblclick', reset)
+      chart.off('datazoom', onZoom)
       observer.disconnect()
       chart.dispose()
       chartRef.current = null
@@ -183,11 +213,19 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
 
   useEffect(() => {
     const chart = chartRef.current
-    if (!chart) return
+    if (!chart || chart.isDisposed()) return
+    if (daysRef.current !== days) {
+      daysRef.current = days
+      zoomRef.current = { start: 0, end: 100 }
+    }
     const axisPlan = buildAxisPlan(visible)
     const unitByName = Object.fromEntries(visible.map((item) => [item.label, item.unit || '']))
     const bands = enableDayNight ? buildBeijingDayNightBands(axisWindow.startMs, axisWindow.endMs) : null
     const showSunLabels = days <= 1
+    const dayNightBlur = {
+      markArea: { itemStyle: { opacity: 1 } },
+      markLine: { lineStyle: { opacity: 0.85 }, label: { opacity: 1 } }
+    }
     const dayNightSeries = bands && bands.markAreaData.length
       ? [{
           name: '昼夜背景',
@@ -195,6 +233,9 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
           data: [],
           silent: true,
           tooltip: { show: false },
+          legendHoverLink: false,
+          emphasis: { disabled: true },
+          blur: dayNightBlur,
           markArea: { silent: true, data: bands.markAreaData },
           markLine: showSunLabels
             ? {
@@ -210,7 +251,11 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
             : undefined
         }]
       : []
-    chart.setOption({
+
+    const { start: zoomStart, end: zoomEnd } = zoomRef.current
+    const optionFrame = requestAnimationFrame(() => {
+      if (!chartRef.current || chartRef.current.isDisposed()) return
+      chartRef.current.setOption({
       animationDuration: 320,
       animationEasing: 'cubicOut',
       color: visible.map((item) => item.color),
@@ -226,7 +271,8 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
           const list = Array.isArray(params) ? params : [params]
           if (!list.length) return ''
           const first = list[0] as { value?: [number | string, number] }
-          const ts = Array.isArray(first.value) ? Number(first.value[0]) : Date.now()
+          const rawTs = Array.isArray(first.value) ? Number(first.value[0]) : NaN
+          const ts = coerceMs(rawTs)
           const lines = list
             .filter((item) => (item as { seriesType?: string }).seriesType === 'line')
             .filter((item) => {
@@ -264,13 +310,21 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
         axisLabel: {
           color: '#7a8799',
           hideOverlap: true,
-          formatter: (value: number) => formatAxisLabel(value, days)
+          formatter: (value: number) => formatAxisLabel(coerceMs(value), days)
         }
       },
       yAxis: axisPlan.yAxis,
       dataZoom: [
-        { type: 'inside', xAxisIndex: 0, start: 0, end: 100, zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: true },
-        { type: 'slider', xAxisIndex: 0, start: 0, end: 100, height: 24, bottom: 16, labelFormatter: (value: number) => formatAxisLabel(value, days) }
+        { type: 'inside', xAxisIndex: 0, start: zoomStart, end: zoomEnd, zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: true },
+        {
+          type: 'slider',
+          xAxisIndex: 0,
+          start: zoomStart,
+          end: zoomEnd,
+          height: 24,
+          bottom: 16,
+          labelFormatter: (value: number) => (Number.isFinite(value) ? formatAxisLabel(value, days) : '')
+        }
       ],
       series: [
         ...dayNightSeries,
@@ -296,7 +350,8 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
             connectNulls: false,
             sampling: undefined,
             yAxisIndex,
-            emphasis: { focus: 'series' as const }
+            emphasis: { focus: 'series' as const },
+            blur: { lineStyle: { opacity: 0.18 } }
           }
           if (!item.markNegative) {
             return [{
@@ -354,6 +409,9 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
         })
       ]
     }, { notMerge: true })
+    })
+
+    return () => cancelAnimationFrame(optionFrame)
   }, [visible, days, enableDayNight, axisWindow])
 
   function toggle(key: string) {
@@ -365,15 +423,29 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
     })
   }
 
-  const primarySeries = advancedKeys.length ? series.filter((item) => !advancedKeys.includes(item.key)) : series
-  const extraSeries = advancedKeys.length ? series.filter((item) => advancedKeys.includes(item.key)) : []
+  function resetZoom() {
+    zoomRef.current = { start: 0, end: 100 }
+    chartRef.current?.dispatchAction({ type: 'dataZoom', start: 0, end: 100 })
+  }
+
+  const orderedSeries = advancedKeys.length
+    ? [
+        ...series.filter((item) => !advancedKeys.includes(item.key)),
+        ...series.filter((item) => advancedKeys.includes(item.key))
+      ]
+    : series
   const renderToggle = (item: ClientChartSeries) => <label key={item.key}><input type="checkbox" checked={selected.has(item.key)} onChange={() => toggle(item.key)} disabled={item.points.length === 0} /><i style={{ backgroundColor: chartSeriesDisplayColor(item.key, item.color) }} />{item.label}{item.unit ? ` (${item.unit})` : ''}</label>
 
   return <section className="chart-panel">
-    <div className="panel-heading"><h2>{title}</h2><button type="button" className="secondary-button" onClick={() => chartRef.current?.dispatchAction({ type: 'dataZoom', start: 0, end: 100 })}>复位缩放</button></div>
-    <div className="chart-controls"><label>范围 <select value={days} onChange={(event) => setDays(Number(event.target.value))}><option value={1}>最近 24 小时</option><option value={3}>最近 3 天</option><option value={7}>最近 7 天</option></select></label><span>滚轮缩放 · 拖动平移 · 双击复位</span>{enableDayNight ? <span className="day-night-legend"><i className="day" />昼 <i className="night" />夜 · 北京日出日落</span> : null}</div>
-    <div className="series-toggles">{primarySeries.map(renderToggle)}</div>
-    {extraSeries.length ? <details className="advanced-series"><summary>更多曲线</summary><div className="series-toggles">{extraSeries.map(renderToggle)}</div></details> : null}
+    <div className="panel-heading"><h2>{title}</h2><button type="button" className="secondary-button" onClick={resetZoom}>复位缩放</button></div>
+    <div className="chart-controls day-controls">
+      <label><input type="radio" name={radioName} value={1} checked={days === 1} onChange={() => setDays(1)} /> 1 天</label>
+      <label><input type="radio" name={radioName} value={3} checked={days === 3} onChange={() => setDays(3)} /> 3 天</label>
+      <label><input type="radio" name={radioName} value={7} checked={days === 7} onChange={() => setDays(7)} /> 7 天</label>
+      <span>滚轮缩放 · 拖动平移 · 双击复位</span>
+      {enableDayNight ? <span className="day-night-legend"><i className="day" />昼 <i className="night" />夜 · 北京日出日落</span> : null}
+    </div>
+    <div className="series-toggles">{orderedSeries.map(renderToggle)}</div>
     {visible.length > 0 ? <div ref={containerRef} className="chart" style={{ height }} /> : <div className="empty-chart">当前范围没有可绘制的数据</div>}
   </section>
 }

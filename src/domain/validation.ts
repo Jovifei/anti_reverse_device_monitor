@@ -6,7 +6,12 @@ export const snLookupSchema = z.string().trim().min(1).max(64).regex(/^[A-Za-z0-
 export const deviceListSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(20),
-  q: z.string().trim().min(1).max(64).optional(),
+  // Empty `q=` from GET forms must become absent, not fail min(1).
+  q: z.preprocess((value) => {
+    if (typeof value !== 'string') return value
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : undefined
+  }, z.string().min(1).max(64).optional()),
   status: z.enum(['all', 'online', 'offline', 'reverse']).default('all')
 })
 
@@ -68,10 +73,11 @@ export function toFlatQuery(raw: unknown) {
 
 export function parseDeviceListQuery(raw: unknown) {
   const flat = toFlatQuery(raw)
+  const q = flat.q?.trim()
   return deviceListSchema.parse({
     page: flat.page,
     pageSize: flat.pageSize,
-    q: flat.q,
+    q: q ? q : undefined,
     status: flat.status
   })
 }

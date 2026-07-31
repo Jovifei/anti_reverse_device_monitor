@@ -26,11 +26,24 @@ describe('inverter configuration display', () => {
   it('maps boolean switches and power limits to business units', () => {
     expect(displaySwitch(row('anti_reverse_enabled', 1))).toBe('开启')
     expect(displaySwitch(row('generation_enabled', 0))).toBe('关闭')
+    expect(displaySwitch({ metricKey: 'anti_reverse_enabled', valueNumber: null, valueText: 'true', reportedAt: new Date() })).toBe('开启')
+    expect(displaySwitch({ metricKey: 'generation_enabled', valueNumber: null, valueText: 'false', reportedAt: new Date() })).toBe('关闭')
     expect(displayPowerLimit(row('power_limit', 100))).toBe('100 W')
     expect(displayPowerLimit(row('power_limit', 0))).toBe('关闭')
   })
 })
 
+describe('wifi signal bars', () => {
+  it('maps strength into 0-4 bars', async () => {
+    const { wifiSignalBars } = await import('@/src/domain/monitoring')
+    expect(wifiSignalBars(null)).toBe(0)
+    expect(wifiSignalBars(10)).toBe(1)
+    expect(wifiSignalBars(40)).toBe(2)
+    expect(wifiSignalBars(60)).toBe(3)
+    expect(wifiSignalBars(80)).toBe(4)
+    expect(wifiSignalBars(-50)).toBe(4)
+  })
+})
 describe('inverter phase label', () => {
   it('maps phase_num 1/2/3 to A/B/C 相', async () => {
     const { displayInverterPhaseLabel } = await import('@/src/domain/monitoring')
@@ -67,5 +80,23 @@ describe('CT history chart alarm colors', () => {
     expect(chartSeriesDisplayColor('temperature', '#dc2626')).toBe('#0f766e')
     expect(chartSeriesDisplayColor('unknown-series', '#c92828')).toBe('#2563eb')
     expect(chartSeriesDisplayColor('unknown-series', '#0d9488')).toBe('#0d9488')
+  })
+})
+
+describe('groupByLocalDate', () => {
+  it('buckets records by Asia/Shanghai calendar day', async () => {
+    const { formatClockTime, formatDateOnly, groupByLocalDate } = await import('@/src/domain/monitoring')
+    const items = [
+      { at: '2026-07-24T10:48:13.000Z', label: 'a' },
+      { at: '2026-07-24T11:01:19.000Z', label: 'b' },
+      { at: '2026-07-25T01:10:29.000Z', label: 'c' }
+    ]
+    const groups = groupByLocalDate(items, (item) => item.at)
+    expect(groups.map((group) => group.date)).toEqual([
+      formatDateOnly(items[0].at),
+      formatDateOnly(items[2].at)
+    ])
+    expect(groups[0].items.map((item) => item.label)).toEqual(['a', 'b'])
+    expect(formatClockTime(items[0].at)).toMatch(/^\d{2}:\d{2}:\d{2}$/)
   })
 })
