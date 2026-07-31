@@ -199,6 +199,16 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
                 label: '限流状态',
                 value: resolveStatusLabel('limit_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.limitState))) ?? EMPTY,
                 empty: !(resolveStatusLabel('limit_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.limitState))))
+              },
+              {
+                label: '在线微逆',
+                value: <span className={onlineInverterCount > 0 ? 'fact-emphasis is-ok' : 'fact-emphasis'}>{onlineInverterCount}<small> / {pairedInverterCount || 8}</small></span>,
+                empty: false
+              },
+              {
+                label: '7日曾在线现离线',
+                value: <span className={recentOfflineInverterCount > 0 ? 'fact-emphasis is-warn' : 'fact-emphasis'}>{recentOfflineInverterCount}</span>,
+                empty: false
               }
             ]}
           />
@@ -224,18 +234,6 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
               }
             ]}
           />
-        </div>
-      </div>
-      <div className="ct-inverter-presence" aria-label="微逆在线概况">
-        <div className={onlineInverterCount > 0 ? 'is-ok' : undefined}>
-          <span>在线微逆</span>
-          <strong>{onlineInverterCount}</strong>
-          <small>/ {pairedInverterCount || 8} 已配对通道</small>
-        </div>
-        <div className={recentOfflineInverterCount > 0 ? 'is-warn' : undefined}>
-          <span>7 日曾在线现离线</span>
-          <strong>{recentOfflineInverterCount}</strong>
-          <small>近 7 天出现过在线、当前已离线</small>
         </div>
       </div>
       <div className="ct-kpi-band" aria-label="功率与发电量摘要">
@@ -315,7 +313,22 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
       return <article key={inverterIndex} className={`inverter-card ${status.variant}`}>
         <div className="inverter-head"><div><h3>微型逆变器 {inverterIndex}：{phaseLabel}</h3><p className="inverter-meta">SN：{binding?.inverterSn ?? EMPTY}<br />软件 {binding?.softwareVersion ?? EMPTY}</p></div><span className={`badge ${status.variant}`}>{status.label}</span></div>
         <div className="inverter-state-grid"><div><span>工作状态</span><strong>{getInverterWorkStatus(workRaw)}</strong></div><div><span>是否发电</span><strong>{status.variant === 'online' ? (generating ? '正在发电' : '否') : EMPTY}</strong></div><div><span>防逆流开关</span><strong>{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.antiReverse))}</strong></div><div><span>发电开关</span><strong>{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.generationEnabled))}</strong></div></div>
-        <div className="inverter-metrics"><HistoryMetric label="PV1" value={value(['pv1_power', 'pv1power'], 'W')} title={`微型逆变器 ${inverterIndex} PV1 功率历史`} series={pv1Series} /><HistoryMetric label="PV2" value={value(['pv2_power', 'pv2power'], 'W')} title={`微型逆变器 ${inverterIndex} PV2 功率历史`} series={pv2Series} /><HistoryMetric label="总功率" value={value(['inverter_power', 'generation_power', 'total_power', 'power'], 'W')} title={`微型逆变器 ${inverterIndex} 功率历史`} series={powerSeries} /><HistoryMetric label="今日发电量" value={energy(INVERTER_KPI_ALIASES.todayEnergy)} title={`微型逆变器 ${inverterIndex} 今日发电量历史`} series={energySeries} /><div className="inverter-metric-cell"><span className="label">累计发电量</span><strong>{energy(INVERTER_KPI_ALIASES.totalEnergy)}</strong></div><div className="inverter-metric-cell"><span className="label">今日发电时长</span><strong>{value(INVERTER_KPI_ALIASES.todayDuration, 'h')}</strong></div><HistoryMetric label="内部温度" value={value(['internal_temperature', 'temperature'], '°C')} title={`微型逆变器 ${inverterIndex} 内部温度历史`} series={temperatureSeries} /><HistoryMetric label="丢包率" value={value(['packet_loss_rate', 'packet_loss'], '%')} title={`微型逆变器 ${inverterIndex} 丢包率历史`} series={packetLossSeries} /></div>
+        <div className="inverter-metric-tiers">
+          <div className="inv-card-pv-row">
+            <HistoryMetric label="PV1" value={value(['pv1_power', 'pv1power'], 'W')} title={`微型逆变器 ${inverterIndex} PV1 功率历史`} series={pv1Series} />
+            <HistoryMetric label="PV2" value={value(['pv2_power', 'pv2power'], 'W')} title={`微型逆变器 ${inverterIndex} PV2 功率历史`} series={pv2Series} />
+          </div>
+          <div className="inv-card-primary-row">
+            <HistoryMetric label="总功率" value={value(['inverter_power', 'generation_power', 'total_power', 'power'], 'W')} title={`微型逆变器 ${inverterIndex} 功率历史`} series={powerSeries} />
+            <HistoryMetric label="今日发电量" value={energy(INVERTER_KPI_ALIASES.todayEnergy)} title={`微型逆变器 ${inverterIndex} 今日发电量历史`} series={energySeries} />
+          </div>
+          <div className="inv-card-secondary-row">
+            <div className="inverter-metric-cell"><span className="label">今日发电时长</span><strong>{value(INVERTER_KPI_ALIASES.todayDuration, 'h')}</strong></div>
+            <HistoryMetric label="内部温度" value={value(['internal_temperature', 'temperature'], '°C')} title={`微型逆变器 ${inverterIndex} 内部温度历史`} series={temperatureSeries} />
+            <HistoryMetric label="丢包率" value={value(['packet_loss_rate', 'packet_loss'], '%')} title={`微型逆变器 ${inverterIndex} 丢包率历史`} series={packetLossSeries} />
+          </div>
+          <p className="inverter-meta">累计发电量 {energy(INVERTER_KPI_ALIASES.totalEnergy)}</p>
+        </div>
         {faultNames.length ? <div className="fault-list">{Array.from(new Set(faultNames)).slice(0, 3).map((name) => <span key={name} className="fault-name">{name}</span>)}</div> : <p className="inverter-meta">当前无故障</p>}
         {binding?.paired ? <Link className="card-link" href={`/devices/${encodeURIComponent(canonicalSn)}/inverters/${inverterIndex}`}>查看微逆详情</Link> : <span className="inverter-meta">{binding?.paired === false ? '未配对通道' : '暂无遥测数据'}</span>}
       </article>

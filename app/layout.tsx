@@ -1,4 +1,5 @@
 ﻿import './globals.css'
+import { LiveSourcePoller } from '@/src/components/live-source-poller'
 
 export const metadata = {
   title: '防逆流设备运行总览',
@@ -14,7 +15,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body>{children}</body>
+      <body>
+        <LiveSourcePoller />
+        {children}
+      </body>
     </html>
   )
 }
