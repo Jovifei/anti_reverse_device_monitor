@@ -7,6 +7,8 @@ coverage/
 .vscode/
 .vscode
 data/
+.codex/
+.agents/
 *.tsbuildinfo
 npm-debug.log*
 
@@ -29,7 +31,11 @@ config/source-field-mapping.local.json
 backups/
 test-results/
 playwright-report/
+.next-validation/
+.next-ui-capture-*/
+.tsconfig-ui-capture-*.json
 docs/dependency-audit.raw.json
+<<<<<<< HEAD
 # Added by code-review-graph
 .code-review-graph/
 CLAUDE.md
@@ -54,3 +60,12 @@ QODER.md
 .mcp.json
 .gemini/
 .gemini/
+=======
+
+# Local real-log UI exploration; never commit customer telemetry or derived previews.
+log/
+!docs/data/
+ui-preview.html
+ui-preview-real-logs.html
+scripts/generate-log-preview.cjs
+>>>>>>> codex/offline-html-export

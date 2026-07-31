@@ -8,6 +8,8 @@ V4 原型完成了页面结构、三相负功率规则、8 台微逆布局和图
 
 已交付 Next.js + TypeScript、Prisma + SQLite、Excel 导入、多 SN 查询、CT 与 8 台微逆页面、最近 7 天查询、ECharts 缩放/平移、状态/故障字典、严重逆流区间、7 天 retention、测试和验收报告。
 
+**离线 HTML 快照能力已实现**（`src/export/offline/`，`npm run export:html:demo`），可在无 Next.js / 无数据库 / 无网络环境下双击查看。
+
 一期不包含控制、OTA、MQTT 发布、配对解绑或真实公司数据库连接。
 
 ## 二期：公司数据库只读接入：待执行

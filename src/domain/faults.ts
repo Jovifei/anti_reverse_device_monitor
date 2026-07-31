@@ -5,6 +5,12 @@ export interface DecodedFault {
   name: string
 }
 
+export function faultDisplayNames(faultMask: number | null | undefined): string[] | null {
+  if (faultMask === null || faultMask === undefined || !Number.isFinite(faultMask)) return null
+  const decoded = decodeFaultMask(faultMask)
+  return decoded.length ? decoded.map((item) => item.name) : ['当前无故障']
+}
+
 export function decodeFaultMask(faultMask: number): DecodedFault[] {
   const bitEntries = Object.entries(faultDictionaryMap.bits ?? {})
   const active: DecodedFault[] = []

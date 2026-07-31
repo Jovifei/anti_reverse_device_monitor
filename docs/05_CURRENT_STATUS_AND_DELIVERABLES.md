@@ -14,6 +14,7 @@
 - 可配置 7 天 retention，且不删除元数据、latest 状态、checkpoint 或导入审计；
 - Unit、SQLite integration 与 Playwright E2E 测试；
 - 二期 Source Adapter 的接口、Mock、公司数据源 Stub、字段映射示例和接入指南。
+- **离线 HTML 快照导出（已实现）**：单文件 / Bundle / ZIP；CLI 支持 SQLite、Demo、Excel；Playwright `file://` 无网络验收。见 `docs/OFFLINE_HTML_EXPORT_GUIDE.md`。
 
 页面入口：
 

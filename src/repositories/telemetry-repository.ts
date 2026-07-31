@@ -82,7 +82,7 @@ export class TelemetryRepository {
 
         const latest = await tx.deviceLatest.findFirst({
           where: { deviceId: device.id, inverterId, metricKey: row.metricKey },
-          select: { id: true }
+          select: { id: true, reportedAt: true }
         })
         const latestData = {
             valueNumber: row.valueNumber ?? null,
@@ -90,9 +90,12 @@ export class TelemetryRepository {
             reportedAt: row.reportedAt,
             receivedAt: row.receivedAt
         }
-        if (latest) {
+        // Imports are not guaranteed to be chronological. Keep the newest
+        // observation rather than letting a later-processed historical row
+        // overwrite the current dashboard value.
+        if (latest && row.reportedAt >= latest.reportedAt) {
           await tx.deviceLatest.update({ where: { id: latest.id }, data: latestData })
-        } else {
+        } else if (!latest) {
           await tx.deviceLatest.create({ data: {
             deviceId: device.id,
             inverterId,
@@ -223,6 +226,12 @@ export class TelemetryRepository {
       page,
       pageSize
     })
+  }
+
+  async hasTelemetryForDevice(deviceSn: string) {
+    const device = await this.db.device.findUnique({ where: { deviceSn }, select: { id: true } })
+    if (!device) return false
+    return Boolean(await this.db.telemetry.findFirst({ where: { deviceId: device.id }, select: { id: true } }))
   }
 
   async listTelemetryByMetric({
@@ -375,6 +384,37 @@ export class TelemetryRepository {
       },
       orderBy: [{ reportedAt: 'asc' }, { id: 'asc' }]
     })
+  }
+
+  async getLatestReportedAt({
+    deviceSn,
+    inverterIndex
+  }: {
+    deviceSn: string
+    inverterIndex?: number | null
+  }) {
+    const device = await this.db.device.findUnique({ where: { deviceSn }, select: { id: true } })
+    if (!device) return null
+
+    let inverterId: number | null | undefined
+    if (inverterIndex) {
+      const binding = await this.db.inverterBinding.findFirst({
+        where: { deviceId: device.id, inverterIndex },
+        select: { id: true }
+      })
+      if (!binding) return null
+      inverterId = binding.id
+    }
+
+    const row = await this.db.telemetry.findFirst({
+      where: {
+        deviceId: device.id,
+        ...(inverterId !== undefined ? { inverterId } : {})
+      },
+      orderBy: { reportedAt: 'desc' },
+      select: { reportedAt: true }
+    })
+    return row?.reportedAt ?? null
   }
 
   async getLatestBefore({

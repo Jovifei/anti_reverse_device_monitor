@@ -30,8 +30,14 @@
 - `npm run test:e2e`
 - `npm run verify-data`
 - `npm run cleanup -- --dry-run`
+- `npm run export:html:demo`
+- `npm run test:offline-html`
 
-详细验收记录见 [一期验收报告](docs/PHASE1_ACCEPTANCE_REPORT.md)。公司数据源接入步骤见 [二期 Adapter 指南](docs/PHASE2_SOURCE_ADAPTER_GUIDE.md)。
+详细验收记录见 [一期验收报告](docs/PHASE1_ACCEPTANCE_REPORT.md)。公司数据源接入步骤见 [二期 Adapter 指南](docs/PHASE2_SOURCE_ADAPTER_GUIDE.md)。离线 HTML 导出见 [离线导出指南](docs/OFFLINE_HTML_EXPORT_GUIDE.md)。
+
+## 离线 HTML 快照
+
+已实现：单设备自包含 HTML、多设备 Bundle、ZIP，以及从 SQLite / Demo / Excel 导出。命令：`npm run export:html`、`npm run export:html:demo`、`npm run export:html:excel`。生成物位于 `artifacts/offline-ui/`（gitignore）。
 
 ## 二期状态
 

@@ -10,6 +10,20 @@ export interface DeviceWithSummary {
   inverterCount: number
 }
 
+export interface DeviceDashboardRecord {
+  id: number
+  deviceSn: string
+  productModel: string | null
+  platformOnline: boolean
+  lastReportedAt: Date | null
+  latestRows: Array<{ metricKey: string; valueNumber: number | null; valueText: string | null; reportedAt: Date }>
+  inverterBindings: Array<{
+    inverterIndex: number
+    paired: boolean
+    latestRows: Array<{ metricKey: string; valueNumber: number | null; valueText: string | null; reportedAt: Date }>
+  }>
+}
+
 export class DeviceRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
 
@@ -84,6 +98,29 @@ export class DeviceRepository {
         inverterCount: item.inverterBindings.length
       })) as DeviceWithSummary[]
     }
+  }
+
+  async findDashboardRecords(): Promise<DeviceDashboardRecord[]> {
+    return this.db.device.findMany({
+      include: {
+        latestRows: {
+          where: { inverterId: null },
+          select: { metricKey: true, valueNumber: true, valueText: true, reportedAt: true }
+        },
+        inverterBindings: {
+          orderBy: { inverterIndex: 'asc' },
+          select: {
+            inverterIndex: true,
+            paired: true,
+            latestRows: {
+              where: { metricKey: 'online_state' },
+              select: { metricKey: true, valueNumber: true, valueText: true, reportedAt: true }
+            }
+          }
+        }
+      },
+      orderBy: [{ deviceSn: 'asc' }]
+    })
   }
 
   async findBySn(deviceSn: string) {

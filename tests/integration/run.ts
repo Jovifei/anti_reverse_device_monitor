@@ -38,6 +38,16 @@ async function main() {
   if (await prisma.deviceLatest.count() !== 1) throw new Error('retention deleted latest state')
   const second = await cleanupRetention(prisma, now)
   if (second.telemetry !== 0 || second.deviceEvents !== 0 || second.faultEvents !== 0 || second.reverseFlowAlerts !== 0) throw new Error('retention is not idempotent')
+  const newestAt = new Date('2026-07-21T01:02:00.000Z')
+  const olderAt = new Date('2026-07-21T01:01:00.000Z')
+  await telemetryRepository.upsertBatch([
+    { deviceSn: device.deviceSn, metricKey: 'latest_order_check', siid: '2', piid: '30', reportedAt: newestAt, receivedAt: newestAt, valueNumber: 99, sourceRecordId: 'latest-first' },
+    { deviceSn: device.deviceSn, metricKey: 'latest_order_check', siid: '2', piid: '30', reportedAt: olderAt, receivedAt: olderAt, valueNumber: 1, sourceRecordId: 'older-second' }
+  ])
+  const latestOrderCheck = await prisma.deviceLatest.findFirst({ where: { deviceId: device.id, metricKey: 'latest_order_check' } })
+  if (latestOrderCheck?.valueNumber !== 99 || latestOrderCheck.reportedAt.getTime() !== newestAt.getTime()) {
+    throw new Error('latest state was overwritten by an older import row')
+  }
   const [{ SourceSyncService }, { MockSourceAdapter }] = await Promise.all([import('@/src/services/source-sync-service'), import('@/src/adapters/source-db/mock-source-adapter')])
   const sourceAt = new Date('2026-07-21T01:00:00.000Z')
   const source = new MockSourceAdapter([{ sourceRecordId: 'same-time-a', deviceSn: device.deviceSn, siid: '2', piid: '9', inverterIndex: null, reportedAt: sourceAt, receivedAt: sourceAt, value: 42, metricKey: 'load_power' }, { sourceRecordId: 'same-time-b', deviceSn: device.deviceSn, siid: '2', piid: '9', inverterIndex: null, reportedAt: sourceAt, receivedAt: sourceAt, value: 43, metricKey: 'load_power' }])

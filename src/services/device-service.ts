@@ -3,12 +3,18 @@ import { parseDeviceListQuery, parseSn, parseTelemetryQuery } from '@/src/domain
 import { parseSnLookup } from '@/src/domain/validation'
 import {
   CT_POWER_METRICS,
+  CT_KPI_ALIASES,
+  displayEnergyKwh,
+  displayValue,
+  findLatestMetric,
   GRID_QUALITY_METRICS,
   INVERTER_POWER_METRICS,
   INVERTER_TEMPERATURE_METRIC,
   type MetricDefinition,
-  metricMatches
+  metricMatches,
+  numericValue
 } from '@/src/domain/monitoring'
+import { resolveStatusLabel } from '@/src/domain/dictionaries'
 import { DeviceRepository } from '@/src/repositories/device-repository'
 import { TelemetryRepository } from '@/src/repositories/telemetry-repository'
 import {
@@ -19,6 +25,14 @@ import {
 
 export interface DeviceListResponse {
   total: number
+  summary: {
+    activeTotal: number
+    onlineCtCount: number
+    offlineCtCount: number
+    criticalReverseFlowCount: number
+    actionableOfflineCount: number
+    staleOfflineCount: number
+  }
   items: {
     id: number
     deviceSn: string
@@ -26,6 +40,18 @@ export interface DeviceListResponse {
     platformOnline: boolean
     lastReportedAt: Date | null
     inverterCount: number
+    onlineInverterCount: number
+    isOnline: boolean
+    reverseFlow: boolean
+    reverseFlowPhases: Array<'A' | 'B' | 'C'>
+    reverseState: 'normal' | 'active' | 'unknown' | 'unknown-last-seen-reverse'
+    offlineMinutes: number | null
+    offlineAlert: boolean
+    todayEnergy: string
+    runtimeState: string
+    limitState: string
+    sub1gState: string
+    wifiSignal: string
   }[]
   page: number
   pageSize: number
@@ -63,6 +89,8 @@ export interface ChartSeries {
   unit: string
   color: string
   markNegative?: boolean
+  dailyReset?: boolean
+  step?: 'start' | 'middle' | 'end'
   points: Array<[string, number]>
 }
 
@@ -75,6 +103,17 @@ export interface DeviceHistorySummary {
 }
 
 const OFFLINE_THRESHOLD_MINUTES = 15
+const ACTIVE_WINDOW_DAYS = 7
+const OFFLINE_NOTICE_WINDOW_MINUTES = ACTIVE_WINDOW_DAYS * 24 * 60
+const INVERTER_TODAY_ENERGY_METRIC: MetricDefinition = { key: 'inverter-today-energy', label: '今日发电量', unit: 'kWh', color: '#8b5e34', aliases: ['today_energy', 'inverter_today_energy'] }
+const INVERTER_PACKET_LOSS_METRIC: MetricDefinition = {
+  key: 'packet-loss',
+  label: '丢包率',
+  unit: '%',
+  color: '#64748b',
+  aliases: ['packet_loss_rate', 'packet_loss'],
+  step: 'end'
+}
 
 function toMinutesSince(date: Date) {
   return Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
@@ -96,15 +135,72 @@ export class DeviceService {
 
   async listDevices(rawQuery: unknown) {
     const parsed = parseDeviceListQuery(rawQuery)
-    const { items, total } = await this.repo.findManyWithKeyword({
-      page: parsed.page,
-      pageSize: parsed.pageSize,
-      keyword: parsed.q
+    const now = new Date()
+    const activeCutoff = new Date(now)
+    activeCutoff.setDate(activeCutoff.getDate() - ACTIVE_WINDOW_DAYS)
+    const onlineCutoff = new Date(now.getTime() - OFFLINE_THRESHOLD_MINUTES * 60_000)
+    const records = await this.repo.findDashboardRecords()
+    const activeItems = records
+      .filter((item) => item.platformOnline || (item.lastReportedAt !== null && item.lastReportedAt >= activeCutoff))
+      .map((item) => {
+        const phaseMetric = (aliases: string[]) => numericValue(findLatestMetric(item.latestRows, aliases))
+        const phaseValues = [
+          { phase: 'A' as const, value: phaseMetric(['active_power_ct1', 'ct.active_power.phase_a']) },
+          { phase: 'B' as const, value: phaseMetric(['active_power_ct2', 'ct.active_power.phase_b']) },
+          { phase: 'C' as const, value: phaseMetric(['active_power_ct3', 'ct.active_power.phase_c']) }
+        ]
+        const reverseFlowPhases = phaseValues.filter((item) => item.value !== null && item.value < 0).map((item) => item.phase)
+        const isOnline = Boolean(item.platformOnline && item.lastReportedAt && item.lastReportedAt >= onlineCutoff)
+        const offlineMinutes = isOnline || !item.lastReportedAt ? null : toMinutesSince(item.lastReportedAt)
+        const offlineAlert = offlineMinutes !== null && offlineMinutes < OFFLINE_NOTICE_WINDOW_MINUTES
+        const reverseState = isOnline
+          ? (reverseFlowPhases.length ? 'active' : 'normal')
+          : (reverseFlowPhases.length ? 'unknown-last-seen-reverse' : 'unknown')
+        const pairedInverters = item.inverterBindings.filter((binding) => binding.paired)
+        const onlineInverterCount = pairedInverters.filter((binding) => binding.latestRows.some((row) => row.valueNumber === 2)).length
+        return {
+          id: item.id,
+          deviceSn: item.deviceSn,
+          productModel: item.productModel,
+          platformOnline: item.platformOnline,
+          lastReportedAt: item.lastReportedAt,
+          inverterCount: pairedInverters.length,
+          onlineInverterCount,
+          isOnline,
+          reverseFlow: reverseState === 'active',
+          reverseFlowPhases,
+          reverseState,
+          offlineMinutes,
+          offlineAlert,
+          todayEnergy: displayEnergyKwh(findLatestMetric(item.latestRows, CT_KPI_ALIASES.todayEnergy)),
+          runtimeState: resolveStatusLabel('ct_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.state))) ?? '—',
+          limitState: resolveStatusLabel('limit_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.limitState))) ?? '—',
+          sub1gState: resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.sub1gState))) ?? '—',
+          wifiSignal: displayValue(findLatestMetric(item.latestRows, ['wifi_signal_strength']))
+        }
+      })
+    const summary = {
+      activeTotal: activeItems.length,
+      onlineCtCount: activeItems.filter((item) => item.isOnline).length,
+      offlineCtCount: activeItems.filter((item) => !item.isOnline).length,
+      criticalReverseFlowCount: activeItems.filter((item) => item.reverseFlow).length,
+      actionableOfflineCount: activeItems.filter((item) => item.offlineAlert).length,
+      staleOfflineCount: activeItems.filter((item) => !item.isOnline && !item.offlineAlert).length
+    }
+    const matchingItems = activeItems.filter((item) => {
+      if (parsed.q && !item.deviceSn.toLowerCase().includes(parsed.q.toLowerCase())) return false
+      if (parsed.status === 'online') return item.isOnline
+      if (parsed.status === 'offline') return !item.isOnline
+      if (parsed.status === 'reverse') return item.reverseFlow
+      return true
     })
+    const total = matchingItems.length
+    const items = matchingItems.slice((parsed.page - 1) * parsed.pageSize, parsed.page * parsed.pageSize)
 
     return {
       items,
       total,
+      summary,
       page: parsed.page,
       pageSize: parsed.pageSize
     } as DeviceListResponse
@@ -112,6 +208,10 @@ export class DeviceService {
 
   async getDeviceSummary(sn: string) {
     return this.repo.findBySn(parseSn(sn))
+  }
+
+  async getDeviceDataSourceLabel(sn: string) {
+    return (await this.telemetryRepository.hasTelemetryForDevice(parseSn(sn))) ? 'Demo SQLite' : '暂无数据'
   }
 
   async resolveDeviceSn(rawSn: string) {
@@ -256,11 +356,10 @@ export class DeviceService {
 
   async getDeviceChartData(sn: string, rawQuery: unknown) {
     const parsed = parseTelemetryQuery(rawQuery)
-    const endAt = new Date()
-    const startAt = new Date(endAt)
-    startAt.setDate(endAt.getDate() - parsed.days)
+    const deviceSn = parseSn(sn)
+    const { startAt, endAt } = await this.resolveChartWindow(deviceSn, parsed.days)
     const rows = await this.telemetryRepository.listTelemetryWindow({
-      deviceSn: parseSn(sn), startAt, endAt
+      deviceSn, startAt, endAt
     })
     return {
       windowStart: startAt.toISOString(),
@@ -272,32 +371,35 @@ export class DeviceService {
 
   async getInverterChartData(sn: string, rawIndex: string | number, rawQuery: unknown) {
     const parsed = parseTelemetryQuery(rawQuery)
+    const deviceSn = parseSn(sn)
     const inverterIndex = parseIndex(rawIndex)
-    const endAt = new Date()
-    const startAt = new Date(endAt)
-    startAt.setDate(endAt.getDate() - parsed.days)
+    const { startAt, endAt } = await this.resolveChartWindow(deviceSn, parsed.days, inverterIndex)
     const rows = await this.telemetryRepository.listTelemetryWindow({
-      deviceSn: parseSn(sn), inverterIndex, startAt, endAt
+      deviceSn, inverterIndex, startAt, endAt
     })
     return {
       windowStart: startAt.toISOString(),
       windowEnd: endAt.toISOString(),
       power: this.toChartSeries(rows, INVERTER_POWER_METRICS),
-      temperature: this.toChartSeries(rows, [INVERTER_TEMPERATURE_METRIC])
+      temperature: this.toChartSeries(rows, [INVERTER_TEMPERATURE_METRIC]),
+      energy: this.toChartSeries(rows, [INVERTER_TODAY_ENERGY_METRIC]).map((item) => ({
+        ...item,
+        dailyReset: true,
+        points: item.points.map(([at, value]) => [at, value / 1000] as [string, number])
+      })),
+      packetLoss: this.toChartSeries(rows, [INVERTER_PACKET_LOSS_METRIC])
     }
   }
 
   async getReverseFlowAlarms(sn: string, rawQuery: unknown) {
     const parsed = parseTelemetryQuery(rawQuery)
-    const now = new Date()
-    const startAt = new Date(now)
-    startAt.setDate(now.getDate() - parsed.days)
     const deviceSn = parseSn(sn)
+    const { startAt, endAt } = await this.resolveChartWindow(deviceSn, parsed.days)
 
     const rows = await this.telemetryRepository.listTelemetryWindow({
       deviceSn,
       startAt,
-      endAt: now
+      endAt
     })
     const phases = [
       { phase: 'A' as const, aliases: ['active_power_ct1', 'ct.active_power.phase_a'] },
@@ -332,7 +434,7 @@ export class DeviceService {
         intervals.push({
           phase, sampleCount: active.sampleCount, minimumPower: active.minimumPower, severity: 'critical',
           startedAt: active.startedAt.toISOString(), endedAt: null,
-          durationMinutes: Math.max(0, Math.round((now.getTime() - active.startedAt.getTime()) / 60_000))
+          durationMinutes: Math.max(0, Math.round((endAt.getTime() - active.startedAt.getTime()) / 60_000))
         })
       }
       return intervals
@@ -345,6 +447,18 @@ export class DeviceService {
     }
   }
 
+  /** 以设备最新上报时间为窗口终点，避免离线历史数据相对墙钟“过期”后只剩尾段。 */
+  private async resolveChartWindow(deviceSn: string, days: number, inverterIndex?: number) {
+    const latest = await this.telemetryRepository.getLatestReportedAt({
+      deviceSn,
+      inverterIndex
+    })
+    const endAt = latest ?? new Date()
+    const startAt = new Date(endAt)
+    startAt.setDate(endAt.getDate() - days)
+    return { startAt, endAt }
+  }
+
   private toChartSeries(
     rows: Array<{ metricKey: string; valueNumber: number | null; valueText: string | null; reportedAt: Date }>,
     definitions: MetricDefinition[]
@@ -355,6 +469,7 @@ export class DeviceService {
       unit: definition.unit,
       color: definition.color,
       markNegative: definition.markNegative,
+      step: definition.step,
       points: rows
         .filter((row) => metricMatches(row.metricKey, definition.aliases) && row.valueNumber !== null)
         .map((row) => [row.reportedAt.toISOString(), row.valueNumber as number])

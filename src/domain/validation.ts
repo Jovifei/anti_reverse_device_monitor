@@ -6,7 +6,8 @@ export const snLookupSchema = z.string().trim().min(1).max(64).regex(/^[A-Za-z0-
 export const deviceListSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(20),
-  q: z.string().trim().min(1).max(64).optional()
+  q: z.string().trim().min(1).max(64).optional(),
+  status: z.enum(['all', 'online', 'offline', 'reverse']).default('all')
 })
 
 export const telemetryQuerySchema = z.object({
@@ -58,6 +59,7 @@ export function toFlatQuery(raw: unknown) {
     page: firstValue(raw, 'page'),
     pageSize: firstValue(raw, 'pageSize'),
     q: firstValue(raw, 'q'),
+    status: firstValue(raw, 'status'),
     days: firstValue(raw, 'days'),
     metric: firstValue(raw, 'metric'),
     inverterIndex: firstValue(raw, 'inverterIndex')
@@ -69,7 +71,8 @@ export function parseDeviceListQuery(raw: unknown) {
   return deviceListSchema.parse({
     page: flat.page,
     pageSize: flat.pageSize,
-    q: flat.q
+    q: flat.q,
+    status: flat.status
   })
 }
 
