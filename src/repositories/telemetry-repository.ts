@@ -10,6 +10,52 @@ export interface LatestTelemetryRow {
   isFaultCritical?: boolean
 }
 
+export type TelemetryWriteConflict = {
+  sourceRecordId: string
+  reason: 'source_record_conflict'
+}
+
+export type TelemetryWriteResult = {
+  created: number
+  duplicatesSkipped: number
+  conflicts: TelemetryWriteConflict[]
+}
+
+function sameSourceTelemetry(
+  existing: {
+    deviceId: number
+    inverterId: number | null
+    siid: string
+    piid: string
+    metricKey: string
+    reportedAt: Date
+    valueNumber: number | null
+    valueText: string | null
+    sourceName: string
+  },
+  next: {
+    deviceId: number
+    inverterId: number | null
+    siid: string
+    piid: string
+    metricKey: string
+    reportedAt: Date
+    valueNumber: number | null
+    valueText: string | null
+    sourceName: string
+  }
+) {
+  return existing.deviceId === next.deviceId &&
+    existing.inverterId === next.inverterId &&
+    existing.siid === next.siid &&
+    existing.piid === next.piid &&
+    existing.metricKey === next.metricKey &&
+    existing.reportedAt.getTime() === next.reportedAt.getTime() &&
+    existing.valueNumber === next.valueNumber &&
+    existing.valueText === next.valueText &&
+    existing.sourceName === next.sourceName
+}
+
 export class TelemetryRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
 
@@ -28,17 +74,12 @@ export class TelemetryRepository {
       sourceRecordId: string
       sourceName?: string
     }>
-  ) {
-    const results = await this.db.$transaction(async (tx) => {
-      const savedRows = []
-      // Same device/metric/time can arrive from different Mongo docs; keep last in-batch.
-      const deduped = new Map<string, (typeof rows)[number]>()
-      for (const row of rows) {
-        const key = `${row.deviceSn}|${row.inverterIndex ?? 0}|${row.metricKey}|${row.reportedAt.toISOString()}`
-        deduped.set(key, row)
-      }
+  ): Promise<TelemetryWriteResult> {
+    return this.db.$transaction(async (tx) => {
+      const result: TelemetryWriteResult = { created: 0, duplicatesSkipped: 0, conflicts: [] }
+      const affectedKeys = new Map<string, { deviceId: number; inverterId: number | null; metricKey: string }>()
 
-      for (const row of deduped.values()) {
+      for (const row of rows) {
         const device = await tx.device.findUnique({
           where: { deviceSn: row.deviceSn }
         })
@@ -73,71 +114,28 @@ export class TelemetryRepository {
           sourceName: row.sourceName ?? 'excel'
         }
 
-        const valueUpdate = {
-          valueNumber: telemetryData.valueNumber,
-          valueText: telemetryData.valueText,
-          receivedAt: telemetryData.receivedAt,
-          metricKey: telemetryData.metricKey,
-          siid: telemetryData.siid,
-          piid: telemetryData.piid,
-          inverterId: telemetryData.inverterId,
-          reportedAt: telemetryData.reportedAt
-        }
-
-        let created
+        let createdCurrent = false
         const bySource = await tx.telemetry.findUnique({ where: { sourceRecordId: row.sourceRecordId } })
         if (bySource) {
-          created = await tx.telemetry.update({ where: { id: bySource.id }, data: valueUpdate })
+          if (sameSourceTelemetry(bySource, telemetryData)) result.duplicatesSkipped += 1
+          else result.conflicts.push({ sourceRecordId: row.sourceRecordId, reason: 'source_record_conflict' })
+          continue
         } else {
-          const byNatural = await tx.telemetry.findFirst({
-            where: {
-              deviceId: device.id,
-              inverterId,
-              metricKey: row.metricKey,
-              reportedAt: row.reportedAt
-            }
-          })
-          if (byNatural) {
-            // Keep existing sourceRecordId to avoid unique collisions across re-syncs.
-            created = await tx.telemetry.update({
-              where: { id: byNatural.id },
-              data: {
-                valueNumber: valueUpdate.valueNumber,
-                valueText: valueUpdate.valueText,
-                receivedAt: valueUpdate.receivedAt,
-                siid: valueUpdate.siid,
-                piid: valueUpdate.piid
-              }
-            })
-          } else {
-            try {
-              created = await tx.telemetry.create({ data: telemetryData })
-            } catch (error) {
-              if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
-                throw error
-              }
-              const raced = await tx.telemetry.findFirst({
-                where: {
-                  deviceId: device.id,
-                  inverterId,
-                  metricKey: row.metricKey,
-                  reportedAt: row.reportedAt
-                }
-              })
-              if (!raced) throw error
-              created = await tx.telemetry.update({
-                where: { id: raced.id },
-                data: {
-                  valueNumber: valueUpdate.valueNumber,
-                  valueText: valueUpdate.valueText,
-                  receivedAt: valueUpdate.receivedAt,
-                  siid: valueUpdate.siid,
-                  piid: valueUpdate.piid
-                }
-              })
-            }
+          try {
+            await tx.telemetry.create({ data: telemetryData })
+            result.created += 1
+            createdCurrent = true
+          } catch (error) {
+            if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') throw error
+            const raced = await tx.telemetry.findUnique({ where: { sourceRecordId: row.sourceRecordId } })
+            if (!raced) throw error
+            if (sameSourceTelemetry(raced, telemetryData)) result.duplicatesSkipped += 1
+            else result.conflicts.push({ sourceRecordId: row.sourceRecordId, reason: 'source_record_conflict' })
           }
         }
+
+        if (!createdCurrent) continue
+        affectedKeys.set(`${device.id}|${inverterId ?? 'null'}|${row.metricKey}`, { deviceId: device.id, inverterId, metricKey: row.metricKey })
 
         if (!device.lastReportedAt || row.reportedAt > device.lastReportedAt) {
           await tx.device.update({
@@ -149,38 +147,22 @@ export class TelemetryRepository {
           })
           device.lastReportedAt = row.reportedAt
         }
-
-        const latest = await tx.deviceLatest.findFirst({
-          where: { deviceId: device.id, inverterId, metricKey: row.metricKey },
-          select: { id: true, reportedAt: true }
-        })
-        const latestData = {
-            valueNumber: row.valueNumber ?? null,
-            valueText: row.valueText ?? null,
-            reportedAt: row.reportedAt,
-            receivedAt: row.receivedAt
-        }
-        // Imports are not guaranteed to be chronological. Keep the newest
-        // observation rather than letting a later-processed historical row
-        // overwrite the current dashboard value.
-        if (latest && row.reportedAt >= latest.reportedAt) {
-          await tx.deviceLatest.update({ where: { id: latest.id }, data: latestData })
-        } else if (!latest) {
-          await tx.deviceLatest.create({ data: {
-            deviceId: device.id,
-            inverterId,
-            metricKey: row.metricKey,
-            ...latestData
-          } })
-        }
-
-        savedRows.push(created)
       }
 
-      return savedRows
-    })
+      for (const key of affectedKeys.values()) {
+        const latest = await tx.telemetry.findFirst({
+          where: { deviceId: key.deviceId, inverterId: key.inverterId, metricKey: key.metricKey },
+          orderBy: [{ reportedAt: 'desc' }, { sourceRecordId: 'desc' }],
+          select: { valueNumber: true, valueText: true, reportedAt: true, receivedAt: true }
+        })
+        if (!latest) continue
+        const existing = await tx.deviceLatest.findFirst({ where: key, select: { id: true } })
+        if (existing) await tx.deviceLatest.update({ where: { id: existing.id }, data: latest })
+        else await tx.deviceLatest.create({ data: { deviceId: key.deviceId, inverterId: key.inverterId, metricKey: key.metricKey, ...latest } })
+      }
 
-    return results
+      return result
+    })
   }
 
   async getLatestAnyBefore({

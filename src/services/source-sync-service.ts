@@ -48,6 +48,13 @@ export type SourceSyncResult = {
 
 const WRITE_CHUNK = 100
 
+class SourceRecordConflictError extends Error {
+  constructor(count: number) {
+    super(`source record conflicts: ${count}`)
+    this.name = 'SourceRecordConflictError'
+  }
+}
+
 function metricKeyFor(record: SourceTelemetryRecord) {
   if (record.metricKey) return record.metricKey.trim().toLowerCase()
   const known = metricDefinitions.find(
@@ -217,7 +224,7 @@ export class SourceSyncService {
           for (let offset = 0; offset < pending.length; offset += WRITE_CHUNK) {
             const chunk = pending.slice(offset, offset + WRITE_CHUNK)
             try {
-              await telemetryRepo.upsertBatch(
+              const writeResult = await telemetryRepo.upsertBatch(
                 chunk.map((row) => ({
                   deviceSn: row.deviceSn,
                   inverterIndex: row.inverterIndex,
@@ -232,9 +239,25 @@ export class SourceSyncService {
                   sourceName
                 }))
               )
-              totals.imported += chunk.length
+              totals.imported += writeResult.created
+              totals.duplicatesSkipped += writeResult.duplicatesSkipped
+              if (writeResult.conflicts.length > 0) {
+                totals.failed += writeResult.conflicts.length
+                for (const conflict of writeResult.conflicts) {
+                  await this.db.syncError.create({
+                    data: {
+                      syncBatchId: batch.id,
+                      sourceRecordId: conflict.sourceRecordId,
+                      errorCode: conflict.reason,
+                      message: 'Source record identity was reused with different telemetry content.'
+                    }
+                  })
+                }
+                throw new SourceRecordConflictError(writeResult.conflicts.length)
+              }
               logProgress(`written ${totals.imported} rows (page ${pageIndex})`)
             } catch (error) {
+              if (error instanceof SourceRecordConflictError) throw error
               if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
                 totals.duplicatesSkipped += chunk.length
                 continue

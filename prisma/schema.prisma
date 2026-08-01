@@ -95,7 +95,7 @@ model Telemetry {
   @@index([deviceId, metricKey, reportedAt(sort: Desc)])
   @@index([inverterId, metricKey, reportedAt(sort: Desc)])
   @@index([sourceName, reportedAt])
-  @@unique([deviceId, inverterId, metricKey, reportedAt])
+  @@index([deviceId, inverterId, metricKey, reportedAt, sourceRecordId])
 }
 
 model DeviceLatest {
