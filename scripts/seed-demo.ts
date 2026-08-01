@@ -33,9 +33,11 @@ async function main() {
   await fs.rm(databasePath, { force: true })
   await fs.writeFile(databasePath, '')
 
+  const useMigrations = process.env.DEMO_USE_MIGRATIONS === 'true'
+  const prismaArgs = useMigrations ? ['prisma', 'migrate', 'deploy'] : ['prisma', 'db', 'push', '--skip-generate']
   const prismaCommand = process.platform === 'win32'
-    ? { file: 'cmd.exe', args: ['/d', '/s', '/c', 'npx prisma db push --skip-generate'] }
-    : { file: 'npx', args: ['prisma', 'db', 'push', '--skip-generate'] }
+    ? { file: 'cmd.exe', args: ['/d', '/s', '/c', `npx ${prismaArgs.join(' ')}`] }
+    : { file: 'npx', args: prismaArgs }
   execFileSync(prismaCommand.file, prismaCommand.args, { cwd: root, env: process.env, stdio: 'inherit' })
 
   const { PrismaClient } = await import('@prisma/client')
