@@ -7,8 +7,9 @@ services:
       - .env.docker
     environment:
       APP_DATABASE_URL: file:./data/device-monitor.db
-      SOURCE_DB_ENABLED: ${SOURCE_DB_ENABLED:-true}
+      SOURCE_DB_ENABLED: ${SOURCE_DB_ENABLED:-false}
       SOURCE_DB_TYPE: mongodb
+      SOURCE_SYNC_INTERVAL_SECONDS: ${SOURCE_SYNC_INTERVAL_SECONDS:-10}
     volumes:
       - app-data:/app/data
       - ./config/devices.json:/app/config/devices.json:ro
@@ -24,10 +25,11 @@ services:
       APP_DATABASE_URL: file:./data/device-monitor.db
       SOURCE_DB_ENABLED: "true"
       SOURCE_DB_TYPE: mongodb
+      SOURCE_SYNC_INTERVAL_SECONDS: ${SOURCE_SYNC_INTERVAL_SECONDS:-10}
     volumes:
       - app-data:/app/data
       - ./config/devices.json:/app/config/devices.json:ro
-    command: ["npm", "run", "source:sync"]
+    command: ["npm", "run", "source:worker"]
 
 volumes:
   app-data:
