@@ -1,6 +1,18 @@
 import { expect, test } from '@playwright/test'
 
 test.describe('CT and inverter monitoring refinements', () => {
+  test('does not expose a browser-triggered source sync endpoint', async ({ page }) => {
+    const response = await page.request.post('/api/source/sync')
+    expect(response.status()).toBe(404)
+    const syncRequests: string[] = []
+    page.on('request', (request) => {
+      if (request.url().includes('/api/source/sync')) syncRequests.push(request.method())
+    })
+    await page.goto('/devices')
+    await page.waitForTimeout(1_000)
+    expect(syncRequests).toEqual([])
+  })
+
   test('keeps the demo summary stable and labels the read-only source', async ({ page }) => {
     await page.goto('/devices')
     await expect(page.locator('.fleet-priority-card.critical strong')).toHaveText('1')

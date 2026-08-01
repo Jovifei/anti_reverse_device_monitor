@@ -344,14 +344,22 @@ export class SourceSyncService {
   }
 }
 
-export function createConfiguredSourceAdapter() {
+export type ConfiguredSourceAdapterOptions = {
+  /** Explicitly pass null to ignore a one-shot MONGODB_DEVICE_ID environment filter. */
+  deviceId?: string | null
+}
+
+export function createConfiguredSourceAdapter(options: ConfiguredSourceAdapterOptions = {}) {
   const config = getSourceRuntimeConfig()
   if (config.sourceType === 'mongodb') {
-    return createMongoLogSourceAdapterFromEnv({
+    const overrides = {
       enabled: config.enabled,
       queryTimeoutMs: config.queryTimeoutMs,
       sourceName: config.sourceName
-    })
+    }
+    return createMongoLogSourceAdapterFromEnv(
+      'deviceId' in options ? { ...overrides, deviceIdFilter: options.deviceId ?? undefined } : overrides
+    )
   }
   return new CompanySourceAdapterStub({
     enabled: config.enabled,

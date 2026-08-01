@@ -16,7 +16,6 @@ async function main() {
   loadLocalEnvironment()
   const dryRun = flag('--dry-run')
   const deviceId = value('--device-id')
-  if (deviceId) process.env.MONGODB_DEVICE_ID = deviceId
   const configured = process.env.SOURCE_DB_ENABLED === 'true'
   if (!configured && dryRun) {
     console.log(
@@ -38,7 +37,7 @@ async function main() {
   console.error(
     `[source:sync] starting${dryRun ? ' (dry-run)' : ''}${deviceId ? ` device_id=${deviceId}` : ''} — connecting to Mongo may take 30–60s…`
   )
-  const adapter = configured ? createConfiguredSourceAdapter() : new MockSourceAdapter()
+  const adapter = configured ? createConfiguredSourceAdapter({ deviceId }) : new MockSourceAdapter()
   const result = await new SourceSyncService(adapter).sync({
     dryRun,
     from: from ? new Date(from) : undefined,
