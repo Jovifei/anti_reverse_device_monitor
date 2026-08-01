@@ -53,7 +53,17 @@ async function main() {
   const source = new MockSourceAdapter([{ sourceRecordId: 'same-time-a', deviceSn: device.deviceSn, siid: '2', piid: '9', inverterIndex: null, reportedAt: sourceAt, receivedAt: sourceAt, value: 42, metricKey: 'load_power' }, { sourceRecordId: 'same-time-b', deviceSn: device.deviceSn, siid: '2', piid: '9', inverterIndex: null, reportedAt: sourceAt, receivedAt: sourceAt, value: 43, metricKey: 'load_power' }])
   const firstSync = await new SourceSyncService(source, prisma).sync({ sourceName: 'integration-source', from: new Date('2026-07-21T00:00:00.000Z'), to: new Date('2026-07-22T00:00:00.000Z'), batchSize: 1 })
   const secondSync = await new SourceSyncService(source, prisma).sync({ sourceName: 'integration-source', from: new Date('2026-07-21T00:00:00.000Z'), to: new Date('2026-07-22T00:00:00.000Z'), batchSize: 1 })
-  if (firstSync.imported !== 2 || secondSync.duplicatesSkipped !== 2) throw new Error(`source sync is not stable or idempotent: ${JSON.stringify({ firstSync, secondSync })}`)
+  const sourceRows = await prisma.telemetry.findMany({ where: { sourceName: 'integration-source' }, orderBy: { sourceRecordId: 'asc' }, select: { sourceRecordId: true, valueNumber: true } })
+  if (firstSync.imported !== 2 || secondSync.imported !== 0 || secondSync.duplicatesSkipped !== 2 || sourceRows.length !== 2 || sourceRows.map((row) => row.sourceRecordId).join(',') !== 'integration-source:same-time-a,integration-source:same-time-b') {
+    throw new Error(`source sync is not stable or idempotent: ${JSON.stringify({ firstSync, secondSync, sourceRows })}`)
+  }
+  if (sourceRows[1]?.valueNumber !== 43) throw new Error(`same-time source ordering did not preserve the latest source record: ${JSON.stringify(sourceRows)}`)
+  const conflictSource = new MockSourceAdapter([{ sourceRecordId: 'conflict-record', deviceSn: device.deviceSn, siid: '2', piid: '9', inverterIndex: null, reportedAt: sourceAt, receivedAt: sourceAt, value: 7, metricKey: 'load_power' }])
+  await new SourceSyncService(conflictSource, prisma).sync({ sourceName: 'integration-conflict', from: new Date('2026-07-21T00:00:00.000Z'), to: new Date('2026-07-22T00:00:00.000Z'), ignoreCheckpoint: true })
+  const conflictReplay = new MockSourceAdapter([{ sourceRecordId: 'conflict-record', deviceSn: device.deviceSn, siid: '2', piid: '9', inverterIndex: null, reportedAt: sourceAt, receivedAt: sourceAt, value: 8, metricKey: 'load_power' }])
+  const conflictResult = await new SourceSyncService(conflictReplay, prisma).sync({ sourceName: 'integration-conflict', from: new Date('2026-07-21T00:00:00.000Z'), to: new Date('2026-07-22T00:00:00.000Z'), ignoreCheckpoint: true })
+  const conflictRow = await prisma.telemetry.findUnique({ where: { sourceRecordId: 'integration-conflict:conflict-record' }, select: { valueNumber: true } })
+  if (conflictResult.failed !== 1 || conflictRow?.valueNumber !== 7) throw new Error(`source ID conflict was not rejected: ${JSON.stringify({ conflictResult, conflictRow })}`)
   if ((await prisma.syncCheckpoint.findUnique({ where: { sourceName: 'integration-source' } }))?.status !== 'ok') throw new Error('source checkpoint was not committed after success')
   console.log(JSON.stringify({ status: 'pass', checks: ['sqlite import path', 'seven-day boundary', 'latest state retained', 'repeat cleanup'] }))
   await prisma.$disconnect()
