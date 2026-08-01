@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { UrlObject } from 'url'
 import { SoftRefreshButton } from '@/src/components/soft-refresh-button'
 import { WifiSignalView } from '@/src/components/wifi-signal-view'
 import { deviceSnPrimaryLabel, deviceSnSecondaryLabel } from '@/src/domain/device-identity'
@@ -12,13 +13,12 @@ const FILTERS = [
   { value: 'reverse', label: '仅逆流告警' }
 ] as const
 
-function fleetListHref(status: (typeof FILTERS)[number]['value'], q: string) {
-  const params = new URLSearchParams()
-  if (status !== 'all') params.set('status', status)
+function fleetListHref(status: (typeof FILTERS)[number]['value'], q: string): UrlObject {
+  const query: Record<string, string> = {}
+  if (status !== 'all') query.status = status
   const trimmed = q.trim()
-  if (trimmed) params.set('q', trimmed)
-  const query = params.toString()
-  return query ? `/devices?${query}` : '/devices'
+  if (trimmed) query.q = trimmed
+  return Object.keys(query).length > 0 ? { pathname: '/devices', query } : { pathname: '/devices' }
 }
 
 function reverseText(device: {

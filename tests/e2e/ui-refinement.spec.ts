@@ -15,10 +15,10 @@ test.describe('CT and inverter monitoring refinements', () => {
 
     await page.goto('/devices/DEMO-CT-ONLINE-001')
     await expect(page.getByText('数据来源：Demo SQLite')).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'CT 当前状态' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'CT 运行摘要' })).toBeVisible()
     await expect(page.getByRole('heading', { name: '电网电压与频率（V / Hz）' })).toBeVisible()
     await expect(page.getByRole('heading', { name: '功率总览' })).toBeVisible()
-    await expect(page.getByText('更多曲线')).toBeVisible()
+    await expect(page.getByRole('checkbox', { name: 'A相 CT 有功功率 (W)' })).toBeVisible()
     await expect(page.locator('.inverter-card')).toHaveCount(8)
   })
 
