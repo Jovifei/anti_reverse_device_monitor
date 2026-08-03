@@ -178,7 +178,7 @@ export class DeviceService {
           runtimeState: resolveStatusLabel('ct_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.state))) ?? '—',
           limitState: resolveStatusLabel('limit_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.limitState))) ?? '—',
           sub1gState: resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.sub1gState))) ?? '—',
-          wifiSignal: displayValue(findLatestMetric(item.latestRows, ['wifi_signal_strength']))
+          wifiSignal: displayValue(findLatestMetric(item.latestRows, ['wifi_signal_strength', 'wifi_rssi', 'wifi.signal', 'wifi_signal']))
         }
       })
     const summary = {

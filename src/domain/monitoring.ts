@@ -78,6 +78,11 @@ export function chartSeriesDisplayColor(key: string, requestedColor: string) {
   return LEGACY_ALERT_SERIES_COLORS.has(normalized) ? NON_ALERT_CHART_FALLBACK_COLOR : requestedColor
 }
 
+/** Align with connectivity offline threshold used by device/telemetry services. */
+export const TELEMETRY_FRESHNESS_MS = 15 * 60 * 1000
+
+export const WIFI_SIGNAL_ALIASES = ['wifi_signal_strength', 'wifi_rssi', 'wifi.signal', 'wifi_signal']
+
 export const CT_KPI_ALIASES = {
   todayEnergy: ['today_energy', 'today_generation_energy'],
   totalEnergy: ['total_energy', 'lifetime_energy', 'accumulated_energy'],
@@ -281,6 +286,50 @@ export function wifiSignalBars(raw: number | null): 0 | 1 | 2 | 3 | 4 {
   return 0
 }
 
+export type Sub1gStatusTone = 'ok' | 'warn' | 'muted'
+
+/**
+ * CT Sub1G 状态：优先固件上报的 sub1g_state；
+ * 缺失时按配对/在线微逆推导（不用上报新鲜度——上报间隔可能很长）。
+ */
+export function deriveCtSub1gStatus(params: {
+  rawState: number | null
+  hasPairedInverters: boolean
+  /** At least one paired inverter is currently online (online_state=2). */
+  hasOnlinePairedInverter?: boolean
+}): { label: string; tone: Sub1gStatusTone; raw: number | null } {
+  if (params.rawState !== null) {
+    const label = resolveStatusLabel('sub1g_state', params.rawState) ?? '—'
+    const tone: Sub1gStatusTone = params.rawState === 4 ? 'ok' : params.rawState === 3 || params.rawState === 2 ? 'warn' : 'muted'
+    return { label, tone, raw: params.rawState }
+  }
+  if (!params.hasPairedInverters) {
+    return { label: '模块未配对设备', tone: 'muted', raw: 1 }
+  }
+  if (params.hasOnlinePairedInverter) {
+    return { label: '通信正常', tone: 'ok', raw: 4 }
+  }
+  return { label: '配对设备已连接但通信不畅', tone: 'warn', raw: 3 }
+}
+
+/**
+ * 微逆 Sub1G 状态：仅已配对通道显示。
+ * - online_state=2 → 通信正常
+ * - online_state=1 → 配对设备已连接但通信不畅（离线）
+ * 不根据上报新鲜度判断（设备上报周期可能很长）。
+ * 未配对 / 无数据 → null（UI 不渲染）。
+ */
+export function deriveInverterSub1gStatus(params: {
+  onlineState: number | null
+  paired?: boolean | null
+}): { label: string; tone: Sub1gStatusTone } | null {
+  if (params.paired !== true) return null
+  if (params.onlineState === 0) return null
+  if (params.onlineState === 2) return { label: '通信正常', tone: 'ok' }
+  if (params.onlineState === 1) return { label: '配对设备已连接但通信不畅', tone: 'warn' }
+  return null
+}
+
 /** 微逆所在相：1/2/3 → A/B/C 相，便于与 CT 三相对照。 */
 export function displayInverterPhaseLabel(raw: string | number | null | undefined) {
   if (raw === null || raw === undefined || raw === '') return '—'
@@ -293,6 +342,21 @@ export function displayInverterPhaseLabel(raw: string | number | null | undefine
   if (label === 'CT2相') return 'B相'
   if (label === 'CT3相') return 'C相'
   return label ?? String(raw)
+}
+
+/** 详情与卡片统一：遥测 phase_num 优先，binding.phaseNum 兜底。 */
+export function resolveInverterPhaseLabel(rows: MetricRow[], bindingPhase?: string | number | null) {
+  return displayInverterPhaseLabel(numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.phase)) ?? bindingPhase)
+}
+
+export function latestMetricReportedAt(rows: MetricRow[]) {
+  let newest: Date | null = null
+  for (const row of rows) {
+    const at = new Date(row.reportedAt)
+    if (Number.isNaN(at.getTime())) continue
+    if (!newest || at > newest) newest = at
+  }
+  return newest
 }
 
 export function displayPowerLimit(row: MetricRow | undefined) {

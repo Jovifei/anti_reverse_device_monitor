@@ -7,7 +7,6 @@ import { faultDisplayNames } from '@/src/domain/faults'
 import {
   INVERTER_KPI_ALIASES,
   displayEnergyKwh,
-  displayInverterPhaseLabel,
   displayPowerLimit,
   displaySwitch,
   displayValue,
@@ -19,7 +18,8 @@ import {
   getInverterWorkStatus,
   groupByLocalDate,
   isGenerating,
-  numericValue
+  numericValue,
+  resolveInverterPhaseLabel
 } from '@/src/domain/monitoring'
 import { resolveStatusLabel } from '@/src/domain/dictionaries'
 import { DeviceService } from '@/src/services/device-service'
@@ -76,13 +76,17 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
   const packetLossRow = findLatestMetric(rows, INVERTER_KPI_ALIASES.packetLoss)
   const pv1Series = charts.power.filter((item) => item.key === 'pv1')
   const pv2Series = charts.power.filter((item) => item.key === 'pv2')
+  const phaseLabel = resolveInverterPhaseLabel(rows, summary.phaseNum)
+  const connectionPointRaw =
+    numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.connectionPoint)) ?? summary.connectionPoint
+  const totalEnergyValue = displayEnergyKwh(findLatestMetric(rows, INVERTER_KPI_ALIASES.totalEnergy))
 
   const transitionGroups = groupByLocalDate(summary.connectivity.transitions, (item) => item.at)
   const offlineGroups = groupByLocalDate(summary.connectivity.offlineWindows, (item) => item.startAt)
   const faultGroups = groupByLocalDate(summary.faultChanges, (item) => item.at)
 
   return <main>
-    <header className="page-header"><div><p className="nav-back"><Link className="utility-link" href={`/devices/${encodeURIComponent(summary.deviceSn)}`}>← 返回 CT {summary.deviceSn}</Link><Link className="utility-link" href="/devices">防逆流设备主页</Link></p><p className="eyebrow">CT {summary.deviceSn}</p><h1>微型逆变器 {summary.inverterIndex}：{displayInverterPhaseLabel(summary.phaseNum)} · {summary.inverterSn ?? EMPTY}</h1><p className="muted">软件版本 {summary.softwareVersion ?? EMPTY} · Sub1G 版本 {summary.sub1gVersion ?? EMPTY}</p></div><DeviceSnSearch initialSn={summary.deviceSn} /></header>
+    <header className="page-header"><div><p className="nav-back"><Link className="utility-link" href={`/devices/${encodeURIComponent(summary.deviceSn)}`}>← 返回 CT {summary.deviceSn}</Link><Link className="utility-link" href="/devices">防逆流设备主页</Link></p><p className="eyebrow">CT {summary.deviceSn}</p><h1>微型逆变器 {summary.inverterIndex}：{phaseLabel}{summary.inverterSn ? ` · ${summary.inverterSn}` : ''}</h1><p className="muted">软件版本 {summary.softwareVersion ?? EMPTY} · Sub1G 版本 {summary.sub1gVersion ?? EMPTY}</p></div><DeviceSnSearch initialSn={summary.deviceSn} /></header>
 
     <section className={`gen-spotlight inv-detail-gen ${generating ? 'is-on' : 'is-off'}`} aria-label="发电状态">
       <div>
@@ -94,23 +98,37 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
       <span className={`badge ${status.variant}`}>{status.label}</span>
     </section>
 
-    <section className="inverter-hero"><div className="panel-heading"><div><h2>当前运行状态</h2><p className="muted">在线、工作与发电状态独立呈现。</p></div><span className={`badge ${status.variant}`}>{status.label}</span></div><div className="status-row"><div><strong>工作状态：</strong>{getInverterWorkStatus(workRaw)}</div><div><strong>当前是否发电：</strong>{status.variant === 'online' ? (generating ? '正在发电' : '否') : EMPTY}</div><div><strong>当前状态持续：</strong>{formatDuration(currentStateMinutes)}</div></div></section>
+    <section className="inverter-hero">
+      <div className="panel-heading">
+        <div>
+          <h2>当前运行状态</h2>
+          <p className="muted">在线、工作与发电状态独立呈现。</p>
+        </div>
+        <span className={`badge ${status.variant}`}>{status.label}</span>
+      </div>
+      <div className="status-row inverter-status-row">
+        <div className="status-col">
+          <div><strong>工作状态：</strong>{getInverterWorkStatus(workRaw)}</div>
+        </div>
+        <div className="status-col">
+          <div><strong>当前状态持续：</strong>{formatDuration(currentStateMinutes)}</div>
+          <div><strong>当前是否发电：</strong>{status.variant === 'online' ? (generating ? '正在发电' : '否') : EMPTY}</div>
+        </div>
+      </div>
+    </section>
 
     <section className="inv-kpi-stack" aria-label="微逆功率与发电指标">
-      <div className="inv-pv-hero-grid">
+      <div className="inv-kpi-main-grid">
         <MetricCard label="PV1 功率" value={displayValue(pv1Row, 'W')} series={pv1Series} tier="pv" />
         <MetricCard label="PV2 功率" value={displayValue(pv2Row, 'W')} series={pv2Series} tier="pv" />
-      </div>
-      <div className="inv-kpi-primary-grid">
-        <MetricCard label="当前发电总功率" value={displayValue(powerRow, 'W')} series={charts.power} tier="primary" />
         <MetricCard label="今日发电量" value={displayEnergyKwh(todayEnergyRow)} series={charts.energy} tier="primary" />
       </div>
-      <div className="inv-kpi-secondary-grid">
+      <div className="inv-kpi-secondary-grid inv-kpi-secondary-4">
         <MetricCard label="今日发电时长" value={displayValue(todayDurationRow, 'h')} tier="secondary" />
         <MetricCard label="内部温度" value={displayValue(temperatureRow, '°C')} series={charts.temperature} tier="secondary" />
         <MetricCard label="丢包率" value={displayValue(packetLossRow, '%')} series={charts.packetLoss} tier="secondary" />
+        <MetricCard label="累计发电量" value={totalEnergyValue} tier="secondary" />
       </div>
-      <p className="inv-kpi-footnote muted">累计发电量 {displayEnergyKwh(findLatestMetric(rows, INVERTER_KPI_ALIASES.totalEnergy))}</p>
     </section>
 
     <section className="panel compact-config-panel">
@@ -118,11 +136,11 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
       <dl className="compact-config-row">
         <div>
           <dt>所在相</dt>
-          <dd><strong className="compact-config-value">{displayInverterPhaseLabel(summary.phaseNum)}</strong></dd>
+          <dd><strong className="compact-config-value">{phaseLabel}</strong></dd>
         </div>
         <div>
           <dt>接入点</dt>
-          <dd><strong className="compact-config-value">{resolveStatusLabel('connection_point', summary.connectionPoint) ?? EMPTY}</strong></dd>
+          <dd><strong className="compact-config-value">{resolveStatusLabel('connection_point', connectionPointRaw) ?? EMPTY}</strong></dd>
         </div>
         <div>
           <dt>防逆流开关</dt>
@@ -182,7 +200,7 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
       <DatedRecordScroll
         groups={faultGroups}
         emptyText="最近 7 天没有故障变化。"
-        scrollClassName="record-scroll-tall"
+        scrollClassName="record-scroll-fault"
         itemKey={(event) => `${event.at}-${event.eventType}-${event.fromMask}-${event.toMask}`}
         renderItem={(event) => (
           <>

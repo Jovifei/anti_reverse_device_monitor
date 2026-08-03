@@ -44,6 +44,55 @@ describe('wifi signal bars', () => {
     expect(wifiSignalBars(-50)).toBe(4)
   })
 })
+
+describe('Sub1G status derivation', () => {
+  it('prefers firmware raw sub1g_state labels', async () => {
+    const { deriveCtSub1gStatus } = await import('@/src/domain/monitoring')
+    expect(deriveCtSub1gStatus({ rawState: 4, hasPairedInverters: true }).label).toBe('通信正常')
+    expect(deriveCtSub1gStatus({ rawState: 3, hasPairedInverters: true }).tone).toBe('warn')
+  })
+
+  it('derives CT status from paired/online inverters, not report freshness', async () => {
+    const { deriveCtSub1gStatus } = await import('@/src/domain/monitoring')
+    expect(
+      deriveCtSub1gStatus({
+        rawState: null,
+        hasPairedInverters: true,
+        hasOnlinePairedInverter: true
+      }).label
+    ).toBe('通信正常')
+    expect(
+      deriveCtSub1gStatus({
+        rawState: null,
+        hasPairedInverters: true,
+        hasOnlinePairedInverter: false
+      }).label
+    ).toBe('配对设备已连接但通信不畅')
+    expect(
+      deriveCtSub1gStatus({
+        rawState: null,
+        hasPairedInverters: false,
+        hasOnlinePairedInverter: false
+      }).label
+    ).toBe('模块未配对设备')
+  })
+
+  it('shows inverter Sub1G only when paired; offline means 通信不畅', async () => {
+    const { deriveInverterSub1gStatus } = await import('@/src/domain/monitoring')
+    expect(deriveInverterSub1gStatus({ onlineState: 2, paired: true })).toEqual({
+      label: '通信正常',
+      tone: 'ok'
+    })
+    expect(deriveInverterSub1gStatus({ onlineState: 1, paired: true })).toEqual({
+      label: '配对设备已连接但通信不畅',
+      tone: 'warn'
+    })
+    expect(deriveInverterSub1gStatus({ onlineState: 0, paired: false })).toBeNull()
+    expect(deriveInverterSub1gStatus({ onlineState: 1, paired: false })).toBeNull()
+    expect(deriveInverterSub1gStatus({ onlineState: null, paired: undefined })).toBeNull()
+  })
+})
+
 describe('inverter phase label', () => {
   it('maps phase_num 1/2/3 to A/B/C 相', async () => {
     const { displayInverterPhaseLabel } = await import('@/src/domain/monitoring')

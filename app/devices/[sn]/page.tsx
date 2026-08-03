@@ -14,6 +14,8 @@ import {
   displaySwitch,
   displayValue,
   displayWifiSignal,
+  deriveCtSub1gStatus,
+  deriveInverterSub1gStatus,
   findLatestMetric,
   formatClockTime,
   formatDuration,
@@ -25,6 +27,7 @@ import {
   INVERTER_KPI_ALIASES,
   isGenerating,
   numericValue,
+  WIFI_SIGNAL_ALIASES,
   wifiSignalBars
 } from '@/src/domain/monitoring'
 import { resolveStatusLabel } from '@/src/domain/dictionaries'
@@ -128,9 +131,10 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
   const offlineWindowGroups = groupByLocalDate(history.platform.offlineWindows, (item) => item.startAt)
   const ctStateRaw = numericValue(findLatestMetric(latest, CT_KPI_ALIASES.state))
   const ctStateLabel = resolveStatusLabel('ct_state', ctStateRaw) ?? EMPTY
-  const wifiRow = findLatestMetric(latest, ['wifi_signal_strength'])
+  const wifiRow = findLatestMetric(latest, WIFI_SIGNAL_ALIASES)
   const wifiRaw = numericValue(wifiRow)
   const wifiText = displayWifiSignal(wifiRow)
+  const wifiEmpty = !wifiText || wifiText === EMPTY
 
   const pairedInverterCount = device.inverterBindings.filter((item) => item.paired).length
   const onlineInverterCount = Array.from({ length: 8 }, (_, offset) => {
@@ -147,6 +151,19 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
     if (inv.connectivity.isOnline) return false
     return inv.connectivity.transitions.some((item) => item.state === 'online')
   }).length
+  const hasOnlinePairedInverter = Array.from({ length: 8 }, (_, offset) => {
+    const inverterIndex = offset + 1
+    const binding = device.inverterBindings.find((item) => item.inverterIndex === inverterIndex)
+    if (binding?.paired !== true) return false
+    const rows = inverterSummaries[offset]?.latestRows ?? []
+    const onlineRaw = numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.onlineState))
+    return getInverterStatus(onlineRaw).variant === 'online'
+  }).some(Boolean)
+  const ctSub1g = deriveCtSub1gStatus({
+    rawState: numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState)),
+    hasPairedInverters: pairedInverterCount > 0,
+    hasOnlinePairedInverter
+  })
 
   return <main>
     <header className="page-header">
@@ -158,7 +175,7 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
       </div>
       <div className="header-actions">
         <span className="readonly-badge source-badge">数据来源：{sourceLabel}</span>
-        {rawExcel ? <a className="utility-link" href={rawExcelHref} download={rawExcel.fileName}>原始数据</a> : null}
+        {rawExcel ? <a className="utility-link" href={rawExcelHref} download={rawExcel.fileName}>下载原始数据</a> : null}
         <SoftRefreshButton />
         {lastKnownAt ? <p className="muted header-last-report">最后上报：{formatTime(lastKnownAt)}</p> : null}
       </div>
@@ -224,13 +241,13 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
               { label: 'SubG 版本', value: device.sub1gVersion ?? EMPTY, empty: !(device.sub1gVersion) },
               {
                 label: 'Sub1G 状态',
-                value: resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState))) ?? EMPTY,
-                empty: !(resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState))))
+                value: <span className={`status-chip tone-${ctSub1g.tone}`}>{ctSub1g.label}</span>,
+                empty: false
               },
               {
                 label: 'WiFi 信号强度',
                 value: <WifiSignalView value={wifiText} bars={wifiSignalBars(wifiRaw)} />,
-                empty: false
+                empty: wifiEmpty
               }
             ]}
           />
@@ -307,12 +324,28 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
       const energySeries = chart?.energy ?? []
       const packetLossSeries = chart?.packetLoss ?? []
       const generating = isGenerating(onlineRaw, workRaw, power)
-      const phaseLabel = displayInverterPhaseLabel(binding?.phaseNum ?? numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.phase)))
+      const phaseLabel = displayInverterPhaseLabel(numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.phase)) ?? binding?.phaseNum)
+      const sub1gStatus = deriveInverterSub1gStatus({
+        onlineState: onlineRaw,
+        paired: binding?.paired === true
+      })
       const value = (aliases: string[], unit = '') => displayValue(findLatestMetric(rows, aliases), unit)
       const energy = (aliases: string[]) => displayEnergyKwh(findLatestMetric(rows, aliases))
       return <article key={inverterIndex} className={`inverter-card ${status.variant}`}>
         <div className="inverter-head"><div><h3>微型逆变器 {inverterIndex}：{phaseLabel}</h3><p className="inverter-meta">SN：{binding?.inverterSn ?? EMPTY}<br />软件 {binding?.softwareVersion ?? EMPTY}</p></div><span className={`badge ${status.variant}`}>{status.label}</span></div>
         <div className="inverter-state-grid"><div><span>工作状态</span><strong>{getInverterWorkStatus(workRaw)}</strong></div><div><span>是否发电</span><strong>{status.variant === 'online' ? (generating ? '正在发电' : '否') : EMPTY}</strong></div><div><span>防逆流开关</span><strong>{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.antiReverse))}</strong></div><div><span>发电开关</span><strong>{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.generationEnabled))}</strong></div></div>
+        <div className={`inverter-state-grid inverter-state-footer ${sub1gStatus ? 'has-sub1g' : 'total-only'}`}>
+          {sub1gStatus ? (
+            <div className={`inverter-sub1g-cell tone-${sub1gStatus.tone}`}>
+              <span>Sub1G 状态</span>
+              <strong>{sub1gStatus.label}</strong>
+            </div>
+          ) : null}
+          <div>
+            <span>累计发电量</span>
+            <strong>{energy(INVERTER_KPI_ALIASES.totalEnergy)}</strong>
+          </div>
+        </div>
         <div className="inverter-metric-tiers">
           <div className="inv-card-pv-row">
             <HistoryMetric label="PV1" value={value(['pv1_power', 'pv1power'], 'W')} title={`微型逆变器 ${inverterIndex} PV1 功率历史`} series={pv1Series} />
@@ -327,7 +360,6 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
             <HistoryMetric label="内部温度" value={value(['internal_temperature', 'temperature'], '°C')} title={`微型逆变器 ${inverterIndex} 内部温度历史`} series={temperatureSeries} />
             <HistoryMetric label="丢包率" value={value(['packet_loss_rate', 'packet_loss'], '%')} title={`微型逆变器 ${inverterIndex} 丢包率历史`} series={packetLossSeries} />
           </div>
-          <p className="inverter-meta">累计发电量 {energy(INVERTER_KPI_ALIASES.totalEnergy)}</p>
         </div>
         {faultNames.length ? <div className="fault-list">{Array.from(new Set(faultNames)).slice(0, 3).map((name) => <span key={name} className="fault-name">{name}</span>)}</div> : <p className="inverter-meta">当前无故障</p>}
         {binding?.paired ? <Link className="card-link" href={`/devices/${encodeURIComponent(canonicalSn)}/inverters/${inverterIndex}`}>查看微逆详情</Link> : <span className="inverter-meta">{binding?.paired === false ? '未配对通道' : '暂无遥测数据'}</span>}

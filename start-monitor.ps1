@@ -39,8 +39,16 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ''
-Write-Host '[3/4] Starting source:worker in a new window...'
-Start-Process -FilePath 'cmd.exe' -ArgumentList @('/k', "chcp 65001>nul & cd /d `"$PWD`" & npm run source:worker")
+Write-Host '[3/4] Starting source:worker in a new window (heap 4096 MB)...'
+$existingWorker = Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction SilentlyContinue |
+  Where-Object { $_.CommandLine -and $_.CommandLine -match 'source-sync-worker' }
+if ($existingWorker) {
+  Write-Host ("[WARN] source:worker already running (pid {0}); skip starting a second copy." -f ($existingWorker | Select-Object -First 1 -ExpandProperty ProcessId)) -ForegroundColor Yellow
+} else {
+  # Explicit heap on the child process: default Node heap OOMs when Next.dev already holds ~2–3 GB.
+  $workerCmd = "chcp 65001>nul & cd /d `"$PWD`" & set NODE_OPTIONS=--max-old-space-size=4096& npm run source:worker"
+  Start-Process -FilePath 'cmd.exe' -ArgumentList @('/k', $workerCmd)
+}
 
 Write-Host '[4/4] Starting / reusing Next.js and opening browser...'
 & "$PSScriptRoot\scripts\open-monitor.ps1"
@@ -50,4 +58,5 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ''
 Write-Host 'Done. You can close this window; keep source-worker and Next.js windows open.' -ForegroundColor Green
+Write-Host 'Worker should log: [source:worker] cycle status=completed ...' -ForegroundColor DarkGray
 Read-Host 'Press Enter to exit'
