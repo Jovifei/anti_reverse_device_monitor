@@ -19,7 +19,16 @@
 - online_state、工作状态和故障位掩码领域字典解码；
 - 7 天在线/离线窗口、故障变化、retention 和数据质量报告；
 - Excel/Fixture Adapter；
-- 二期公司数据源的只读 Adapter 合同、Mock 和 Stub。
+- 二期公司数据源的只读 Adapter 合同、Mock 和 Stub；
+- Mongo 设备日志只读增量同步（独立 Worker 进程，10s 间隔，复合游标幂等）；
+- 离线 HTML 导出（单文件 / Bundle / ZIP，自包含 ECharts，零网络依赖）；
+- 45 秒软刷新（`POST /api/live` → `revalidatePath` → `router.refresh`，不触发全页加载）；
+- 北京日出日落昼夜背景带；
+- Docker Compose 双服务部署（Web + Sync Worker）。
+
+## 技术文档
+
+如需复盘学习系统实现原理、数据流和架构决策，见 [技术路线总览](docs/10-STUD-学习/01-STUD-技术路线总览.md)。
 
 ## 验证命令
 

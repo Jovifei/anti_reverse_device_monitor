@@ -1,17 +1,56 @@
 # 系统架构设计
 
-## 1. 当前原型架构
+## 1. 当前实现架构
 
 ```mermaid
-flowchart LR
-    A[设备日志 Excel] --> B[数据清洗脚本]
-    B --> C[多页面离线 HTML]
-    C --> D[设备总览]
-    C --> E[CT 设备页]
-    C --> F[8 台微逆详情页]
+flowchart TB
+    subgraph Browser["浏览器"]
+        POLLER[LiveSourcePoller\n45s 间隔]
+    end
+
+    subgraph Web["Next.js 15"]
+        RSC[React Server Components\n服务端渲染]
+        API[Route Handlers\n12 个 REST 端点]
+        POLLER -->|POST /api/live| API
+        API -->|revalidatePath| RSC
+    end
+
+    subgraph SVC["服务层"]
+        DS[DeviceService]
+        TS[TelemetryService]
+        RSC --> DS --> TS
+    end
+
+    subgraph REPO["仓库层"]
+        DR[DeviceRepository]
+        TR[TelemetryRepository]
+        DS --> DR --> PRISMA[Prisma]
+        TS --> TR --> PRISMA
+    end
+
+    PRISMA --> SQLITE[(SQLite)]
+
+    subgraph Sync["同步 Worker 独立进程"]
+        SYNC_SVC[SourceSyncService]
+        ADAPTER[MongoLogSourceAdapter]
+        SYNC_SVC --> ADAPTER
+        ADAPTER -->|find · 只读| MONGO[(公司 MongoDB)]
+        SYNC_SVC --> TR_2[TelemetryRepository]
+        TR_2 --> PRISMA_2[Prisma] --> SQLITE
+    end
+
+    XLSX[Excel 导入] --> ADAPTER_2[ExcelSourceAdapter] --> TR_2
 ```
 
-当前原型用于验证页面、字段归类和交互，不支持动态数据库查询。
+### 当前实际特点
+
+- 单项目部署，SQLite 单文件数据库；
+- 同步 Worker 是独立 OS 进程，通过 SQLite 文件与 Web 进程通信；
+- 100% 服务端数据获取，浏览器不做任何遥测 API 调用；
+- 6 个 Client Component（LiveSourcePoller、SoftRefreshButton、TelemetryChart、MetricHistoryDialog、DeviceSnSwitcher、DeviceSnSearch）；
+- 软刷新 45 秒间隔（非整页重载），通过 `POST /api/live` → `revalidatePath` → `router.refresh()` 实现；
+- 不连接生产控制通道，不修改设备参数；
+- 可导出离线 HTML 快照（自包含，零网络）。
 
 ## 2. 一期目标架构
 
@@ -70,27 +109,58 @@ flowchart TB
     WEB --> AUTH[公司 SSO / OIDC]
 ```
 
-## 5. 模块划分
+## 5. 实际模块划分
 
 ```text
 app/
-├── overview/                 设备总览
-├── devices/[sn]/             CT 设备详情
-├── devices/[sn]/inverters/   微逆详情
-├── alarms/                   告警中心
-└── api/                      服务端 API
+├── page.tsx                    → redirect /devices
+├── layout.tsx                  LiveSourcePoller 全局挂载
+├── devices/
+│   ├── layout.tsx              dynamic='force-dynamic' + revalidate=0
+│   ├── page.tsx                设备总览（列表 + 筛选 + 统计）
+│   └── [sn]/
+│       ├── page.tsx            CT 设备详情（面板 + 图表 + 微逆网格）
+│       └── inverters/[index]/
+│           └── page.tsx        微逆详情（发电 + 图表 + 故障）
+└── api/
+    ├── devices/                 设备列表 + 详情 + 遥测 + 历史 + 告警 + 健康
+    ├── live/                    同步状态指纹 + 缓存刷新
+    └── imports/excel/           Excel 导入
 
 src/
-├── domain/                   领域模型与状态规则
-├── repositories/             数据访问
-├── services/                 查询、同步、告警、统计
+├── domain/                    领域模型与状态规则
+│   ├── monitoring.ts           逆流判定、状态标签、图表系列定义、间隙处理
+│   ├── beijing-sun.ts          北京日出日落计算（NOAA 近似）
+│   ├── faults.ts               故障位掩码解码
+│   ├── dictionaries.ts          字典加载（状态、故障）
+│   ├── device-identity.ts      设备 SN 标识策略
+│   ├── online-inverter-count.ts 在线微逆计数标准化
+│   └── validation.ts            Zod Schema 集中管理
+├── repositories/               数据访问
+│   ├── device-repository.ts    设备 + 绑定 + 最新数据
+│   └── telemetry-repository.ts 时序写入 + 去重 + 最新值维护
+├── services/                   查询、同步、分析
+│   ├── device-service.ts       设备组合查询 + 逆流告警 + 图表数据
+│   ├── telemetry-service.ts    连通性分析 + 故障时间线 + 时序统计
+│   ├── source-sync-service.ts  Mongo 增量同步编排
+│   └── source-sync-worker.ts   Worker 调度循环
 ├── adapters/
-│   ├── excel/                Excel 导入
-│   ├── source-db/            公司数据库
-│   └── mqtt/                 后续只读 MQTT
-├── metrics/                  指标字典
-├── faults/                   故障位解码
-└── export/                   HTML 快照导出
+│   ├── source/                 Excel 数据源
+│   └── source-db/              Mongo 只读数据源 + 设备注册表
+├── components/                 6 个 Client Component + 纯渲染组件
+│   ├── telemetry-chart.tsx     ECharts 图表（458 行，核心组件）
+│   ├── live-source-poller.tsx  45s 软刷新
+│   ├── metric-history-dialog.tsx 弹窗图表
+│   └── ...                     其他组件
+└── export/offline/             离线 HTML 导出
+    ├── build-*-view-model.ts   视图模型构建
+    ├── render-html.ts          HTML 渲染
+    ├── client-runtime.ts       浏览器端 ECharts 运行时
+    ├── echarts-asset.ts        ECharts 内联加载
+    ├── embedded-view-model.ts  视图模型提取与回环
+    ├── package-export.ts       单文件 + Bundle + ZIP 导出
+    ├── zip-archive.ts          手写 ZIP 打包器
+    └── cli.ts                  CLI 参数解析
 ```
 
 ## 6. 数据流
