@@ -207,6 +207,7 @@ export class DeviceRepository {
     deviceId: number
     inverterIndex: number
     inverterSn?: string | null
+    softwareVersion?: string | null
   }) {
     return this.db.inverterBinding.upsert({
       where: {
@@ -217,12 +218,14 @@ export class DeviceRepository {
       },
       update: {
         paired: true,
-        ...(params.inverterSn !== undefined ? { inverterSn: params.inverterSn } : {})
+        ...(params.inverterSn !== undefined ? { inverterSn: params.inverterSn } : {}),
+        ...(params.softwareVersion !== undefined ? { softwareVersion: params.softwareVersion } : {})
       },
       create: {
         deviceId: params.deviceId,
         inverterIndex: params.inverterIndex,
         inverterSn: params.inverterSn ?? null,
+        softwareVersion: params.softwareVersion ?? null,
         paired: true
       }
     })

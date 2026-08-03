@@ -217,11 +217,26 @@ export class SourceSyncService {
               deviceSn,
               ...(meta.sourceDeviceId ? { productModel: meta.sourceDeviceId } : {})
             })
-            const indexes = new Set(
-              pending.filter((row) => row.deviceSn === deviceSn && row.inverterIndex).map((row) => row.inverterIndex as number)
-            )
+            const deviceRows = pending.filter((row) => row.deviceSn === deviceSn && row.inverterIndex)
+            const indexes = new Set(deviceRows.map((row) => row.inverterIndex as number))
             for (const inverterIndex of indexes) {
-              await deviceRepo.findOrCreateInverterBinding({ deviceId: device.id, inverterIndex })
+              const channelRows = deviceRows.filter((row) => row.inverterIndex === inverterIndex)
+              const snRow = channelRows.find((row) => row.metricKey === 'inverter_sn')
+              const softRow = channelRows.find((row) => row.metricKey === 'software_version')
+              const inverterSn =
+                snRow?.valueText?.trim() ||
+                (snRow?.valueNumber !== null && snRow?.valueNumber !== undefined ? String(snRow.valueNumber) : undefined)
+              const softwareVersion =
+                softRow?.valueText?.trim() ||
+                (softRow?.valueNumber !== null && softRow?.valueNumber !== undefined
+                  ? String(softRow.valueNumber)
+                  : undefined)
+              await deviceRepo.findOrCreateInverterBinding({
+                deviceId: device.id,
+                inverterIndex,
+                ...(inverterSn ? { inverterSn } : {}),
+                ...(softwareVersion ? { softwareVersion } : {})
+              })
             }
           }
 

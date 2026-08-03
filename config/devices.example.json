@@ -2,8 +2,78 @@
   "version": 1,
   "devices": [
     {
+      "sn": "GC2001000000038",
+      "device_id": "6969cbb8205d9219dcefda3f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    },
+    {
+      "sn": "GC2001000000044",
+      "device_id": "696b1d4c205d9219dc89e5ec",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    },
+    {
+      "sn": "GC2001000000045",
+      "device_id": "696b2018205d9219dcc7ca43",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    },
+    {
+      "sn": "GC2001000000072",
+      "device_id": "69ae5c36495848939e4fc7f2",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    },
+    {
+      "sn": "GC2001000000092",
+      "device_id": "69c66240495848939ea70cb6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    },
+    {
+      "sn": "GC2001000000161",
+      "device_id": "69af80aa495848939e9f6498",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    },
+    {
+      "sn": "GC2001000000190",
+      "device_id": "69c26d33495848939e5b611e",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    },
+    {
+      "sn": "GC2001000000233",
+      "device_id": "69f02abe495848939e5ebb4b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    },
+    {
       "sn": "GC2001000000252",
       "device_id": "69c4e61a495848939ee23928",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    },
+    {
+      "sn": "GC2001000000301",
+      "device_id": "69fa987d495848939e686a9b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct"
+    },
+    {
+      "sn": "GC2001000000303",
+      "device_id": "6a4caab5495848939e7e1478",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
       "label": "anti-reverse-ct"

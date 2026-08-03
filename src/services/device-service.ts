@@ -96,7 +96,7 @@ export interface ChartSeries {
   markNegative?: boolean
   dailyReset?: boolean
   step?: 'start' | 'middle' | 'end'
-  points: Array<[string, number]>
+  points: Array<[string, number | null]>
 }
 
 export interface DeviceHistorySummary {
@@ -422,7 +422,10 @@ export class DeviceService {
       energy: this.toChartSeries(rows, [INVERTER_TODAY_ENERGY_METRIC]).map((item) => ({
         ...item,
         dailyReset: true,
-        points: item.points.map(([at, value]) => [at, value / 1000] as [string, number])
+        points: item.points.map(([at, value]) => [
+          at,
+          value === null ? null : value / 1000
+        ] as [string, number | null])
       })),
       packetLoss: this.toChartSeries(rows, [INVERTER_PACKET_LOSS_METRIC])
     }

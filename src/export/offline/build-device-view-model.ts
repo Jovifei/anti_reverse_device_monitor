@@ -2,6 +2,7 @@ import { resolveStatusLabel } from '@/src/domain/dictionaries'
 import { faultDisplayNames, toHexMask } from '@/src/domain/faults'
 import {
   CT_KPI_ALIASES,
+  breakChartTimeGaps,
   deriveCtSub1gStatus,
   displayEnergyKwh,
   displayInverterPhaseLabel,
@@ -36,7 +37,7 @@ function toOfflineSeries(series: ChartSeries[]): OfflineChartSeries[] {
       markNegative: item.markNegative,
       dailyReset: item.dailyReset,
       step: item.step,
-      points: item.points
+      points: breakChartTimeGaps(item.points)
     })
   )
 }

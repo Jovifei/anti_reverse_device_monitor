@@ -10,6 +10,7 @@ import { deviceSnSecondaryLabel } from '@/src/domain/device-identity'
 import {
   CT_KPI_ALIASES,
   displayEnergyKwh,
+  displayInverterIdentity,
   displayInverterPhaseLabel,
   displaySwitch,
   displayValue,
@@ -21,12 +22,12 @@ import {
   formatDuration,
   formatTime,
   formatTimeShort,
-  getInverterStatus,
   getInverterWorkStatus,
   groupByLocalDate,
   INVERTER_KPI_ALIASES,
   isGenerating,
   numericValue,
+  resolveInverterCardStatus,
   WIFI_SIGNAL_ALIASES,
   wifiSignalBars
 } from '@/src/domain/monitoring'
@@ -143,7 +144,8 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
     if (binding?.paired === false) return false
     const rows = inverterSummaries[offset]?.latestRows ?? []
     const onlineRaw = numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.onlineState))
-    return getInverterStatus(onlineRaw).variant === 'online'
+    const power = numericValue(findLatestMetric(rows, ['inverter_power', 'generation_power', 'total_power', 'power']))
+    return resolveInverterCardStatus({ onlineState: onlineRaw, paired: binding?.paired, power }).variant === 'online'
   }).filter(Boolean).length
   const recentOfflineInverterCount = history.inverters.filter((inv) => {
     const binding = device.inverterBindings.find((item) => item.inverterIndex === inv.inverterIndex)
@@ -157,7 +159,8 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
     if (binding?.paired !== true) return false
     const rows = inverterSummaries[offset]?.latestRows ?? []
     const onlineRaw = numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.onlineState))
-    return getInverterStatus(onlineRaw).variant === 'online'
+    const power = numericValue(findLatestMetric(rows, ['inverter_power', 'generation_power', 'total_power', 'power']))
+    return resolveInverterCardStatus({ onlineState: onlineRaw, paired: true, power }).variant === 'online'
   }).some(Boolean)
   const ctSub1g = deriveCtSub1gStatus({
     rawState: numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState)),
@@ -311,10 +314,14 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
       const binding = device.inverterBindings.find((item) => item.inverterIndex === inverterIndex)
       const rows = summary?.latestRows ?? []
       const onlineRaw = numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.onlineState))
-      const status = binding?.paired === false ? getInverterStatus(0) : getInverterStatus(onlineRaw)
       const workRaw = numericValue(findLatestMetric(rows, INVERTER_KPI_ALIASES.workState))
       const powerRow = findLatestMetric(rows, ['inverter_power', 'generation_power', 'total_power', 'power'])
       const power = numericValue(powerRow)
+      const status = resolveInverterCardStatus({
+        onlineState: onlineRaw,
+        paired: binding?.paired,
+        power
+      })
       const faultNames = summary?.faults.flatMap((fault) => fault.faults.map((item) => item.name)) ?? []
       const chart = inverterCharts[offset]
       const powerSeries = chart?.power ?? []
@@ -331,8 +338,10 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
       })
       const value = (aliases: string[], unit = '') => displayValue(findLatestMetric(rows, aliases), unit)
       const energy = (aliases: string[]) => displayEnergyKwh(findLatestMetric(rows, aliases))
+      const snText = displayInverterIdentity(binding?.inverterSn, findLatestMetric(rows, ['inverter_sn']))
+      const softwareText = displayInverterIdentity(binding?.softwareVersion, findLatestMetric(rows, ['software_version']))
       return <article key={inverterIndex} className={`inverter-card ${status.variant}`}>
-        <div className="inverter-head"><div><h3>微型逆变器 {inverterIndex}：{phaseLabel}</h3><p className="inverter-meta">SN：{binding?.inverterSn ?? EMPTY}<br />软件 {binding?.softwareVersion ?? EMPTY}</p></div><span className={`badge ${status.variant}`}>{status.label}</span></div>
+        <div className="inverter-head"><div><h3>微型逆变器 {inverterIndex}：{phaseLabel}</h3><p className="inverter-meta">SN：{snText}<br />软件 {softwareText}</p></div><span className={`badge ${status.variant}`}>{status.label}</span></div>
         <div className="inverter-state-grid"><div><span>工作状态</span><strong>{getInverterWorkStatus(workRaw)}</strong></div><div><span>是否发电</span><strong>{status.variant === 'online' ? (generating ? '正在发电' : '否') : EMPTY}</strong></div><div><span>防逆流开关</span><strong>{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.antiReverse))}</strong></div><div><span>发电开关</span><strong>{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.generationEnabled))}</strong></div></div>
         <div className="inverter-metric-tiers">
           <div className="inv-card-pv-row">

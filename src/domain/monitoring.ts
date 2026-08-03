@@ -166,6 +166,40 @@ export function scaleEnergyPointsWhToKwh(points: Array<[string, number]>): Array
   return points.map(([at, value]) => [at, whToKwh(value)])
 }
 
+/** Default: break line if adjacent samples are more than 2 hours apart. */
+export const CHART_TIME_GAP_BREAK_MS = 2 * 60 * 60 * 1000
+
+/**
+ * Insert null points so ECharts (`connectNulls: false`) does not draw
+ * long diagonals across missing telemetry windows.
+ */
+export function breakChartTimeGaps(
+  points: Array<[string, number | null]>,
+  maxGapMs = CHART_TIME_GAP_BREAK_MS
+): Array<[string, number | null]> {
+  if (points.length === 0) return []
+  const out: Array<[string, number | null]> = []
+  for (let index = 0; index < points.length; index += 1) {
+    const point = points[index]
+    if (index > 0) {
+      const previous = points[index - 1]
+      const previousMs = new Date(previous[0]).getTime()
+      const currentMs = new Date(point[0]).getTime()
+      if (
+        Number.isFinite(previousMs) &&
+        Number.isFinite(currentMs) &&
+        currentMs - previousMs > maxGapMs &&
+        previous[1] !== null &&
+        point[1] !== null
+      ) {
+        out.push([new Date(previousMs + 1).toISOString(), null])
+      }
+    }
+    out.push(point)
+  }
+  return out
+}
+
 export function findLatestMetric<T extends MetricRow>(rows: T[], aliases: string[]) {
   const normalizedAliases = aliases.map((alias) => normalizedMetricKey(alias))
   const exact = rows.find((row) => normalizedAliases.includes(normalizedMetricKey(row.metricKey)))
@@ -252,6 +286,34 @@ export function getInverterStatus(raw: number | null) {
   if (raw === 1) return { label, variant: 'offline' as const }
   if (raw === 0) return { label, variant: 'unpaired' as const }
   return { label, variant: 'unknown' as const }
+}
+
+/**
+ * Card status when firmware omits online_state: prefer power evidence over a misleading「无数据」.
+ * Does not invent firmware enum codes — only display fallbacks.
+ */
+export function resolveInverterCardStatus(params: {
+  onlineState: number | null
+  paired?: boolean
+  power?: number | null
+}): { label: string; variant: 'online' | 'offline' | 'unpaired' | 'unknown' } {
+  if (params.paired === false) return getInverterStatus(0)
+  if (params.onlineState !== null) return getInverterStatus(params.onlineState)
+  if (params.power !== null && params.power !== undefined && Number.isFinite(params.power) && params.power > 1) {
+    return { label: '有功率上报', variant: 'online' }
+  }
+  return { label: '状态未上报', variant: 'unknown' }
+}
+
+/** Prefer binding identity, then latest telemetry text/number. */
+export function displayInverterIdentity(bindingValue: string | null | undefined, metricRow?: MetricRow) {
+  const fromBinding = bindingValue?.trim()
+  if (fromBinding) return fromBinding
+  const text = metricRow?.valueText?.trim()
+  if (text) return text
+  const numeric = numericValue(metricRow)
+  if (numeric !== null) return String(numeric)
+  return '—'
 }
 
 export function getInverterWorkStatus(raw: number | null) {

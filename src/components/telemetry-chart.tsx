@@ -3,7 +3,11 @@
 import * as echarts from 'echarts'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { buildBeijingDayNightBands, seriesNeedsDayNightBands } from '@/src/domain/beijing-sun'
-import { chartSeriesDisplayColor, NEGATIVE_POWER_ALERT_COLOR } from '@/src/domain/monitoring'
+import {
+  breakChartTimeGaps,
+  chartSeriesDisplayColor,
+  NEGATIVE_POWER_ALERT_COLOR
+} from '@/src/domain/monitoring'
 
 /** Red is reserved for actual negative-power reverse-flow evidence only. */
 const NEGATIVE_WARN_COLOR = NEGATIVE_POWER_ALERT_COLOR
@@ -38,7 +42,7 @@ export interface ClientChartSeries {
   dailyReset?: boolean
   /** Hold previous value until next sample, then jump (no diagonal interpolation). */
   step?: 'start' | 'middle' | 'end'
-  points: Array<[string, number]>
+  points: Array<[string, number | null]>
 }
 
 type Props = {
@@ -330,16 +334,18 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
         ...dayNightSeries,
         ...visible.flatMap((item) => {
           const yAxisIndex = axisPlan.dual && item.unit === 'Hz' ? 1 : 0
-          const chartPoints = item.dailyReset
+          const resetPoints = item.dailyReset
             ? item.points.flatMap((point, index) => {
                 if (index === 0) return [point]
                 const prev = item.points[index - 1]
+                if (point[1] === null || prev[1] === null) return [point]
                 const cur = partsInTz(new Date(point[0]).getTime())
                 const before = partsInTz(new Date(prev[0]).getTime())
                 const crossed = cur.year !== before.year || cur.month !== before.month || cur.day !== before.day
                 return crossed && point[1] < prev[1] ? [[point[0], null] as [string, null], point] : [point]
               })
             : item.points
+          const chartPoints = breakChartTimeGaps(resetPoints)
           const lineBase = {
             name: item.label,
             type: 'line' as const,

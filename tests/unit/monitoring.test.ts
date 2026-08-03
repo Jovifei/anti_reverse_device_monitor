@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { chartSeriesDisplayColor, CT_POWER_METRICS, displayPowerLimit, displaySwitch, isGenerating } from '@/src/domain/monitoring'
+import {
+  breakChartTimeGaps,
+  chartSeriesDisplayColor,
+  CT_POWER_METRICS,
+  displayInverterIdentity,
+  displayPowerLimit,
+  displaySwitch,
+  isGenerating,
+  resolveInverterCardStatus
+} from '@/src/domain/monitoring'
 
-const row = (metricKey: string, valueNumber: number | null) => ({ metricKey, valueNumber, valueText: null, reportedAt: new Date() })
+const row = (metricKey: string, valueNumber: number | null, valueText: string | null = null) => ({
+  metricKey,
+  valueNumber,
+  valueText,
+  reportedAt: new Date()
+})
 
 describe('real-time inverter generation state', () => {
   it('requires online state and positive output power', () => {
@@ -19,6 +33,29 @@ describe('real-time inverter generation state', () => {
   it('uses work state only when output is unavailable and online', () => {
     expect(isGenerating(2, 1, null)).toBe(true)
     expect(isGenerating(2, 2, null)).toBe(false)
+  })
+})
+
+describe('resolveInverterCardStatus', () => {
+  it('keeps firmware online_state when present', () => {
+    expect(resolveInverterCardStatus({ onlineState: 2, paired: true, power: 0 }).variant).toBe('online')
+    expect(resolveInverterCardStatus({ onlineState: 1, paired: true, power: 500 }).variant).toBe('offline')
+  })
+
+  it('falls back to power evidence instead of 无数据', () => {
+    expect(resolveInverterCardStatus({ onlineState: null, paired: true, power: 120 })).toEqual({
+      label: '有功率上报',
+      variant: 'online'
+    })
+    expect(resolveInverterCardStatus({ onlineState: null, paired: true, power: null }).label).toBe('状态未上报')
+  })
+})
+
+describe('displayInverterIdentity', () => {
+  it('prefers binding then telemetry text', () => {
+    expect(displayInverterIdentity('SN-BIND', row('inverter_sn', null, 'SN-TELE'))).toBe('SN-BIND')
+    expect(displayInverterIdentity(null, row('inverter_sn', null, 'SN-TELE'))).toBe('SN-TELE')
+    expect(displayInverterIdentity(undefined, undefined)).toBe('—')
   })
 })
 
@@ -147,5 +184,31 @@ describe('groupByLocalDate', () => {
     ])
     expect(groups[0].items.map((item) => item.label)).toEqual(['a', 'b'])
     expect(formatClockTime(items[0].at)).toMatch(/^\d{2}:\d{2}:\d{2}$/)
+  })
+})
+
+describe('breakChartTimeGaps', () => {
+  it('inserts null between samples farther than maxGapMs', () => {
+    const points = breakChartTimeGaps(
+      [
+        ['2026-07-28T10:00:00.000Z', 400],
+        ['2026-07-28T10:30:00.000Z', 420],
+        ['2026-08-03T10:00:00.000Z', 300]
+      ],
+      2 * 60 * 60 * 1000
+    )
+    expect(points).toHaveLength(4)
+    expect(points[2][1]).toBeNull()
+    expect(points[3]).toEqual(['2026-08-03T10:00:00.000Z', 300])
+  })
+
+  it('keeps dense samples continuous', () => {
+    const points = breakChartTimeGaps([
+      ['2026-07-28T10:00:00.000Z', 100],
+      ['2026-07-28T10:10:00.000Z', 110],
+      ['2026-07-28T10:20:00.000Z', 120]
+    ])
+    expect(points).toHaveLength(3)
+    expect(points.every((point) => point[1] !== null)).toBe(true)
   })
 })

@@ -1,5 +1,6 @@
 import { faultDisplayNames, toHexMask } from '@/src/domain/faults'
 import {
+  breakChartTimeGaps,
   displayEnergyKwh,
   displayInverterPhaseLabel,
   displayPowerLimit,
@@ -31,7 +32,7 @@ function toOfflineSeries(series: ChartSeries[]): OfflineChartSeries[] {
       markNegative: item.markNegative,
       dailyReset: item.dailyReset,
       step: item.step,
-      points: item.points
+      points: breakChartTimeGaps(item.points)
     })
   )
 }

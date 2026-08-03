@@ -11,6 +11,11 @@ import { expandIotEventLogDocument, type IotEventLogDocument } from '@/src/adapt
 import { loadMongoFieldMapping } from '@/src/adapters/source-db/mongo-field-mapping'
 import { resolveMongoCollectionName, resolveMongoProductId } from '@/src/adapters/source-db/mongo-defaults'
 import { redactSourceError } from '@/src/adapters/source-db/security'
+import {
+  allocateSyncPageBudgets,
+  composeDeviceLogDrivenPage,
+  timeSpanOfRecords
+} from '@/src/adapters/source-db/telemetry-page-compose'
 import { shardTimeRange } from '@/src/adapters/source-db/time-shards'
 import type {
   DeviceQuery,
@@ -171,60 +176,68 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
     const cursorTime = params.cursor ? Date.parse(params.cursor.reportedAt) : Number.NaN
     const effectiveTo = Number.isFinite(cursorTime) ? new Date(Math.min(params.to.getTime(), cursorTime)) : params.to
     const windows = shardTimeRange(params.from, effectiveTo, DEFAULT_TIME_SHARD_MS)
-    const records: SourceTelemetryRecord[] = []
-    let lastCursor: SourceCursor | undefined
+    const { wifiBudget, logBudget } = allocateSyncPageBudgets(params.limit)
     const db = await this.db()
 
-    // Pull event-only WiFi first so a full device_log page cannot starve P_0_0.
-    for (const [collectionName, deviceIds] of byIotCollection) {
-      const collection = db.collection<Document>(collectionName)
-      for (const window of windows) {
-        const page = await this.queryIotWifiWindow({
-          collection,
-          deviceIds,
-          from: window.from,
-          to: window.to,
-          limit: Math.max(50, Math.min(200, params.limit)),
-          snByDeviceId,
-          mapping,
-          cursor: params.cursor
-        })
-        records.push(...page.records)
-        if (page.nextCursor) lastCursor = page.nextCursor
-      }
-    }
-
+    // device_log first — pagination cursor/hasMore are driven only by these rows.
+    const logRecords: SourceTelemetryRecord[] = []
+    let logHasMore = false
     for (const [collectionName, deviceIds] of byCollection) {
       const collection = db.collection<Document>(collectionName)
       for (const window of windows) {
-        if (records.length >= params.limit) break
+        if (logRecords.length >= logBudget) {
+          logHasMore = true
+          break
+        }
         const page = await this.queryWindow({
           collection,
           deviceIds,
           from: window.from,
           to: window.to,
-          limit: params.limit - records.length,
+          limit: logBudget - logRecords.length,
           snByDeviceId,
           mapping,
           cursor: params.cursor
         })
-        records.push(...page.records)
-        if (page.nextCursor) lastCursor = page.nextCursor
+        logRecords.push(...page.records)
+        if (page.hasMore) logHasMore = true
       }
     }
 
-    records.sort((left, right) => right.reportedAt.getTime() - left.reportedAt.getTime() || left.sourceRecordId.localeCompare(right.sourceRecordId))
-    const trimmed = records.slice(0, params.limit)
-    const hasMore = records.length > params.limit || Boolean(lastCursor && trimmed.length === params.limit)
-    const nextCursor =
-      trimmed.length > 0
-        ? {
-            reportedAt: trimmed[trimmed.length - 1].reportedAt.toISOString(),
-            sourceRecordId: trimmed[trimmed.length - 1].sourceRecordId
-          }
-        : lastCursor
+    // Opportunistic WiFi: only the span covered by this log page (or newest shard if empty).
+    const wifiRecords: SourceTelemetryRecord[] = []
+    if (wifiBudget > 0 && byIotCollection.size > 0) {
+      const span = timeSpanOfRecords(logRecords)
+      const wifiWindows = span
+        ? [{ from: span.from, to: span.to }]
+        : windows.slice(0, 1)
+      for (const [collectionName, deviceIds] of byIotCollection) {
+        const collection = db.collection<Document>(collectionName)
+        for (const window of wifiWindows) {
+          if (wifiRecords.length >= wifiBudget) break
+          const page = await this.queryIotWifiWindow({
+            collection,
+            deviceIds,
+            from: window.from,
+            to: window.to,
+            limit: wifiBudget - wifiRecords.length,
+            snByDeviceId,
+            mapping,
+            cursor: undefined
+          })
+          wifiRecords.push(...page.records)
+        }
+      }
+    }
 
-    return { records: trimmed, nextCursor: hasMore ? nextCursor : undefined, hasMore, queryDurationMs: Date.now() - started }
+    const composed = composeDeviceLogDrivenPage({
+      logRecords,
+      logHasMore,
+      wifiRecords,
+      limit: params.limit
+    })
+
+    return { ...composed, queryDurationMs: Date.now() - started }
   }
 
   async fetchDeviceProperties(sn: string): Promise<SourceDeviceProperties> {
@@ -285,46 +298,53 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
 
     const fromSec = toUnixSeconds(params.from)
     const toSec = toUnixSeconds(params.to)
-    const filter: Document = {
-      device_id: params.deviceIds.length === 1 ? params.deviceIds[0] : { $in: params.deviceIds },
-      time: { $gte: fromSec, $lte: toSec }
-    }
-
-    // Read-only find; never insert/update/delete/createIndex.
-    const docs = await params.collection
-      .find(filter, {
-        projection: { device_id: 1, time: 1, data: 1 },
-        sort: { time: -1 },
-        limit: Math.min(Math.max(params.limit, 1), 500),
-        maxTimeMS: this.config.queryTimeoutMs
-      })
-      .toArray()
-
+    // Fair per-device fetch: a shared `$in` + limit lets chatty devices starve quieter ones
+    // (charts look like straight lines; inverter online_state never arrives).
+    const perDeviceDocLimit = Math.min(500, Math.max(30, Math.ceil(Math.min(params.limit, 500) / params.deviceIds.length)))
     const records: SourceTelemetryRecord[] = []
-    for (const doc of docs) {
-      const deviceId = typeof doc.device_id === 'string' ? doc.device_id : ''
+    let anyDocs = false
+
+    for (const deviceId of params.deviceIds) {
       const deviceSn = params.snByDeviceId.get(deviceId)
       if (!deviceSn) continue
-      const expanded = expandDeviceLogDocument({
-        document: doc as DeviceLogDocument,
-        deviceSn,
-        mapping: params.mapping
-      })
-      for (const row of expanded) {
-        if (params.cursor && row.reportedAt.toISOString() === params.cursor.reportedAt && row.sourceRecordId >= params.cursor.sourceRecordId) {
-          continue
+      // Read-only find; never insert/update/delete/createIndex.
+      const docs = await params.collection
+        .find(
+          { device_id: deviceId, time: { $gte: fromSec, $lte: toSec } },
+          {
+            projection: { device_id: 1, time: 1, data: 1 },
+            sort: { time: -1 },
+            limit: perDeviceDocLimit,
+            maxTimeMS: this.config.queryTimeoutMs
+          }
+        )
+        .toArray()
+      if (docs.length > 0) anyDocs = true
+      for (const doc of docs) {
+        const expanded = expandDeviceLogDocument({
+          document: doc as DeviceLogDocument,
+          deviceSn,
+          mapping: params.mapping
+        })
+        for (const row of expanded) {
+          if (params.cursor && row.reportedAt.toISOString() === params.cursor.reportedAt && row.sourceRecordId >= params.cursor.sourceRecordId) {
+            continue
+          }
+          records.push(row)
         }
-        records.push(row)
-        if (records.length >= params.limit) break
       }
-      if (records.length >= params.limit) break
     }
 
+    records.sort(
+      (left, right) =>
+        right.reportedAt.getTime() - left.reportedAt.getTime() || left.sourceRecordId.localeCompare(right.sourceRecordId)
+    )
+    const trimmed = records.slice(0, params.limit)
     const nextCursor =
-      records.length > 0
-        ? { reportedAt: records[records.length - 1].reportedAt.toISOString(), sourceRecordId: records[records.length - 1].sourceRecordId }
+      trimmed.length > 0
+        ? { reportedAt: trimmed[trimmed.length - 1].reportedAt.toISOString(), sourceRecordId: trimmed[trimmed.length - 1].sourceRecordId }
         : undefined
-    return { records, nextCursor, hasMore: docs.length > 0 && records.length >= params.limit }
+    return { records: trimmed, nextCursor, hasMore: anyDocs && records.length > trimmed.length }
   }
 
   /** Event-only WiFi RSSI (`P_0_0`) from iot_event_log_<productId>. */
@@ -340,44 +360,50 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
   }): Promise<SourceTelemetryBatch> {
     if (params.limit <= 0 || params.deviceIds.length === 0) return { records: [], hasMore: false }
 
-    const filter: Document = {
-      deviceId: params.deviceIds.length === 1 ? params.deviceIds[0] : { $in: params.deviceIds },
-      en: 'P_0_0',
-      t: { $gte: params.from, $lte: params.to }
-    }
-
-    const docs = await params.collection
-      .find(filter, {
-        projection: { deviceId: 1, sn: 1, et: 1, en: 1, ec: 1, t: 1 },
-        sort: { t: -1 },
-        limit: Math.min(Math.max(params.limit, 1), 200),
-        maxTimeMS: this.config.queryTimeoutMs
-      })
-      .toArray()
-
+    const perDeviceDocLimit = Math.min(200, Math.max(10, Math.ceil(Math.min(params.limit, 200) / params.deviceIds.length)))
     const records: SourceTelemetryRecord[] = []
-    for (const doc of docs) {
-      const deviceId = typeof doc.deviceId === 'string' ? doc.deviceId : ''
-      const deviceSn = params.snByDeviceId.get(deviceId) || (typeof doc.sn === 'string' ? doc.sn : '')
-      if (!deviceSn) continue
-      const row = expandIotEventLogDocument({
-        document: doc as IotEventLogDocument,
-        deviceSn,
-        mapping: params.mapping
-      })
-      if (!row) continue
-      if (params.cursor && row.reportedAt.toISOString() === params.cursor.reportedAt && row.sourceRecordId >= params.cursor.sourceRecordId) {
-        continue
+    let anyDocs = false
+
+    for (const deviceId of params.deviceIds) {
+      const docs = await params.collection
+        .find(
+          { deviceId, en: 'P_0_0', t: { $gte: params.from, $lte: params.to } },
+          {
+            projection: { deviceId: 1, sn: 1, et: 1, en: 1, ec: 1, t: 1 },
+            sort: { t: -1 },
+            limit: perDeviceDocLimit,
+            maxTimeMS: this.config.queryTimeoutMs
+          }
+        )
+        .toArray()
+      if (docs.length > 0) anyDocs = true
+      for (const doc of docs) {
+        const id = typeof doc.deviceId === 'string' ? doc.deviceId : ''
+        const deviceSn = params.snByDeviceId.get(id) || (typeof doc.sn === 'string' ? doc.sn : '')
+        if (!deviceSn) continue
+        const row = expandIotEventLogDocument({
+          document: doc as IotEventLogDocument,
+          deviceSn,
+          mapping: params.mapping
+        })
+        if (!row) continue
+        if (params.cursor && row.reportedAt.toISOString() === params.cursor.reportedAt && row.sourceRecordId >= params.cursor.sourceRecordId) {
+          continue
+        }
+        records.push(row)
       }
-      records.push(row)
-      if (records.length >= params.limit) break
     }
 
+    records.sort(
+      (left, right) =>
+        right.reportedAt.getTime() - left.reportedAt.getTime() || left.sourceRecordId.localeCompare(right.sourceRecordId)
+    )
+    const trimmed = records.slice(0, params.limit)
     const nextCursor =
-      records.length > 0
-        ? { reportedAt: records[records.length - 1].reportedAt.toISOString(), sourceRecordId: records[records.length - 1].sourceRecordId }
+      trimmed.length > 0
+        ? { reportedAt: trimmed[trimmed.length - 1].reportedAt.toISOString(), sourceRecordId: trimmed[trimmed.length - 1].sourceRecordId }
         : undefined
-    return { records, nextCursor, hasMore: docs.length > 0 && records.length >= params.limit }
+    return { records: trimmed, nextCursor, hasMore: anyDocs && records.length > trimmed.length }
   }
 }
 

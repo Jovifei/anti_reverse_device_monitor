@@ -21,6 +21,8 @@
     "source:sync": "node --max-old-space-size=4096 ./node_modules/tsx/dist/cli.mjs scripts/sync-source-data.ts",
     "source:worker": "node --max-old-space-size=4096 ./node_modules/tsx/dist/cli.mjs scripts/source-sync-worker.ts",
     "devices:sync-registry": "tsx scripts/sync-device-registry.ts",
+    "devices:apply-map": "tsx scripts/apply-device-sn-map.ts",
+    "source:resync-all": "node --max-old-space-size=4096 ./node_modules/tsx/dist/cli.mjs scripts/resync-all-registry-devices.ts",
     "inspect:mongodb": "tsx scripts/inspect-mongodb-source.ts",
     "demo:seed": "tsx scripts/seed-demo.ts",
     "demo": "tsx scripts/start-demo.ts",
