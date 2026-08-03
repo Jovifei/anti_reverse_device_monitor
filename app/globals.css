@@ -70,14 +70,7 @@ body {
 }
 
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: .4;
-  background-image: linear-gradient(#d7e0ee 1px, transparent 1px), linear-gradient(90deg, #d7e0ee 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: linear-gradient(to bottom, black, transparent 55%);
+  content: none;
 }
 
 main {
@@ -280,7 +273,7 @@ button:disabled {
 .panel,
 .chart-panel,
 .inverter-card {
-  background: rgba(255, 255, 255, .96);
+  background: #fff;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
@@ -985,7 +978,7 @@ button:disabled {
   text-align: left;
 }
 
-.inverter-section-title > div {
+.inverter-section-title>div {
   flex: 1 1 auto;
   min-width: 0;
   text-align: left;
@@ -1037,6 +1030,8 @@ button:disabled {
   border-color: #c9d7e8;
   border-left: 3px solid var(--green);
   background: #fff;
+  /* solid fill blocks body grid pattern from showing through metrics */
+  isolation: isolate;
 }
 
 .inverter-card.offline {
@@ -1690,7 +1685,7 @@ button:disabled {
 
 .metric-dialog-backdrop {
   position: fixed;
-  z-index: 100;
+  z-index: 1000;
   inset: 0;
   display: grid;
   place-items: center;
@@ -2217,11 +2212,18 @@ button:disabled {
 
 .inverter-state-grid>div,
 .inverter-metric-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  box-sizing: border-box;
+  width: 100%;
   min-width: 0;
-  padding: 8px;
+  padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(247, 249, 252, .9);
-  border: 1px solid transparent;
+  background: #f7f9fc;
+  border: 0;
+  box-shadow: none;
   text-align: left;
 }
 
@@ -2241,7 +2243,9 @@ button:disabled {
   font-family: var(--font-data);
   font-size: 12px;
   font-weight: 700;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
   text-align: left;
 }
@@ -2257,7 +2261,7 @@ button:disabled {
 .inv-card-primary-row,
 .inv-card-secondary-row {
   display: grid;
-  gap: 7px;
+  gap: 8px;
   width: 100%;
 }
 
@@ -2273,17 +2277,18 @@ button:disabled {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.inv-card-pv-row > *,
-.inv-card-primary-row > *,
-.inv-card-secondary-row > * {
+.inv-card-pv-row>*,
+.inv-card-primary-row>*,
+.inv-card-secondary-row>* {
   min-width: 0;
   width: 100%;
 }
 
 .inv-card-pv-row .inverter-metric-cell {
   min-height: 72px;
-  border-color: #8fd6a8;
-  background: linear-gradient(160deg, #eefbf3 0%, #fff 72%);
+  padding: 10px 12px;
+  background: #e8f7ee;
+  box-shadow: none;
 }
 
 .inv-card-pv-row .inverter-metric-cell .label {
@@ -2302,8 +2307,9 @@ button:disabled {
 
 .inv-card-primary-row .inverter-metric-cell {
   min-height: 64px;
-  border-color: #c5d7f0;
-  background: #fff;
+  padding: 10px 12px;
+  background: #eef3fb;
+  box-shadow: none;
 }
 
 .inv-card-primary-row .inverter-metric-cell strong {
@@ -2315,12 +2321,13 @@ button:disabled {
 
 .inv-card-secondary-row .inverter-metric-cell {
   min-height: 54px;
-  background: #f7f9fc;
+  background: #f4f6f9;
+  box-shadow: none;
 }
 
 .inv-card-secondary-row .inverter-metric-cell strong {
-  color: #40546f;
-  font-size: 12px;
+  color: #1f2d3d;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -2342,7 +2349,8 @@ button:disabled {
 
 .inverter-metric-tiers .metric-history-trigger,
 .inverter-metrics .metric-history-trigger {
-  display: block;
+  display: flex;
+  flex-direction: column;
   margin: 0;
   padding: 0;
   border: 0;
@@ -2353,8 +2361,21 @@ button:disabled {
   text-align: left;
 }
 
+/* Kill global focus/hover ring that draws curved outlines over metric text. */
+.inverter-metric-tiers .metric-history-trigger:hover,
+.inverter-metric-tiers .metric-history-trigger:focus-visible,
+.inverter-metrics .metric-history-trigger:hover,
+.inverter-metrics .metric-history-trigger:focus-visible {
+  box-shadow: none;
+}
+
 .inverter-metric-tiers .metric-history-trigger .inverter-metric-cell,
 .inverter-metrics .metric-history-trigger .inverter-metric-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1 1 auto;
+  width: 100%;
   height: auto;
   min-height: 58px;
   cursor: pointer;
@@ -2364,9 +2385,21 @@ button:disabled {
 .inverter-metric-tiers .metric-history-trigger:focus-visible .inverter-metric-cell,
 .inverter-metrics .metric-history-trigger:hover .inverter-metric-cell,
 .inverter-metrics .metric-history-trigger:focus-visible .inverter-metric-cell {
-  border-color: #9dbcf2;
-  box-shadow: 0 4px 10px rgba(21, 88, 214, .1);
+  filter: brightness(.97);
   outline: 0;
+}
+
+.inverter-metric-tiers .metric-history-trigger:focus-visible .inverter-metric-cell,
+.inverter-metrics .metric-history-trigger:focus-visible .inverter-metric-cell {
+  outline: 2px solid #9dbcf2;
+  outline-offset: 2px;
+}
+
+.inv-card-pv-row .metric-history-trigger:hover .inverter-metric-cell,
+.inv-card-pv-row .metric-history-trigger:focus-visible .inverter-metric-cell,
+.inv-card-primary-row .metric-history-trigger:hover .inverter-metric-cell,
+.inv-card-primary-row .metric-history-trigger:focus-visible .inverter-metric-cell {
+  box-shadow: none;
 }
 
 .inverter-metric-cell small {
@@ -2488,18 +2521,18 @@ button:disabled {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.inv-pv-hero-grid > *,
-.inv-kpi-primary-grid > *,
-.inv-kpi-secondary-grid > * {
+.inv-pv-hero-grid>*,
+.inv-kpi-primary-grid>*,
+.inv-kpi-secondary-grid>* {
   min-width: 0;
   width: 100%;
 }
 
 .inv-metric-card.inv-metric-pv {
   min-height: 128px;
-  border-color: #8fd6a8;
-  background: linear-gradient(160deg, #eefbf3 0%, #fff 70%);
-  box-shadow: var(--shadow-md);
+  border: 0;
+  background: #e8f7ee;
+  box-shadow: none;
 }
 
 .inv-metric-card.inv-metric-pv .label {
@@ -2518,15 +2551,14 @@ button:disabled {
 }
 
 .inv-metric-card.inv-metric-pv::after {
-  height: 4px;
-  opacity: .9;
-  background: linear-gradient(90deg, #0f7a3d, transparent 75%);
+  display: none;
 }
 
 .inv-metric-card.inv-metric-primary {
   min-height: 108px;
-  border-color: #c5d7f0;
-  background: #fff;
+  border: 0;
+  background: #eef3fb;
+  box-shadow: none;
 }
 
 .inv-metric-card.inv-metric-primary .value {
@@ -2536,14 +2568,25 @@ button:disabled {
   font-weight: 800;
 }
 
+.inv-metric-card.inv-metric-primary::after {
+  display: none;
+}
+
 .inv-metric-card.inv-metric-secondary {
   min-height: 92px;
-  box-shadow: var(--shadow-sm);
+  border: 0;
+  background: #f4f6f9;
+  box-shadow: none;
 }
 
 .inv-metric-card.inv-metric-secondary .value {
   margin-top: 8px;
+  color: #1f2d3d;
   font-size: clamp(18px, 1.6vw, 24px);
+}
+
+.inv-metric-card.inv-metric-secondary::after {
+  display: none;
 }
 
 .inv-kpi-footnote {
@@ -2691,6 +2734,16 @@ button:disabled {
   transform: none !important;
 }
 
+/* Dialog is portaled to body; kill card hover lifts so siblings cannot paint over the modal. */
+body.metric-dialog-open .inverter-card,
+body.metric-dialog-open .inverter-card:hover,
+body.metric-dialog-open .phase-card,
+body.metric-dialog-open .phase-card:hover,
+body.metric-dialog-open .metric-card,
+body.metric-dialog-open .metric-card:hover {
+  transform: none !important;
+}
+
 .phase-card {
   display: block;
 }
@@ -2706,6 +2759,7 @@ button:disabled {
 }
 
 @media (max-width: 820px) {
+
   .gen-spotlight,
   .inv-detail-gen {
     grid-template-columns: 1fr;
@@ -3230,6 +3284,7 @@ button:disabled {
     padding: 11px 10px;
   }
 }
+
 .live-sync-hint {
   position: fixed;
   z-index: 40;

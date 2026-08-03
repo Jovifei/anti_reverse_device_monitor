@@ -48,13 +48,6 @@ export type SourceSyncResult = {
 
 const WRITE_CHUNK = 100
 
-class SourceRecordConflictError extends Error {
-  constructor(count: number) {
-    super(`source record conflicts: ${count}`)
-    this.name = 'SourceRecordConflictError'
-  }
-}
-
 function metricKeyFor(record: SourceTelemetryRecord) {
   if (record.metricKey) return record.metricKey.trim().toLowerCase()
   const known = metricDefinitions.find(
@@ -91,13 +84,19 @@ export class SourceSyncService {
     const checkpoint = options.ignoreCheckpoint
       ? null
       : await this.db.syncCheckpoint.findUnique({ where: { sourceName } })
-    let cursor = options.from || options.ignoreCheckpoint ? undefined : parseCursor(checkpoint?.sourceCursor ?? null)
+    const savedCursor = options.ignoreCheckpoint ? undefined : parseCursor(checkpoint?.sourceCursor ?? null)
+    // Checkpoint is a high-water mark (newest synced time). Next run pulls [watermark → now].
+    // Do NOT pass it as the adapter page cursor — that clamps `to` backward and yields an empty window.
     const from =
       options.from ??
-      (cursor ? new Date(cursor.reportedAt) : new Date(to.getTime() - config.lookbackDays * 86_400_000))
+      (savedCursor
+        ? new Date(savedCursor.reportedAt)
+        : new Date(to.getTime() - config.lookbackDays * 86_400_000))
+    let pageCursor: SourceCursor | undefined
+    let newestCursor: SourceCursor | null = savedCursor ?? null
 
     logProgress(
-      `window ${from.toISOString()} → ${to.toISOString()} (${options.ignoreCheckpoint ? 'lookback/device-scoped' : 'lookback/checkpoint'})`
+      `window ${from.toISOString()} → ${to.toISOString()} (${options.ignoreCheckpoint ? 'lookback/device-scoped' : savedCursor ? 'incremental/checkpoint' : 'lookback/checkpoint'})`
     )
 
     const batch = await this.db.syncBatch.create({
@@ -105,7 +104,7 @@ export class SourceSyncService {
         sourceName,
         status: 'running',
         startedAt: new Date(),
-        cursorBefore: cursor ? JSON.stringify(cursor) : null
+        cursorBefore: savedCursor ? JSON.stringify(savedCursor) : null
       }
     })
     const totals = {
@@ -115,7 +114,6 @@ export class SourceSyncService {
       unknownMetrics: 0,
       missingIdentifiers: 0
     }
-    let lastCursor: SourceCursor | null = cursor ?? null
     let pageIndex = 0
 
     try {
@@ -123,7 +121,7 @@ export class SourceSyncService {
         pageIndex += 1
         logProgress(`fetching Mongo page ${pageIndex}…`)
         const started = Date.now()
-        const page = await this.adapter.fetchTelemetry({ cursor, from, to, limit: batchSize })
+        const page = await this.adapter.fetchTelemetry({ cursor: pageCursor, from, to, limit: batchSize })
         logProgress(`page ${pageIndex}: got ${page.records.length} rows in ${Date.now() - started}ms`)
 
         if (page.records.length === 0) break
@@ -162,7 +160,13 @@ export class SourceSyncService {
 
           const key = metricKeyFor(row)
           if (key.startsWith('siid:')) totals.unknownMetrics += 1
-          lastCursor = { reportedAt: row.reportedAt.toISOString(), sourceRecordId: row.sourceRecordId }
+          if (
+            !newestCursor ||
+            row.reportedAt.getTime() > Date.parse(newestCursor.reportedAt) ||
+            (row.reportedAt.toISOString() === newestCursor.reportedAt && row.sourceRecordId > newestCursor.sourceRecordId)
+          ) {
+            newestCursor = { reportedAt: row.reportedAt.toISOString(), sourceRecordId: row.sourceRecordId }
+          }
 
           if (options.dryRun) {
             totals.imported += 1
@@ -253,11 +257,10 @@ export class SourceSyncService {
                     }
                   })
                 }
-                throw new SourceRecordConflictError(writeResult.conflicts.length)
+                logProgress(`skipped ${writeResult.conflicts.length} sourceRecordId conflict(s); kept existing values`)
               }
               logProgress(`written ${totals.imported} rows (page ${pageIndex})`)
             } catch (error) {
-              if (error instanceof SourceRecordConflictError) throw error
               if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
                 totals.duplicatesSkipped += chunk.length
                 continue
@@ -276,8 +279,8 @@ export class SourceSyncService {
           }
         }
 
-        cursor = page.nextCursor
-        if (!page.hasMore || !cursor) break
+        pageCursor = page.nextCursor
+        if (!page.hasMore || !pageCursor) break
       }
 
       // Per-device sync must not advance the shared source checkpoint.
@@ -286,13 +289,13 @@ export class SourceSyncService {
           where: { sourceName },
           create: {
             sourceName,
-            sourceCursor: lastCursor ? JSON.stringify(lastCursor) : '',
+            sourceCursor: newestCursor ? JSON.stringify(newestCursor) : '',
             status: 'ok',
             lastSuccessAt: new Date(),
             lastError: null
           },
           update: {
-            sourceCursor: lastCursor ? JSON.stringify(lastCursor) : checkpoint?.sourceCursor ?? '',
+            sourceCursor: newestCursor ? JSON.stringify(newestCursor) : checkpoint?.sourceCursor ?? '',
             status: 'ok',
             syncedAt: new Date(),
             lastSuccessAt: new Date(),
@@ -306,7 +309,7 @@ export class SourceSyncService {
         data: {
           status: options.dryRun ? 'dry-run' : 'completed',
           completedAt: new Date(),
-          cursorAfter: lastCursor ? JSON.stringify(lastCursor) : null,
+          cursorAfter: newestCursor ? JSON.stringify(newestCursor) : null,
           ...totals
         }
       })
@@ -316,7 +319,7 @@ export class SourceSyncService {
         status: options.dryRun ? 'dry-run' : 'completed',
         sourceName,
         ...totals,
-        checkpoint: lastCursor
+        checkpoint: newestCursor
       }
     } catch (error) {
       const safe = redactSourceError(error)
@@ -337,7 +340,7 @@ export class SourceSyncService {
         where: { id: batch.id },
         data: { status: 'failed', completedAt: new Date(), ...totals, lastError: safe.message }
       })
-      return { status: 'failed', sourceName, ...totals, checkpoint: lastCursor, error: safe }
+      return { status: 'failed', sourceName, ...totals, checkpoint: newestCursor, error: safe }
     } finally {
       await this.adapter.close?.()
     }

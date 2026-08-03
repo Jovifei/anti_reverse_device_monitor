@@ -17,6 +17,7 @@
     "verify-data": "tsx scripts/verify-data.ts",
     "source:inspect": "tsx scripts/inspect-source.ts",
     "source:validate-mapping": "tsx scripts/validate-source-mapping.ts",
+    "db:ensure-migrations": "node --env-file=.env.local scripts/ensure-db-migrations.mjs",
     "source:sync": "tsx scripts/sync-source-data.ts",
     "source:worker": "tsx scripts/source-sync-worker.ts",
     "devices:sync-registry": "tsx scripts/sync-device-registry.ts",
