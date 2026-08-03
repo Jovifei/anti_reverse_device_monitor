@@ -3727,6 +3727,18 @@ body.metric-dialog-open .metric-card:hover {
   font-weight: 800;
 }
 
+.fleet-risk-table .fleet-table-inverters .online-inverter-count {
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.fleet-risk-table .fleet-table-inverters .online-inverter-count-online,
+.fleet-risk-table .fleet-table-inverters .online-inverter-count-total,
+.fleet-risk-table .fleet-table-inverters .online-inverter-count-sep {
+  font-size: inherit;
+}
+
 .fleet-table-action {
   color: var(--blue);
   font-weight: 800;

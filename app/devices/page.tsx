@@ -140,7 +140,7 @@ export default async function DeviceListPage({
               <td><span className={`badge ${device.isOnline ? 'online' : 'offline'}`}>{device.isOnline ? 'CT 在线' : 'CT 离线'}</span></td>
               <td><span className={`fleet-table-reverse ${device.reverseState === 'active' ? 'danger-value' : ''}`}>{reverseText(device)}</span></td>
               <td className={`fleet-table-value ${device.todayEnergy !== '—' ? 'is-energy' : ''}`}>{device.todayEnergy}</td>
-              <td><OnlineInverterCount online={device.onlineInverterCount} total={device.inverterCount || 8} /></td>
+              <td className="fleet-table-value fleet-table-inverters"><OnlineInverterCount online={device.onlineInverterCount} total={device.inverterCount || 8} /></td>
               <td><span className={`status-chip tone-${runtimeTone(device.runtimeState)}`}>{device.runtimeState}</span></td>
               <td>{device.limitState}</td>
               <td>{device.sub1gState}</td>

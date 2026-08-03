@@ -29,7 +29,7 @@ export function DatedRecordScroll<T>({
           <h4 className="record-day-heading">{group.date}</h4>
           <ul className="record-list">
             {group.items.map((item, index) => (
-              <li key={itemKey(item, index)}>{renderItem(item, index)}</li>
+              <li key={`${group.date}-${index}-${itemKey(item, index)}`}>{renderItem(item, index)}</li>
             ))}
           </ul>
         </section>
