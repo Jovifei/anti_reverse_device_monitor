@@ -8,6 +8,11 @@ import {
   chartSeriesDisplayColor,
   NEGATIVE_POWER_ALERT_COLOR
 } from '@/src/domain/monitoring'
+import {
+  isTelemetryTooltipSeries,
+  resolveTooltipTimestamp,
+  type TooltipParam
+} from '@/src/components/telemetry-chart-tooltip'
 
 /** Red is reserved for actual negative-power reverse-flow evidence only. */
 const NEGATIVE_WARN_COLOR = NEGATIVE_POWER_ALERT_COLOR
@@ -55,12 +60,13 @@ type Props = {
   dayNightBands?: boolean
 }
 
+/** Axis labels may fall back to now; tooltips must not. */
 function coerceMs(ms: number) {
   return Number.isFinite(ms) ? ms : Date.now()
 }
 
 function partsInTz(ms: number) {
-  const safe = coerceMs(ms)
+  const safe = Number.isFinite(ms) ? ms : Date.now()
   const fmt = new Intl.DateTimeFormat('en-CA', {
     timeZone: process.env.APP_TIMEZONE || 'Asia/Shanghai',
     year: 'numeric', month: '2-digit', day: '2-digit',
@@ -274,15 +280,10 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
         formatter: (params: unknown) => {
           const list = Array.isArray(params) ? params : [params]
           if (!list.length) return ''
-          const first = list[0] as { value?: [number | string, number] }
-          const rawTs = Array.isArray(first.value) ? Number(first.value[0]) : NaN
-          const ts = coerceMs(rawTs)
+          const ts = resolveTooltipTimestamp(params)
+          const timeLine = ts === null ? '时间 —' : `时间 ${formatTooltipTime(ts)}`
           const lines = list
-            .filter((item) => (item as { seriesType?: string }).seriesType === 'line')
-            .filter((item) => {
-              const name = (item as { seriesName?: string }).seriesName ?? ''
-              return name !== '昼夜背景' && !name.includes('·负')
-            })
+            .filter((item) => isTelemetryTooltipSeries(item as TooltipParam))
             .map((item) => {
               const row = item as { marker?: string; seriesName?: string; value?: [number | string, number | null] }
               let raw = Array.isArray(row.value) ? row.value[1] : null
@@ -297,7 +298,7 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
               const warn = typeof raw === 'number' && raw < 0
               return `${row.marker ?? ''}${row.seriesName ?? ''}: ${text}${unit ? ` ${unit}` : ''}${warn ? '（负值警示）' : ''}`
             })
-          return [`时间 ${formatTooltipTime(ts)}`, ...lines].join('<br/>')
+          return [timeLine, ...lines].join('<br/>')
         }
       },
       legend: { top: 7, type: 'scroll', textStyle: { color: '#667085' }, data: visible.map((item) => item.label) },

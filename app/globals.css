@@ -2087,6 +2087,11 @@ button:disabled {
   background: var(--paper-alt);
 }
 
+/* CT 本体上下线三列：可视高度 ×3，减少频繁滚动 */
+.ct-presence-panel .record-scroll {
+  max-height: 480px;
+}
+
 .record-scroll-tall {
   max-height: 260px;
 }
@@ -2107,7 +2112,7 @@ button:disabled {
 .record-day-group+.record-day-group {
   border-top: 1px solid #dfe6ef;
   margin-top: 4px;
-  padding-top: 8px;
+  padding-top: 0;
 }
 
 .record-day-heading {
@@ -2125,6 +2130,74 @@ button:disabled {
 
 .record-day-group .record-list li:first-child {
   border-top: 0;
+}
+
+/* 按日轮换背景，便于区分相邻日期块 */
+.record-day-tone-0 {
+  background: #f4f7fb;
+}
+.record-day-tone-0 .record-day-heading {
+  background: #dce6f2;
+}
+
+.record-day-tone-1 {
+  background: #f3f8f4;
+}
+.record-day-tone-1 .record-day-heading {
+  background: #d8eadc;
+}
+
+.record-day-tone-2 {
+  background: #f8f5f1;
+}
+.record-day-tone-2 .record-day-heading {
+  background: #ebe1d4;
+}
+
+.record-day-tone-3 {
+  background: #f5f3f9;
+}
+.record-day-tone-3 .record-day-heading {
+  background: #e4dff0;
+}
+
+.record-day-tone-4 {
+  background: #f3f7f8;
+}
+.record-day-tone-4 .record-day-heading {
+  background: #d7e8eb;
+}
+
+.online-inverter-count {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.online-inverter-count-online,
+.online-inverter-count-total {
+  font-weight: 800;
+  color: #334155;
+}
+
+.online-inverter-count-online.is-ok,
+.online-inverter-count-total.is-ok {
+  color: #15803d;
+}
+
+.online-inverter-count-total.is-alert {
+  color: #c92828;
+}
+
+.online-inverter-count-sep {
+  margin: 0 1px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.offline-duration-emphasis {
+  font-weight: 800;
+  color: #15233a;
+  font-variant-numeric: tabular-nums;
 }
 
 .record-state-online {
@@ -3512,7 +3585,7 @@ body.metric-dialog-open .metric-card:hover {
 
 .fleet-risk-table {
   width: 100%;
-  min-width: 1190px;
+  min-width: 1280px;
   border-collapse: separate;
   border-spacing: 0;
   color: #31445f;

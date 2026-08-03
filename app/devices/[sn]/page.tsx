@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import { DatedRecordScroll } from '@/src/components/dated-record-scroll'
 import { DeviceSnSwitcher } from '@/src/components/device-sn-switcher'
 import { MetricHistoryDialog } from '@/src/components/metric-history-dialog'
+import { OfflineWindowLabel } from '@/src/components/offline-window-label'
+import { OnlineInverterCount } from '@/src/components/online-inverter-count'
 import { SoftRefreshButton } from '@/src/components/soft-refresh-button'
 import { TelemetryChart, type ClientChartSeries } from '@/src/components/telemetry-chart'
 import { WifiSignalView } from '@/src/components/wifi-signal-view'
@@ -222,7 +224,7 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
               },
               {
                 label: '在线微逆',
-                value: <span className={onlineInverterCount > 0 ? 'fact-emphasis is-ok' : 'fact-emphasis'}>{onlineInverterCount}<small> / {pairedInverterCount || 8}</small></span>,
+                value: <OnlineInverterCount online={onlineInverterCount} total={pairedInverterCount || 8} className="fact-emphasis" />,
                 empty: false
               },
               {
@@ -377,6 +379,6 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
 
     <TelemetryChart title="电网电压与频率（V / Hz）" series={charts.grid} height={360} />
 
-    <section className="panel ct-presence-panel"><h2>CT 本体上下线与离线时长</h2><div className="presence-columns"><div><h3>上线时间</h3><DatedRecordScroll groups={onlineTransitionGroups} emptyText="当前窗口没有上线记录。" itemKey={(item) => `${item.at}-online`} renderItem={(item) => formatClockTime(item.at)} /></div><div><h3>下线时间</h3><DatedRecordScroll groups={offlineTransitionGroups} emptyText="当前窗口没有下线记录。" itemKey={(item) => `${item.at}-offline`} renderItem={(item) => formatClockTime(item.at)} /></div><div><h3>持续离线时间</h3><DatedRecordScroll groups={offlineWindowGroups} emptyText="当前窗口没有离线区间。" itemKey={(item) => `${item.startAt}-${item.endAt}`} renderItem={(item) => <>{formatClockTime(item.startAt)} 至 {formatTime(item.endAt)} · {formatDuration(item.durationMinutes)}</>} /></div></div></section>
+    <section className="panel ct-presence-panel"><h2>CT 本体上下线与离线时长</h2><div className="presence-columns"><div><h3>上线时间</h3><DatedRecordScroll groups={onlineTransitionGroups} emptyText="当前窗口没有上线记录。" itemKey={(item) => `${item.at}-online`} renderItem={(item) => formatClockTime(item.at)} /></div><div><h3>下线时间</h3><DatedRecordScroll groups={offlineTransitionGroups} emptyText="当前窗口没有下线记录。" itemKey={(item) => `${item.at}-offline`} renderItem={(item) => formatClockTime(item.at)} /></div><div><h3>持续离线时间</h3><DatedRecordScroll groups={offlineWindowGroups} emptyText="当前窗口没有离线区间。" itemKey={(item) => `${item.startAt}-${item.endAt}`} renderItem={(item) => <OfflineWindowLabel startAt={item.startAt} endAt={item.endAt} durationMinutes={item.durationMinutes} />} /></div></div></section>
   </main>
 }

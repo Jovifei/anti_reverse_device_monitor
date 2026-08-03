@@ -24,8 +24,8 @@ export function DatedRecordScroll<T>({
   if (!groups.length) return <p className="muted">{emptyText}</p>
   return (
     <div className={`record-scroll ${scrollClassName}`.trim()}>
-      {groups.map((group) => (
-        <section key={group.date} className="record-day-group">
+      {groups.map((group, dayIndex) => (
+        <section key={group.date} className={`record-day-group record-day-tone-${dayIndex % 5}`}>
           <h4 className="record-day-heading">{group.date}</h4>
           <ul className="record-list">
             {group.items.map((item, index) => (

@@ -8,6 +8,7 @@ import {
   displayValue,
   findLatestMetric,
   formatDuration,
+  formatOfflineWindowRange,
   formatTime,
   getInverterStatus,
   getInverterWorkStatus,
@@ -163,7 +164,7 @@ export async function buildInverterViewModel(
       text: `${formatTime(item.at)} · ${item.eventType} · ${(item.toFaults ?? []).join('、') || EMPTY} · ${item.toHex ?? EMPTY}`
     })),
     offlineWindows: (summary.connectivity?.offlineWindows ?? []).map((item) => ({
-      text: `下线 ${formatTime(item.startAt)} · 恢复 ${item.endAt ? formatTime(item.endAt) : '持续中'} · ${formatDuration(item.durationMinutes)}`
+      text: `${formatOfflineWindowRange(item.startAt, item.endAt)} · ${formatDuration(item.durationMinutes)}`
     })),
     charts: {
       power: toOfflineSeries(charts.power),

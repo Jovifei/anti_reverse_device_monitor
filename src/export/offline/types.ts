@@ -122,6 +122,8 @@ export interface OfflineOverviewItem {
   reverseState: 'normal' | 'active' | 'unknown' | 'unknown-last-seen-reverse'
   reversePhases: string
   todayEnergy: string
+  onlineInverterCount: number
+  inverterCount: number
   runtimeState: string
   limitState: string
   sub1gState: string

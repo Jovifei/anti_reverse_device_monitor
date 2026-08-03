@@ -11,6 +11,7 @@ import {
   displayWifiSignal,
   findLatestMetric,
   formatDuration,
+  formatOfflineWindowRange,
   formatTime,
   formatTimeShort,
   getInverterStatus,
@@ -235,7 +236,7 @@ export async function buildDeviceViewModel(
       .filter((item) => item.state === 'offline')
       .map((item) => ({ text: formatTime(item.at) })),
     platformOfflineWindows: history.platform.offlineWindows.map((item) => ({
-      text: `${formatTime(item.startAt)} → ${formatTime(item.endAt)} · ${formatDuration(item.durationMinutes)}${item.endAt ? '' : '（持续中）'}`
+      text: `${formatOfflineWindowRange(item.startAt, item.endAt)} · ${formatDuration(item.durationMinutes)}`
     })),
     inverters,
     overviewHref: options?.includeDetailLinks ? './index.html' : undefined

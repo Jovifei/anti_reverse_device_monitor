@@ -6,6 +6,9 @@ import {
   displayInverterIdentity,
   displayPowerLimit,
   displaySwitch,
+  durationEmphasisParts,
+  formatOfflineWindowRange,
+  formatTime,
   isGenerating,
   resolveInverterCardStatus
 } from '@/src/domain/monitoring'
@@ -187,6 +190,28 @@ describe('groupByLocalDate', () => {
   })
 })
 
+describe('formatOfflineWindowRange', () => {
+  it('omits repeated date when start and end share a local day', () => {
+    // 2026-08-02 00:05:25 / 00:22:35 Asia/Shanghai
+    expect(formatOfflineWindowRange('2026-08-01T16:05:25.000Z', '2026-08-01T16:22:35.000Z')).toBe(
+      '00:05:25 至 00:22:35'
+    )
+  })
+
+  it('keeps full end timestamp across local days', () => {
+    const end = '2026-08-02T16:22:35.000Z'
+    expect(formatOfflineWindowRange('2026-08-01T16:05:25.000Z', end)).toBe(`00:05:25 至 ${formatTime(end)}`)
+  })
+})
+
+describe('durationEmphasisParts', () => {
+  it('marks minute count for emphasis', () => {
+    expect(durationEmphasisParts(17)).toEqual([
+      { kind: 'num', value: '17' },
+      { kind: 'text', value: ' 分钟' }
+    ])
+  })
+})
 describe('breakChartTimeGaps', () => {
   it('inserts null between samples farther than maxGapMs', () => {
     const points = breakChartTimeGaps(

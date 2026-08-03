@@ -280,16 +280,44 @@ export function clientRuntimeSource(): string {
         textStyle: { color: '#fff' },
         formatter: function(params){
           if (!params || !params.length) return '';
-          const head = '时间 ' + formatTooltipTime(params[0].value[0]);
+          function toMs(v){
+            if (typeof v === 'number' && Number.isFinite(v)) return v;
+            if (typeof v === 'string' && v) {
+              var n = Number(v);
+              if (Number.isFinite(n)) return n;
+              var p = Date.parse(v);
+              if (Number.isFinite(p)) return p;
+            }
+            return NaN;
+          }
+          var ts = NaN;
+          for (var i = 0; i < params.length; i++) {
+            if (params[i].axisValue != null) {
+              ts = toMs(params[i].axisValue);
+              if (Number.isFinite(ts)) break;
+            }
+          }
+          if (!Number.isFinite(ts)) {
+            for (var j = 0; j < params.length; j++) {
+              var row = params[j];
+              var name = row.seriesName || '';
+              if (row.seriesType !== 'line' || name === '昼夜背景' || String(name).indexOf('·负') >= 0) continue;
+              if (Array.isArray(row.value)) {
+                ts = toMs(row.value[0]);
+                if (Number.isFinite(ts)) break;
+              }
+            }
+          }
+          const head = Number.isFinite(ts) ? ('时间 ' + formatTooltipTime(ts)) : '时间 —';
           const lines = params.filter(function(p){
             return p.seriesType === 'line' && p.seriesName !== '昼夜背景' && String(p.seriesName || '').indexOf('·负') < 0;
           }).map(function(p){
             var v = Array.isArray(p.value) ? p.value[1] : p.value;
             if ((v === null || v === undefined) && p.seriesName && Array.isArray(p.value)) {
               var seriesItem = visible.find(function(entry){ return entry.label === p.seriesName; });
-              var ts = p.value[0];
+              var pointTs = p.value[0];
               var hit = seriesItem && (seriesItem.points || []).find(function(point){
-                return point[0] === ts || new Date(point[0]).getTime() === new Date(ts).getTime();
+                return point[0] === pointTs || new Date(point[0]).getTime() === new Date(pointTs).getTime();
               });
               if (hit) v = hit[1];
             }

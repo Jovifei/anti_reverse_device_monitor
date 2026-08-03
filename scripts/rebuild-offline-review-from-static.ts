@@ -96,6 +96,8 @@ function buildOverview(devices: OfflineDeviceViewModel[]): OfflineOverviewViewMo
       reverseState,
       reversePhases: device.reversePhases.length ? device.reversePhases.join(' / ') : '—',
       todayEnergy: device.todayEnergy,
+      onlineInverterCount: device.inverters.filter((item) => item.statusVariant === 'online').length,
+      inverterCount: device.inverters.filter((item) => item.statusVariant !== 'unpaired').length || device.inverters.length || 8,
       runtimeState: device.ctState,
       limitState: device.limitState,
       sub1gState: device.sub1gState,

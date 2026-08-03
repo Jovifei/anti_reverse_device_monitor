@@ -215,6 +215,43 @@ export function formatDuration(minutes: number | null | undefined) {
   return `${hours} 小时 ${remaining} 分钟`
 }
 
+/** Split duration for UI emphasis on numeric parts. */
+export function durationEmphasisParts(minutes: number | null | undefined): Array<{ kind: 'num' | 'text'; value: string }> {
+  if (minutes === null || minutes === undefined || !Number.isFinite(minutes)) {
+    return [{ kind: 'text', value: '—' }]
+  }
+  if (minutes < 60) {
+    return [
+      { kind: 'num', value: String(Math.round(minutes)) },
+      { kind: 'text', value: ' 分钟' }
+    ]
+  }
+  const hours = Math.floor(minutes / 60)
+  const remaining = Math.round(minutes % 60)
+  return [
+    { kind: 'num', value: String(hours) },
+    { kind: 'text', value: ' 小时 ' },
+    { kind: 'num', value: String(remaining) },
+    { kind: 'text', value: ' 分钟' }
+  ]
+}
+
+/**
+ * Offline window under a day heading: same calendar day → clock-only end;
+ * cross-day → keep full end timestamp.
+ */
+export function formatOfflineWindowRange(
+  startAt: Date | string,
+  endAt: Date | string | null | undefined
+): string {
+  const startClock = formatClockTime(startAt)
+  if (!endAt) return `${startClock} 至 持续中`
+  if (formatDateOnly(startAt) === formatDateOnly(endAt)) {
+    return `${startClock} 至 ${formatClockTime(endAt)}`
+  }
+  return `${startClock} 至 ${formatTime(endAt)}`
+}
+
 export function formatTime(value: Date | string | null | undefined) {
   if (!value) return '—'
   const parsed = new Date(value)

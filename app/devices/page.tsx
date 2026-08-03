@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { SoftRefreshButton } from '@/src/components/soft-refresh-button'
+import { OnlineInverterCount } from '@/src/components/online-inverter-count'
 import { WifiSignalView } from '@/src/components/wifi-signal-view'
 import { deviceSnPrimaryLabel, deviceSnSecondaryLabel } from '@/src/domain/device-identity'
 import { formatDuration, formatTime, wifiSignalBars } from '@/src/domain/monitoring'
@@ -128,7 +129,7 @@ export default async function DeviceListPage({
       {devices.length ? <div className="fleet-table-scroll" tabIndex={0} aria-label="CT 风险与运行概览表格，可横向滚动查看全部指标">
         <table className="fleet-risk-table">
           <caption>CT 风险与运行概览</caption>
-          <thead><tr><th scope="col">CT SN</th><th scope="col">通信状态</th><th scope="col">当前逆流状态</th><th scope="col">今日发电量</th><th scope="col">运行状态</th><th scope="col">限流状态</th><th scope="col">Sub1G</th><th scope="col">WiFi 信号</th><th scope="col">最后上报</th><th scope="col">详情</th></tr></thead>
+          <thead><tr><th scope="col">CT SN</th><th scope="col">通信状态</th><th scope="col">当前逆流状态</th><th scope="col">今日发电量</th><th scope="col">在线微逆个数</th><th scope="col">运行状态</th><th scope="col">限流状态</th><th scope="col">Sub1G</th><th scope="col">WiFi 信号</th><th scope="col">最后上报</th><th scope="col">详情</th></tr></thead>
           <tbody>{devices.map((device) => {
             const connectionText = device.isOnline ? '在线上报中' : device.offlineAlert ? `离线 ${formatDuration(device.offlineMinutes)}，请处理` : `离线 ${formatDuration(device.offlineMinutes)}，已停止提醒`
             const primary = deviceSnPrimaryLabel(device.deviceSn)
@@ -139,6 +140,7 @@ export default async function DeviceListPage({
               <td><span className={`badge ${device.isOnline ? 'online' : 'offline'}`}>{device.isOnline ? 'CT 在线' : 'CT 离线'}</span></td>
               <td><span className={`fleet-table-reverse ${device.reverseState === 'active' ? 'danger-value' : ''}`}>{reverseText(device)}</span></td>
               <td className={`fleet-table-value ${device.todayEnergy !== '—' ? 'is-energy' : ''}`}>{device.todayEnergy}</td>
+              <td><OnlineInverterCount online={device.onlineInverterCount} total={device.inverterCount || 8} /></td>
               <td><span className={`status-chip tone-${runtimeTone(device.runtimeState)}`}>{device.runtimeState}</span></td>
               <td>{device.limitState}</td>
               <td>{device.sub1gState}</td>

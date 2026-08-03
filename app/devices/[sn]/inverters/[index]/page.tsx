@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { DatedRecordScroll } from '@/src/components/dated-record-scroll'
 import { DeviceSnSearch } from '@/src/components/device-sn-search'
 import { MetricHistoryDialog } from '@/src/components/metric-history-dialog'
+import { OfflineWindowLabel } from '@/src/components/offline-window-label'
 import { TelemetryChart, type ClientChartSeries } from '@/src/components/telemetry-chart'
 import { faultDisplayNames } from '@/src/domain/faults'
 import {
@@ -13,7 +14,6 @@ import {
   findLatestMetric,
   formatClockTime,
   formatDuration,
-  formatTime,
   getInverterStatus,
   groupByLocalDate,
   isGenerating,
@@ -208,9 +208,7 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
           scrollClassName="record-scroll-tall"
           itemKey={(item) => `${item.startAt}-${item.endAt}`}
           renderItem={(item) => (
-            <>
-              {formatClockTime(item.startAt)} 至 {item.endAt ? formatTime(item.endAt) : '持续中'} · {formatDuration(item.durationMinutes)}
-            </>
+            <OfflineWindowLabel startAt={item.startAt} endAt={item.endAt} durationMinutes={item.durationMinutes} />
           )}
         />
       </div>
