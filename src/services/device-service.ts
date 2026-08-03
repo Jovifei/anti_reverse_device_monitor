@@ -37,6 +37,8 @@ export interface DeviceListResponse {
     criticalReverseFlowCount: number
     actionableOfflineCount: number
     staleOfflineCount: number
+    ctsWithOfflineInverters: number
+    offlineInverterUnitCount: number
   }
   items: {
     id: number
@@ -46,6 +48,8 @@ export interface DeviceListResponse {
     lastReportedAt: Date | null
     inverterCount: number
     onlineInverterCount: number
+    offlineInverterIndexes: number[]
+    hasOfflineInverter: boolean
     isOnline: boolean
     reverseFlow: boolean
     reverseFlowPhases: Array<'A' | 'B' | 'C'>
@@ -162,12 +166,14 @@ export class DeviceService {
           ? (reverseFlowPhases.length ? 'active' : 'normal')
           : (reverseFlowPhases.length ? 'unknown-last-seen-reverse' : 'unknown')
         const pairedInverters = item.inverterBindings.filter((binding) => binding.paired)
-        const hasOnlinePairedInverter = pairedInverters.some((binding) =>
+        const isPairedOnline = (binding: (typeof pairedInverters)[number]) =>
           binding.latestRows.some((row) => numericValue(row) === 2)
-        )
-        const onlineInverterCount = pairedInverters.filter((binding) =>
-          binding.latestRows.some((row) => numericValue(row) === 2)
-        ).length
+        const hasOnlinePairedInverter = pairedInverters.some(isPairedOnline)
+        const onlineInverterCount = pairedInverters.filter(isPairedOnline).length
+        const offlineInverterIndexes = pairedInverters
+          .filter((binding) => !isPairedOnline(binding))
+          .map((binding) => binding.inverterIndex)
+        const hasOfflineInverter = offlineInverterIndexes.length > 0
         const sub1g = deriveCtSub1gStatus({
           rawState: numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.sub1gState)),
           hasPairedInverters: pairedInverters.length > 0,
@@ -181,6 +187,8 @@ export class DeviceService {
           lastReportedAt: item.lastReportedAt,
           inverterCount: pairedInverters.length,
           onlineInverterCount,
+          offlineInverterIndexes,
+          hasOfflineInverter,
           isOnline,
           reverseFlow: reverseState === 'active',
           reverseFlowPhases,
@@ -200,13 +208,16 @@ export class DeviceService {
       offlineCtCount: activeItems.filter((item) => !item.isOnline).length,
       criticalReverseFlowCount: activeItems.filter((item) => item.reverseFlow).length,
       actionableOfflineCount: activeItems.filter((item) => item.offlineAlert).length,
-      staleOfflineCount: activeItems.filter((item) => !item.isOnline && !item.offlineAlert).length
+      staleOfflineCount: activeItems.filter((item) => !item.isOnline && !item.offlineAlert).length,
+      ctsWithOfflineInverters: activeItems.filter((item) => item.hasOfflineInverter).length,
+      offlineInverterUnitCount: activeItems.reduce((sum, item) => sum + item.offlineInverterIndexes.length, 0)
     }
     const matchingItems = activeItems.filter((item) => {
       if (parsed.q && !item.deviceSn.toLowerCase().includes(parsed.q.toLowerCase())) return false
       if (parsed.status === 'online') return item.isOnline
       if (parsed.status === 'offline') return !item.isOnline
       if (parsed.status === 'reverse') return item.reverseFlow
+      if (parsed.status === 'inv-offline') return item.hasOfflineInverter
       return true
     })
     const total = matchingItems.length

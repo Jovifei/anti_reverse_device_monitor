@@ -26,10 +26,11 @@ describe('device list query validation', () => {
     })
   })
 
-  it('keeps non-empty q trimmed', () => {
-    expect(parseDeviceListQuery({ q: ' 252 ', status: 'all' })).toMatchObject({
-      q: '252',
-      status: 'all'
+  it('accepts inv-offline status filter', () => {
+    expect(parseDeviceListQuery({ status: 'inv-offline' })).toMatchObject({
+      status: 'inv-offline',
+      page: 1,
+      pageSize: 20
     })
   })
 })

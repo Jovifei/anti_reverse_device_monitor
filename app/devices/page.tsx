@@ -10,7 +10,8 @@ const FILTERS = [
   { value: 'all', label: '全部活跃设备' },
   { value: 'online', label: '仅在线 CT' },
   { value: 'offline', label: '仅离线 CT' },
-  { value: 'reverse', label: '仅逆流告警' }
+  { value: 'reverse', label: '仅逆流告警' },
+  { value: 'inv-offline', label: '存在离线微逆' }
 ] as const
 
 function fleetListHref(status: (typeof FILTERS)[number]['value'], q: string) {
@@ -114,6 +115,20 @@ export default async function DeviceListPage({
         <p>离线不足 7 天，可能需要恢复通信或确认设备状态 · 点击筛选</p>
       </Link>
       <Link
+        href={fleetListHref('inv-offline', q)}
+        className={`fleet-priority-card inv-offline ${result.summary.ctsWithOfflineInverters ? 'is-active' : ''} ${status === 'inv-offline' ? 'is-selected' : ''}`}
+        aria-current={status === 'inv-offline' ? 'page' : undefined}
+      >
+        <span>存在离线微逆</span>
+        <strong>{result.summary.ctsWithOfflineInverters}</strong>
+        <p>
+          {result.summary.ctsWithOfflineInverters
+            ? `${result.summary.ctsWithOfflineInverters} 台 CT · 共 ${result.summary.offlineInverterUnitCount} 路配对微逆离线`
+            : '当前没有配对微逆离线'}
+          {' '}· 点击筛选
+        </p>
+      </Link>
+      <Link
         href={fleetListHref('online', q)}
         className={`fleet-priority-card online ${status === 'online' ? 'is-selected' : ''}`}
         aria-current={status === 'online' ? 'page' : undefined}
@@ -135,12 +150,17 @@ export default async function DeviceListPage({
             const primary = deviceSnPrimaryLabel(device.deviceSn)
             const secondary = deviceSnSecondaryLabel(device.deviceSn)
             const wifiRaw = parseWifiNumber(device.wifiSignal)
-            return <tr className={`${device.reverseState === 'active' ? 'reverse-row' : ''} ${device.offlineAlert ? 'offline-row' : ''}`} key={device.id}>
+            return <tr className={`${device.reverseState === 'active' ? 'reverse-row' : ''} ${device.offlineAlert ? 'offline-row' : ''} ${device.hasOfflineInverter ? 'inv-offline-row' : ''}`} key={device.id}>
               <th scope="row"><Link className="fleet-table-sn" href={`/devices/${encodeURIComponent(device.deviceSn)}`}>{primary}</Link><span className="fleet-table-subtext">{secondary ? `${secondary} · ${connectionText}` : connectionText}</span></th>
               <td><span className={`badge ${device.isOnline ? 'online' : 'offline'}`}>{device.isOnline ? 'CT 在线' : 'CT 离线'}</span></td>
               <td><span className={`fleet-table-reverse ${device.reverseState === 'active' ? 'danger-value' : ''}`}>{reverseText(device)}</span></td>
               <td className={`fleet-table-value ${device.todayEnergy !== '—' ? 'is-energy' : ''}`}>{device.todayEnergy}</td>
-              <td className="fleet-table-value fleet-table-inverters"><OnlineInverterCount online={device.onlineInverterCount} total={device.inverterCount || 8} /></td>
+              <td className="fleet-table-value fleet-table-inverters">
+                <OnlineInverterCount online={device.onlineInverterCount} total={device.inverterCount || 8} />
+                {device.offlineInverterIndexes.length ? (
+                  <span className="fleet-table-inv-offline">离线微逆 #{device.offlineInverterIndexes.join(',')}</span>
+                ) : null}
+              </td>
               <td><span className={`status-chip tone-${runtimeTone(device.runtimeState)}`}>{device.runtimeState}</span></td>
               <td>{device.limitState}</td>
               <td>{device.sub1gState}</td>

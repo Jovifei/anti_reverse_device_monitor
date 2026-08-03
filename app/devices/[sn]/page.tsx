@@ -361,7 +361,7 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
                 <strong>{sub1gStatus.label}</strong>
               </div>
             ) : null}
-            <div>
+            <div className="inverter-total-energy-cell">
               <span>累计发电量</span>
               <strong>{energy(INVERTER_KPI_ALIASES.totalEnergy)}</strong>
             </div>
