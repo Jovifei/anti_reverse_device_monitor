@@ -22,6 +22,7 @@
     "2_17": { "metricKey": "grid_frequency", "siid": "2", "piid": "17", "inverterIndex": null },
     "2_21": { "metricKey": "sub1g_state", "siid": "2", "piid": "21", "inverterIndex": null },
     "2_26": { "metricKey": "wifi_signal_strength", "siid": "2", "piid": "26", "inverterIndex": null },
+    "0_0": { "metricKey": "wifi_signal_strength", "siid": "0", "piid": "0", "inverterIndex": null },
     "3_10": { "metricKey": "work_mode", "siid": "3", "piid": "10", "inverterIndex": null },
     "3_11": { "metricKey": "to_grid_power_limit", "siid": "3", "piid": "11", "inverterIndex": null },
     "3_15": { "metricKey": "sub1g_channel", "siid": "3", "piid": "15", "inverterIndex": null }

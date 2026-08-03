@@ -81,7 +81,7 @@ export function chartSeriesDisplayColor(key: string, requestedColor: string) {
 /** Align with connectivity offline threshold used by device/telemetry services. */
 export const TELEMETRY_FRESHNESS_MS = 15 * 60 * 1000
 
-export const WIFI_SIGNAL_ALIASES = ['wifi_signal_strength', 'wifi_rssi', 'wifi.signal', 'wifi_signal']
+export const WIFI_SIGNAL_ALIASES = ['wifi_signal_strength', 'wifi_rssi', 'wifi.signal', 'wifi_signal', '0_0']
 
 export const CT_KPI_ALIASES = {
   todayEnergy: ['today_energy', 'today_generation_energy'],

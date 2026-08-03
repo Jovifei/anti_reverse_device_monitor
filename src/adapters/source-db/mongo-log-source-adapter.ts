@@ -7,6 +7,7 @@ import {
   type DeviceRegistryEntry
 } from '@/src/adapters/source-db/device-registry'
 import { expandDeviceLogDocument, type DeviceLogDocument } from '@/src/adapters/source-db/expand-device-log'
+import { expandIotEventLogDocument, type IotEventLogDocument } from '@/src/adapters/source-db/expand-iot-event-log'
 import { loadMongoFieldMapping } from '@/src/adapters/source-db/mongo-field-mapping'
 import { resolveMongoCollectionName, resolveMongoProductId } from '@/src/adapters/source-db/mongo-defaults'
 import { redactSourceError } from '@/src/adapters/source-db/security'
@@ -80,6 +81,14 @@ function toUnixSeconds(date: Date): number {
   return Math.floor(date.getTime() / 1000)
 }
 
+function iotEventLogCollectionName(entry: DeviceRegistryEntry, fallbackProductId?: string): string | null {
+  if (entry.collection?.trim().startsWith('device_log_')) {
+    return entry.collection.trim().replace(/^device_log_/, 'iot_event_log_')
+  }
+  const productId = entry.product_id?.trim() || fallbackProductId?.trim()
+  return productId ? `iot_event_log_${productId}` : null
+}
+
 export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
   private client: MongoClient | null = null
   private readonly config: MongoLogSourceConfig
@@ -141,6 +150,7 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
 
     const snByDeviceId = new Map(entries.map((entry) => [entry.device_id, resolveDeviceSn(entry)]))
     const byCollection = new Map<string, string[]>()
+    const byIotCollection = new Map<string, string[]>()
     for (const entry of entries) {
       const collection = collectionForEntry(entry, this.config.productId) || this.config.collection
       if (!collection) {
@@ -149,6 +159,13 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
       const list = byCollection.get(collection) ?? []
       list.push(entry.device_id)
       byCollection.set(collection, list)
+
+      const iotCollection = iotEventLogCollectionName(entry, this.config.productId)
+      if (iotCollection) {
+        const iotList = byIotCollection.get(iotCollection) ?? []
+        iotList.push(entry.device_id)
+        byIotCollection.set(iotCollection, iotList)
+      }
     }
 
     const cursorTime = params.cursor ? Date.parse(params.cursor.reportedAt) : Number.NaN
@@ -157,6 +174,25 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
     const records: SourceTelemetryRecord[] = []
     let lastCursor: SourceCursor | undefined
     const db = await this.db()
+
+    // Pull event-only WiFi first so a full device_log page cannot starve P_0_0.
+    for (const [collectionName, deviceIds] of byIotCollection) {
+      const collection = db.collection<Document>(collectionName)
+      for (const window of windows) {
+        const page = await this.queryIotWifiWindow({
+          collection,
+          deviceIds,
+          from: window.from,
+          to: window.to,
+          limit: Math.max(50, Math.min(200, params.limit)),
+          snByDeviceId,
+          mapping,
+          cursor: params.cursor
+        })
+        records.push(...page.records)
+        if (page.nextCursor) lastCursor = page.nextCursor
+      }
+    }
 
     for (const [collectionName, deviceIds] of byCollection) {
       const collection = db.collection<Document>(collectionName)
@@ -281,6 +317,59 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
         records.push(row)
         if (records.length >= params.limit) break
       }
+      if (records.length >= params.limit) break
+    }
+
+    const nextCursor =
+      records.length > 0
+        ? { reportedAt: records[records.length - 1].reportedAt.toISOString(), sourceRecordId: records[records.length - 1].sourceRecordId }
+        : undefined
+    return { records, nextCursor, hasMore: docs.length > 0 && records.length >= params.limit }
+  }
+
+  /** Event-only WiFi RSSI (`P_0_0`) from iot_event_log_<productId>. */
+  private async queryIotWifiWindow(params: {
+    collection: Collection<Document>
+    deviceIds: string[]
+    from: Date
+    to: Date
+    limit: number
+    snByDeviceId: Map<string, string>
+    mapping: ReturnType<typeof loadMongoFieldMapping>['mapping']
+    cursor?: SourceCursor
+  }): Promise<SourceTelemetryBatch> {
+    if (params.limit <= 0 || params.deviceIds.length === 0) return { records: [], hasMore: false }
+
+    const filter: Document = {
+      deviceId: params.deviceIds.length === 1 ? params.deviceIds[0] : { $in: params.deviceIds },
+      en: 'P_0_0',
+      t: { $gte: params.from, $lte: params.to }
+    }
+
+    const docs = await params.collection
+      .find(filter, {
+        projection: { deviceId: 1, sn: 1, et: 1, en: 1, ec: 1, t: 1 },
+        sort: { t: -1 },
+        limit: Math.min(Math.max(params.limit, 1), 200),
+        maxTimeMS: this.config.queryTimeoutMs
+      })
+      .toArray()
+
+    const records: SourceTelemetryRecord[] = []
+    for (const doc of docs) {
+      const deviceId = typeof doc.deviceId === 'string' ? doc.deviceId : ''
+      const deviceSn = params.snByDeviceId.get(deviceId) || (typeof doc.sn === 'string' ? doc.sn : '')
+      if (!deviceSn) continue
+      const row = expandIotEventLogDocument({
+        document: doc as IotEventLogDocument,
+        deviceSn,
+        mapping: params.mapping
+      })
+      if (!row) continue
+      if (params.cursor && row.reportedAt.toISOString() === params.cursor.reportedAt && row.sourceRecordId >= params.cursor.sourceRecordId) {
+        continue
+      }
+      records.push(row)
       if (records.length >= params.limit) break
     }
 

@@ -6,15 +6,18 @@ import { parseSnLookup } from '@/src/domain/validation'
 import {
   CT_POWER_METRICS,
   CT_KPI_ALIASES,
+  deriveCtSub1gStatus,
   displayEnergyKwh,
   displayValue,
+  displayWifiSignal,
   findLatestMetric,
   GRID_QUALITY_METRICS,
   INVERTER_POWER_METRICS,
   INVERTER_TEMPERATURE_METRIC,
   type MetricDefinition,
   metricMatches,
-  numericValue
+  numericValue,
+  WIFI_SIGNAL_ALIASES
 } from '@/src/domain/monitoring'
 import { resolveStatusLabel } from '@/src/domain/dictionaries'
 import { DeviceRepository } from '@/src/repositories/device-repository'
@@ -159,7 +162,17 @@ export class DeviceService {
           ? (reverseFlowPhases.length ? 'active' : 'normal')
           : (reverseFlowPhases.length ? 'unknown-last-seen-reverse' : 'unknown')
         const pairedInverters = item.inverterBindings.filter((binding) => binding.paired)
-        const onlineInverterCount = pairedInverters.filter((binding) => binding.latestRows.some((row) => row.valueNumber === 2)).length
+        const hasOnlinePairedInverter = pairedInverters.some((binding) =>
+          binding.latestRows.some((row) => numericValue(row) === 2)
+        )
+        const onlineInverterCount = pairedInverters.filter((binding) =>
+          binding.latestRows.some((row) => numericValue(row) === 2)
+        ).length
+        const sub1g = deriveCtSub1gStatus({
+          rawState: numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.sub1gState)),
+          hasPairedInverters: pairedInverters.length > 0,
+          hasOnlinePairedInverter
+        })
         return {
           id: item.id,
           deviceSn: item.deviceSn,
@@ -177,8 +190,8 @@ export class DeviceService {
           todayEnergy: displayEnergyKwh(findLatestMetric(item.latestRows, CT_KPI_ALIASES.todayEnergy)),
           runtimeState: resolveStatusLabel('ct_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.state))) ?? '—',
           limitState: resolveStatusLabel('limit_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.limitState))) ?? '—',
-          sub1gState: resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.sub1gState))) ?? '—',
-          wifiSignal: displayValue(findLatestMetric(item.latestRows, ['wifi_signal_strength', 'wifi_rssi', 'wifi.signal', 'wifi_signal']))
+          sub1gState: sub1g.label,
+          wifiSignal: displayWifiSignal(findLatestMetric(item.latestRows, WIFI_SIGNAL_ALIASES))
         }
       })
     const summary = {

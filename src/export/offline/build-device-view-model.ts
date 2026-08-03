@@ -2,10 +2,12 @@ import { resolveStatusLabel } from '@/src/domain/dictionaries'
 import { faultDisplayNames, toHexMask } from '@/src/domain/faults'
 import {
   CT_KPI_ALIASES,
+  deriveCtSub1gStatus,
   displayEnergyKwh,
   displayInverterPhaseLabel,
   displaySwitch,
   displayValue,
+  displayWifiSignal,
   findLatestMetric,
   formatDuration,
   formatTime,
@@ -15,6 +17,7 @@ import {
   INVERTER_KPI_ALIASES,
   isGenerating,
   numericValue,
+  WIFI_SIGNAL_ALIASES,
   type MetricRow
 } from '@/src/domain/monitoring'
 import { displayOrEmpty, mapSourceLabel, withDailyResetSeries } from '@/src/export/offline/html-utils'
@@ -203,7 +206,11 @@ export async function buildDeviceViewModel(
     sub1gVersion: displayOrEmpty(device.sub1gVersion),
     ctState: resolveStatusLabel('ct_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.state))) ?? EMPTY,
     limitState: resolveStatusLabel('limit_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.limitState))) ?? EMPTY,
-    sub1gState: resolveStatusLabel('sub1g_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState))) ?? EMPTY,
+    sub1gState: deriveCtSub1gStatus({
+      rawState: numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState)),
+      hasPairedInverters: device.inverterBindings.some((item) => item.paired === true),
+      hasOnlinePairedInverter: inverters.some((item) => item.statusVariant === 'online')
+    }).label,
     workMode: resolveStatusLabel('work_mode', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.workMode))) ?? EMPTY,
     loadPower: displayValue(findLatestMetric(latest, ['load_power', 'ct.load_power']), 'W'),
     gridPower: displayValue(findLatestMetric(latest, ['grid_power', 'ct.grid_power']), 'W'),
@@ -211,16 +218,13 @@ export async function buildDeviceViewModel(
       const value = numericValue(findLatestMetric(latest, ['grid_power', 'ct.grid_power']))
       return value !== null && value < 0
     })(),
-    inverterTotalPower: displayValue(
-      findLatestMetric(latest, ['inverter_total_power', 'total_generation_power', 'micro_total_power']),
-      'W'
-    ),
+    inverterTotalPower: displayValue(findLatestMetric(latest, ['inverter_total_power', 'total_generation_power', 'micro_total_power']), 'W'),
     todayEnergy: displayEnergyKwh(findLatestMetric(latest, CT_KPI_ALIASES.todayEnergy)),
     todayDuration: displayValue(findLatestMetric(latest, CT_KPI_ALIASES.todayDuration), 'h'),
     totalEnergy: displayEnergyKwh(findLatestMetric(latest, CT_KPI_ALIASES.totalEnergy)),
     gridVoltage: displayValue(findLatestMetric(latest, ['grid_voltage']), 'V'),
     gridFrequency: displayValue(findLatestMetric(latest, ['grid_frequency']), 'Hz'),
-    wifiSignal: displayValue(findLatestMetric(latest, ['wifi_signal_strength'])),
+    wifiSignal: displayWifiSignal(findLatestMetric(latest, WIFI_SIGNAL_ALIASES)),
     powerSeries,
     gridSeries: toOfflineSeries(charts.grid),
     platformOnlineEvents: history.platform.transitions
