@@ -15,7 +15,6 @@ import {
   formatDuration,
   formatTime,
   getInverterStatus,
-  getInverterWorkStatus,
   groupByLocalDate,
   isGenerating,
   numericValue,
@@ -25,26 +24,6 @@ import { resolveStatusLabel } from '@/src/domain/dictionaries'
 import { DeviceService } from '@/src/services/device-service'
 
 const EMPTY = '—'
-
-function MetricCard({
-  label,
-  value,
-  series,
-  tier = 'secondary'
-}: {
-  label: string
-  value: string
-  series?: ClientChartSeries[]
-  tier?: 'pv' | 'primary' | 'secondary'
-}) {
-  const content = (
-    <div className={`metric-card inv-metric-card inv-metric-${tier}`}>
-      <div className="label">{label}</div>
-      <div className="value">{value}</div>
-    </div>
-  )
-  return series ? <MetricHistoryDialog label={label} series={series}>{content}</MetricHistoryDialog> : content
-}
 
 const faultEventLabel = { appeared: '故障出现', changed: '故障变化', recovered: '故障恢复' } as const
 
@@ -85,85 +64,128 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
   const offlineGroups = groupByLocalDate(summary.connectivity.offlineWindows, (item) => item.startAt)
   const faultGroups = groupByLocalDate(summary.faultChanges, (item) => item.at)
 
-  return <main>
-    <header className="page-header"><div><p className="nav-back"><Link className="utility-link" href={`/devices/${encodeURIComponent(summary.deviceSn)}`}>← 返回 CT {summary.deviceSn}</Link><Link className="utility-link" href="/devices">防逆流设备主页</Link></p><p className="eyebrow">CT {summary.deviceSn}</p><h1>微型逆变器 {summary.inverterIndex}：{phaseLabel}{summary.inverterSn ? ` · ${summary.inverterSn}` : ''}</h1><p className="muted">软件版本 {summary.softwareVersion ?? EMPTY} · Sub1G 版本 {summary.sub1gVersion ?? EMPTY}</p></div><DeviceSnSearch initialSn={summary.deviceSn} /></header>
-
-    <section className={`gen-spotlight inv-detail-gen ${generating ? 'is-on' : 'is-off'}`} aria-label="发电状态">
+  return <main className="inv-detail-page">
+    <header className="page-header">
       <div>
-        <p className="eyebrow">Generation focus</p>
-        <h2>{status.variant === 'online' ? (generating ? '正在发电' : '当前未发电') : status.label}</h2>
-        <p className="muted">工作状态 {getInverterWorkStatus(workRaw)} · 状态持续 {formatDuration(currentStateMinutes)}</p>
+        <p className="nav-back">
+          <Link className="utility-link" href={`/devices/${encodeURIComponent(summary.deviceSn)}`}>← 返回 CT {summary.deviceSn}</Link>
+          <Link className="utility-link" href="/devices">防逆流设备主页</Link>
+        </p>
+        <p className="eyebrow">CT {summary.deviceSn}</p>
+        <h1>微型逆变器 {summary.inverterIndex}：{phaseLabel}{summary.inverterSn ? ` · ${summary.inverterSn}` : ''}</h1>
+        <p className="muted">软件 {summary.softwareVersion ?? EMPTY} · Sub1G {summary.sub1gVersion ?? EMPTY}</p>
       </div>
-      <strong className="gen-spotlight-power">{displayValue(powerRow, 'W')}</strong>
-      <span className={`badge ${status.variant}`}>{status.label}</span>
+      <DeviceSnSearch initialSn={summary.deviceSn} />
+    </header>
+
+    <section className={`inv-gen-compose ${generating ? 'is-on' : 'is-off'}`} aria-label="发电功率总览">
+      <div className="inv-gen-compose-row">
+        <div className="inv-gen-compose-status">
+          <p className="eyebrow inv-gen-kicker">
+            <span className="inv-live-pill">实时</span>
+            <span className="inv-live-dot" aria-hidden="true" />
+            发电优先
+          </p>
+          <h2>{status.variant === 'online' ? (generating ? '正在发电' : '当前未发电') : status.label}</h2>
+        </div>
+        <dl className="inv-power-facts">
+          <div className="inv-power-fact is-pv">
+            <dt>PV1 功率</dt>
+            <dd>
+              <MetricHistoryDialog label="PV1 功率" series={pv1Series}>
+                <span className="inv-power-fact-value">{displayValue(pv1Row, 'W')}</span>
+              </MetricHistoryDialog>
+            </dd>
+          </div>
+          <div className="inv-power-fact is-pv">
+            <dt>PV2 功率</dt>
+            <dd>
+              <MetricHistoryDialog label="PV2 功率" series={pv2Series}>
+                <span className="inv-power-fact-value">{displayValue(pv2Row, 'W')}</span>
+              </MetricHistoryDialog>
+            </dd>
+          </div>
+          <div className="inv-power-fact is-total">
+            <dt>总功率</dt>
+            <dd>
+              <MetricHistoryDialog label="总功率" series={charts.power}>
+                <span className="inv-power-fact-value">{displayValue(powerRow, 'W')}</span>
+              </MetricHistoryDialog>
+            </dd>
+          </div>
+        </dl>
+        <span className={`badge ${status.variant} inv-gen-online`}>{status.label}</span>
+      </div>
     </section>
 
-    <section className="inverter-hero">
-      <div className="panel-heading">
-        <div>
-          <h2>当前运行状态</h2>
-          <p className="muted">在线、工作与发电状态独立呈现。</p>
-        </div>
-        <span className={`badge ${status.variant}`}>{status.label}</span>
-      </div>
-      <div className="status-row inverter-status-row">
-        <div className="status-col">
-          <div><strong>工作状态：</strong>{getInverterWorkStatus(workRaw)}</div>
-        </div>
-        <div className="status-col">
-          <div><strong>当前状态持续：</strong>{formatDuration(currentStateMinutes)}</div>
-          <div><strong>当前是否发电：</strong>{status.variant === 'online' ? (generating ? '正在发电' : '否') : EMPTY}</div>
-        </div>
+    <section className="inv-detail-facts" aria-label="运行详情">
+      <div className="inv-fact-band">
+        <dl className="inv-fact-strip">
+          <div className="is-energy">
+            <dt>今日发电量</dt>
+            <dd>
+              <MetricHistoryDialog label="今日发电量" series={charts.energy}>
+                <span className="fact-emphasis is-ok">{displayEnergyKwh(todayEnergyRow)}</span>
+              </MetricHistoryDialog>
+            </dd>
+          </div>
+          <div className="is-energy">
+            <dt>累计发电量</dt>
+            <dd><span className="fact-emphasis">{totalEnergyValue}</span></dd>
+          </div>
+          <div>
+            <dt>今日发电时长</dt>
+            <dd>{displayValue(todayDurationRow, 'h')}</dd>
+          </div>
+          <div>
+            <dt>内部温度</dt>
+            <dd>
+              <MetricHistoryDialog label="内部温度" series={charts.temperature}>
+                <span className="inv-fact-click">{displayValue(temperatureRow, '°C')}</span>
+              </MetricHistoryDialog>
+            </dd>
+          </div>
+          <div>
+            <dt>丢包率</dt>
+            <dd>
+              <MetricHistoryDialog label="丢包率" series={charts.packetLoss}>
+                <span className="inv-fact-click">{displayValue(packetLossRow, '%')}</span>
+              </MetricHistoryDialog>
+            </dd>
+          </div>
+          <div>
+            <dt>防逆流开关</dt>
+            <dd>{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.antiReverse))}</dd>
+          </div>
+          <div>
+            <dt>发电开关</dt>
+            <dd>{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.generationEnabled))}</dd>
+          </div>
+          <div>
+            <dt>接入点</dt>
+            <dd>{resolveStatusLabel('connection_point', connectionPointRaw) ?? EMPTY}</dd>
+          </div>
+          <div>
+            <dt>功率限制</dt>
+            <dd>{displayPowerLimit(findLatestMetric(rows, INVERTER_KPI_ALIASES.powerLimit))}</dd>
+          </div>
+        </dl>
       </div>
     </section>
 
-    <section className="inv-kpi-stack" aria-label="微逆功率与发电指标">
-      <div className="inv-kpi-main-grid">
-        <MetricCard label="PV1 功率" value={displayValue(pv1Row, 'W')} series={pv1Series} tier="pv" />
-        <MetricCard label="PV2 功率" value={displayValue(pv2Row, 'W')} series={pv2Series} tier="pv" />
-        <MetricCard label="今日发电量" value={displayEnergyKwh(todayEnergyRow)} series={charts.energy} tier="primary" />
-      </div>
-      <div className="inv-kpi-secondary-grid inv-kpi-secondary-4">
-        <MetricCard label="今日发电时长" value={displayValue(todayDurationRow, 'h')} tier="secondary" />
-        <MetricCard label="内部温度" value={displayValue(temperatureRow, '°C')} series={charts.temperature} tier="secondary" />
-        <MetricCard label="丢包率" value={displayValue(packetLossRow, '%')} series={charts.packetLoss} tier="secondary" />
-        <MetricCard label="累计发电量" value={totalEnergyValue} tier="secondary" />
+    <section className="inv-detail-charts" aria-label="历史曲线">
+      <TelemetryChart title="发电功率（W）" series={charts.power} height={420} />
+      <TelemetryChart title="今日发电量（kWh）" series={charts.energy} height={300} />
+      <div className="inv-detail-chart-duo">
+        <TelemetryChart title="内部温度（°C）" series={charts.temperature} height={300} />
+        <TelemetryChart title="丢包率（%）" series={charts.packetLoss} height={300} />
       </div>
     </section>
 
-    <section className="panel compact-config-panel">
-      <div className="panel-heading"><h2>通信与接入配置</h2></div>
-      <dl className="compact-config-row">
-        <div>
-          <dt>所在相</dt>
-          <dd><strong className="compact-config-value">{phaseLabel}</strong></dd>
-        </div>
-        <div>
-          <dt>接入点</dt>
-          <dd><strong className="compact-config-value">{resolveStatusLabel('connection_point', connectionPointRaw) ?? EMPTY}</strong></dd>
-        </div>
-        <div>
-          <dt>防逆流开关</dt>
-          <dd><strong className="compact-config-value">{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.antiReverse))}</strong></dd>
-        </div>
-        <div>
-          <dt>发电开关</dt>
-          <dd><strong className="compact-config-value">{displaySwitch(findLatestMetric(rows, INVERTER_KPI_ALIASES.generationEnabled))}</strong></dd>
-        </div>
-        <div>
-          <dt>功率限制</dt>
-          <dd><strong className="compact-config-value">{displayPowerLimit(findLatestMetric(rows, INVERTER_KPI_ALIASES.powerLimit))}</strong></dd>
-        </div>
-      </dl>
-    </section>
-    <TelemetryChart title="发电功率（W）" series={charts.power} height={480} />
-    <TelemetryChart title="内部温度（°C）" series={charts.temperature} height={420} />
-    <TelemetryChart title="今日发电量（kWh）" series={charts.energy} height={360} />
-    <TelemetryChart title="丢包率（%）" series={charts.packetLoss} height={360} />
-    <section className="two-column">
+    <section className="inv-detail-records two-column">
       <div className="panel">
-        <h2>在线和离线记录</h2>
-        <p>当前状态持续：{formatDuration(currentStateMinutes)}</p>
+        <h2>在线 / 离线</h2>
+        <p className="muted">当前状态持续：{formatDuration(currentStateMinutes)}</p>
         <DatedRecordScroll
           groups={transitionGroups}
           emptyText="没有 online_state 记录。"
@@ -193,7 +215,8 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
         />
       </div>
     </section>
-    <section className="panel">
+
+    <section className="panel inv-fault-panel">
       <h2>当前故障</h2>
       {faultNames === null ? <p className="muted">{EMPTY}</p> : faultNames.map((name) => <span key={name} className={name === '当前无故障' ? 'fault-clear' : 'fault-name'}>{name}</span>)}
       <h3>故障码变化记录</h3>
@@ -211,6 +234,9 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
         )}
       />
     </section>
-    <Link href={`/devices/${encodeURIComponent(summary.deviceSn)}`}>返回 CT 设备页面</Link>
+
+    <p className="inv-detail-footer-nav">
+      <Link className="utility-link" href={`/devices/${encodeURIComponent(summary.deviceSn)}`}>返回 CT 设备页面</Link>
+    </p>
   </main>
 }
