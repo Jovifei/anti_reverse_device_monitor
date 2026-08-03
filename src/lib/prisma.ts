@@ -1,5 +1,5 @@
 ﻿import { PrismaClient } from '@prisma/client'
-import { withSqliteBusyTimeout } from '@/src/lib/sqlite-url'
+import { withSqliteClientParams } from '@/src/lib/sqlite-url'
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient
@@ -7,7 +7,7 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient() {
   const rawUrl = process.env.APP_DATABASE_URL
-  const url = rawUrl ? withSqliteBusyTimeout(rawUrl) : undefined
+  const url = rawUrl ? withSqliteClientParams(rawUrl) : undefined
   return new PrismaClient({
     log: process.env.NODE_ENV === 'production' ? ['error'] : ['warn', 'error'],
     ...(url ? { datasources: { db: { url } } } : {})
