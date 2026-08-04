@@ -3175,6 +3175,40 @@ button:disabled {
   font-family: var(--font-data);
 }
 
+.fleet-risk-table td.is-last-known,
+.fleet-risk-table td.is-last-known .status-chip,
+.fleet-risk-table td.is-last-known .online-inverter-count-online,
+.fleet-risk-table td.is-last-known .online-inverter-count-total,
+.fleet-risk-table td.is-last-known .online-inverter-count-sep,
+.fleet-risk-table td.is-last-known .fleet-table-inv-offline,
+.fleet-risk-table td.is-last-known .wifi-signal,
+.fleet-risk-table td.is-last-known .wifi-signal-value,
+.fleet-risk-table td.is-last-known .wifi-bars {
+  color: #6b7785 !important;
+  opacity: 0.78;
+  filter: grayscale(0.55);
+}
+
+.fleet-risk-table td.is-last-known.is-energy {
+  color: #6b7785 !important;
+}
+
+.fleet-risk-table td.is-last-known .status-chip.tone-ok,
+.fleet-risk-table td.is-last-known .status-chip.tone-warn,
+.fleet-risk-table td.is-last-known .status-chip.tone-progress,
+.fleet-risk-table td.is-last-known .status-chip.tone-muted {
+  background: #e8ecf0;
+  border-color: #cfd6de;
+  color: #5f6d7d;
+  box-shadow: none;
+}
+
+.fleet-risk-table td.is-last-known .online-inverter-count-online.is-ok,
+.fleet-risk-table td.is-last-known .online-inverter-count-total.is-ok,
+.fleet-risk-table td.is-last-known .online-inverter-count-total.is-alert {
+  color: #6b7785;
+}
+
 .soft-refresh-button {
   white-space: nowrap;
 }

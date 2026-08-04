@@ -3,6 +3,7 @@ import { SoftRefreshButton } from '@/src/components/soft-refresh-button'
 import { OnlineInverterCount } from '@/src/components/online-inverter-count'
 import { WifiSignalView } from '@/src/components/wifi-signal-view'
 import { deviceSnPrimaryLabel, deviceSnSecondaryLabel } from '@/src/domain/device-identity'
+import { fleetLastKnownClass, fleetLastKnownTitle } from '@/src/domain/fleet-last-known'
 import { formatDuration, formatTime, wifiSignalBars } from '@/src/domain/monitoring'
 import { DeviceService } from '@/src/services/device-service'
 
@@ -47,6 +48,16 @@ function runtimeTone(label: string) {
   if (label.includes('等待') || label === '—') return 'warn'
   if (label.includes('执行') || label.includes('判断')) return 'progress'
   return 'muted'
+}
+
+function generationTone(status: 'generating' | 'idle' | 'offline') {
+  if (status === 'generating') return 'ok'
+  if (status === 'idle') return 'warn'
+  return 'muted'
+}
+
+function joinClass(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(' ')
 }
 
 function parseWifiNumber(raw: string) {
@@ -163,31 +174,36 @@ export default async function DeviceListPage({
     </section>
 
     <section className="fleet-list-panel" aria-labelledby="fleet-list-title">
-      <div className="panel-heading"><div><p className="eyebrow">Risk ordered</p><h2 id="fleet-list-title">CT 风险与运行概览</h2><p className="muted">运行状态与 WiFi 用色块/格数突出；今日发电量用于快速判断是否在发电。</p></div><span className="readonly-badge">共匹配 {result.total} 台</span></div>
+      <div className="panel-heading"><div><p className="eyebrow">Risk ordered</p><h2 id="fleet-list-title">CT 风险与运行概览</h2><p className="muted">运行状态与 WiFi 用色块/格数突出；微逆发电状态区分发电 / 在线未发电 / 离线。</p></div><span className="readonly-badge">共匹配 {result.total} 台</span></div>
       {devices.length ? <div className="fleet-table-scroll" tabIndex={0} aria-label="CT 风险与运行概览表格，可横向滚动查看全部指标">
         <table className="fleet-risk-table">
           <caption>CT 风险与运行概览</caption>
-          <thead><tr><th scope="col">CT SN</th><th scope="col">通信状态</th><th scope="col">当前逆流状态</th><th scope="col">今日发电量</th><th scope="col">在线微逆个数</th><th scope="col">运行状态</th><th scope="col">限流状态</th><th scope="col">Sub1G</th><th scope="col">WiFi 信号</th><th scope="col">最后上报</th><th scope="col">详情</th></tr></thead>
+          <thead><tr><th scope="col">CT SN</th><th scope="col">通信状态</th><th scope="col">运行状态</th><th scope="col">限流状态</th><th scope="col">当前逆流状态</th><th scope="col">今日发电量</th><th scope="col">微逆发电状态</th><th scope="col">在线微逆个数</th><th scope="col">Sub1G</th><th scope="col">WiFi 信号</th><th scope="col">最后上报</th><th scope="col">详情</th></tr></thead>
           <tbody>{devices.map((device) => {
             const connectionText = device.isOnline ? '在线上报中' : device.offlineAlert ? `离线 ${formatDuration(device.offlineMinutes)}，请处理` : `离线 ${formatDuration(device.offlineMinutes)}，已停止提醒`
             const primary = deviceSnPrimaryLabel(device.deviceSn)
             const secondary = deviceSnSecondaryLabel(device.deviceSn)
             const wifiRaw = parseWifiNumber(device.wifiSignal)
-            return <tr className={`${device.reverseState === 'active' ? 'reverse-row' : ''} ${device.hasSustainedReverse && device.reverseState !== 'active' ? 'sustained-reverse-row' : ''} ${device.offlineAlert ? 'offline-row' : ''} ${device.hasOfflineInverter ? 'inv-offline-row' : ''}`} key={device.id}>
+            const lastKnown = fleetLastKnownClass(device.isOnline)
+            const genExtra = device.inverterGenerationStatus === 'idle' ? '在线但是未发电' : undefined
+            const lastKnownTitle = fleetLastKnownTitle(device.isOnline)
+            const genTitle = fleetLastKnownTitle(device.isOnline, genExtra)
+            return <tr className={`${device.reverseState === 'active' ? 'reverse-row' : ''} ${device.hasSustainedReverse && device.reverseState !== 'active' ? 'sustained-reverse-row' : ''} ${device.offlineAlert ? 'offline-row' : ''} ${!device.isOnline ? 'ct-offline-row' : ''} ${device.hasOfflineInverter ? 'inv-offline-row' : ''}`} key={device.id}>
               <th scope="row"><Link className="fleet-table-sn" href={`/devices/${encodeURIComponent(device.deviceSn)}`}>{primary}</Link><span className="fleet-table-subtext">{secondary ? `${secondary} · ${connectionText}` : connectionText}</span></th>
               <td><span className={`badge ${device.isOnline ? 'online' : 'offline'}`}>{device.isOnline ? 'CT 在线' : 'CT 离线'}</span></td>
+              <td className={lastKnown} title={lastKnownTitle}><span className={`status-chip tone-${runtimeTone(device.runtimeState)}`}>{device.runtimeState}</span></td>
+              <td className={lastKnown} title={lastKnownTitle}>{device.limitState}</td>
               <td><span className={`fleet-table-reverse ${device.reverseState === 'active' || device.hasSustainedReverse ? 'danger-value' : ''}`}>{reverseText(device)}</span></td>
-              <td className={`fleet-table-value ${device.todayEnergy !== '—' ? 'is-energy' : ''}`}>{device.todayEnergy}</td>
-              <td className="fleet-table-value fleet-table-inverters">
+              <td className={joinClass('fleet-table-value', device.todayEnergy !== '—' && 'is-energy', lastKnown)} title={lastKnownTitle}>{device.todayEnergy}</td>
+              <td className={lastKnown} title={genTitle}><span className={`status-chip tone-${generationTone(device.inverterGenerationStatus)}`}>{device.inverterGenerationLabel}</span></td>
+              <td className={joinClass('fleet-table-value', 'fleet-table-inverters', lastKnown)} title={lastKnownTitle}>
                 <OnlineInverterCount online={device.onlineInverterCount} total={device.inverterCount || 8} />
                 {device.offlineInverterIndexes.length ? (
                   <span className="fleet-table-inv-offline">离线微逆 #{device.offlineInverterIndexes.join(',')}</span>
                 ) : null}
               </td>
-              <td><span className={`status-chip tone-${runtimeTone(device.runtimeState)}`}>{device.runtimeState}</span></td>
-              <td>{device.limitState}</td>
-              <td>{device.sub1gState}</td>
-              <td><WifiSignalView value={device.wifiSignal} bars={wifiSignalBars(wifiRaw)} /></td>
+              <td className={lastKnown} title={lastKnownTitle}>{device.sub1gState}</td>
+              <td className={lastKnown} title={lastKnownTitle}><WifiSignalView value={device.wifiSignal} bars={wifiSignalBars(wifiRaw)} /></td>
               <td><time>{formatTime(device.lastReportedAt)}</time></td>
               <td><Link className="fleet-table-action" href={`/devices/${encodeURIComponent(device.deviceSn)}`}>查看详情</Link></td>
             </tr>

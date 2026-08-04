@@ -485,3 +485,28 @@ export function isGenerating(rawOnlineState: number | null, rawWorkState: number
   if (rawPower !== null && Number.isFinite(rawPower)) return rawPower > 1
   return rawWorkState === 1 || rawWorkState === 3
 }
+
+/** Fleet CT row: aggregate micro-inverter generation for the site. */
+export type CtInverterGenerationStatus = 'generating' | 'idle' | 'offline'
+
+/**
+ * 发电：有在线微逆且 CT 侧总发电功率 > 1 W；
+ * 未发电：有在线微逆但未检测到有效发电功率；
+ * 离线：没有在线微逆。
+ */
+export function resolveCtInverterGenerationStatus(params: {
+  onlineInverterCount: number
+  generationPower: number | null
+}): CtInverterGenerationStatus {
+  if (params.onlineInverterCount <= 0) return 'offline'
+  if (params.generationPower !== null && Number.isFinite(params.generationPower) && params.generationPower > 1) {
+    return 'generating'
+  }
+  return 'idle'
+}
+
+export function ctInverterGenerationStatusLabel(status: CtInverterGenerationStatus) {
+  if (status === 'generating') return '发电'
+  if (status === 'idle') return '未发电'
+  return '离线'
+}

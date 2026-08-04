@@ -1,4 +1,9 @@
-import { formatDuration, formatTime } from '@/src/domain/monitoring'
+import {
+  ctInverterGenerationStatusLabel,
+  formatDuration,
+  formatTime,
+  resolveCtInverterGenerationStatus
+} from '@/src/domain/monitoring'
 import { mapSourceLabel, safeFileToken } from '@/src/export/offline/html-utils'
 import type { OfflineDeviceViewModel, OfflineOverviewItem, OfflineOverviewViewModel } from '@/src/export/offline/types'
 import { DeviceService } from '@/src/services/device-service'
@@ -26,6 +31,14 @@ export function buildOfflineOverviewFromDevices(
     const reverseState = device.ctOnline
       ? (device.reverseNow ? 'active' : 'normal')
       : (device.reverseNow ? 'unknown-last-seen-reverse' : 'unknown')
+    const onlineInverterCount = device.inverters.filter((item) => item.statusVariant === 'online').length
+    const anyGenerating = device.inverters.some((item) => item.generating === '是')
+    const inverterGenerationLabel = ctInverterGenerationStatusLabel(
+      resolveCtInverterGenerationStatus({
+        onlineInverterCount,
+        generationPower: anyGenerating ? 100 : onlineInverterCount > 0 ? 0 : null
+      })
+    )
     return {
       deviceSn: device.deviceSn,
       isOnline: device.ctOnline,
@@ -35,8 +48,9 @@ export function buildOfflineOverviewFromDevices(
       reverseState,
       reversePhases: device.reversePhases.length ? device.reversePhases.join(' / ') : '—',
       todayEnergy: device.todayEnergy,
-      onlineInverterCount: device.inverters.filter((item) => item.statusVariant === 'online').length,
+      onlineInverterCount,
       inverterCount: device.inverters.filter((item) => item.statusVariant !== 'unpaired').length || device.inverters.length,
+      inverterGenerationLabel,
       runtimeState: device.ctState,
       limitState: device.limitState,
       sub1gState: device.sub1gState,
@@ -79,6 +93,7 @@ export async function buildOverviewViewModel(days = 7, options?: { sourceLabelOv
     todayEnergy: item.todayEnergy,
     onlineInverterCount: item.onlineInverterCount,
     inverterCount: item.inverterCount || 8,
+    inverterGenerationLabel: item.inverterGenerationLabel,
     runtimeState: item.runtimeState,
     limitState: item.limitState,
     sub1gState: item.sub1gState,

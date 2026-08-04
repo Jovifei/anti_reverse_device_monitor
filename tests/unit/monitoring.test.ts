@@ -39,6 +39,19 @@ describe('real-time inverter generation state', () => {
   })
 })
 
+describe('CT fleet inverter generation status', () => {
+  it('maps online count and total generation power to 发电/未发电/离线', async () => {
+    const { ctInverterGenerationStatusLabel, resolveCtInverterGenerationStatus } = await import('@/src/domain/monitoring')
+    expect(resolveCtInverterGenerationStatus({ onlineInverterCount: 0, generationPower: 500 })).toBe('offline')
+    expect(resolveCtInverterGenerationStatus({ onlineInverterCount: 3, generationPower: 120 })).toBe('generating')
+    expect(resolveCtInverterGenerationStatus({ onlineInverterCount: 3, generationPower: 0 })).toBe('idle')
+    expect(resolveCtInverterGenerationStatus({ onlineInverterCount: 2, generationPower: null })).toBe('idle')
+    expect(ctInverterGenerationStatusLabel('generating')).toBe('发电')
+    expect(ctInverterGenerationStatusLabel('idle')).toBe('未发电')
+    expect(ctInverterGenerationStatusLabel('offline')).toBe('离线')
+  })
+})
+
 describe('resolveInverterCardStatus', () => {
   it('keeps firmware online_state when present', () => {
     expect(resolveInverterCardStatus({ onlineState: 2, paired: true, power: 0 }).variant).toBe('online')

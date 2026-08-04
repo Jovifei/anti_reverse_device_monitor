@@ -124,6 +124,7 @@ export interface OfflineOverviewItem {
   todayEnergy: string
   onlineInverterCount: number
   inverterCount: number
+  inverterGenerationLabel: string
   runtimeState: string
   limitState: string
   sub1gState: string

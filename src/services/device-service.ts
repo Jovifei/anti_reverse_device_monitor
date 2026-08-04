@@ -6,6 +6,7 @@ import { parseSnLookup } from '@/src/domain/validation'
 import {
   CT_POWER_METRICS,
   CT_KPI_ALIASES,
+  ctInverterGenerationStatusLabel,
   deriveCtSub1gStatus,
   displayEnergyKwh,
   displayValue,
@@ -17,6 +18,7 @@ import {
   type MetricDefinition,
   metricMatches,
   numericValue,
+  resolveCtInverterGenerationStatus,
   WIFI_SIGNAL_ALIASES
 } from '@/src/domain/monitoring'
 import {
@@ -67,6 +69,9 @@ export interface DeviceListResponse {
     offlineMinutes: number | null
     offlineAlert: boolean
     todayEnergy: string
+    /** Aggregate micro-inverter generation: generating | idle (online, not generating) | offline */
+    inverterGenerationStatus: 'generating' | 'idle' | 'offline'
+    inverterGenerationLabel: string
     runtimeState: string
     limitState: string
     sub1gState: string
@@ -186,6 +191,13 @@ export class DeviceService {
           .filter((binding) => !isPairedOnline(binding))
           .map((binding) => binding.inverterIndex)
         const hasOfflineInverter = offlineInverterIndexes.length > 0
+        const generationPower = numericValue(
+          findLatestMetric(item.latestRows, ['inverter_total_power', 'total_generation_power', 'micro_total_power'])
+        )
+        const inverterGenerationStatus = resolveCtInverterGenerationStatus({
+          onlineInverterCount,
+          generationPower
+        })
         const sub1g = deriveCtSub1gStatus({
           rawState: numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.sub1gState)),
           hasPairedInverters: pairedInverters.length > 0,
@@ -208,6 +220,8 @@ export class DeviceService {
           offlineMinutes,
           offlineAlert,
           todayEnergy: displayEnergyKwh(findLatestMetric(item.latestRows, CT_KPI_ALIASES.todayEnergy)),
+          inverterGenerationStatus,
+          inverterGenerationLabel: ctInverterGenerationStatusLabel(inverterGenerationStatus),
           runtimeState: resolveStatusLabel('ct_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.state))) ?? '—',
           limitState: resolveStatusLabel('limit_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.limitState))) ?? '—',
           sub1gState: sub1g.label,

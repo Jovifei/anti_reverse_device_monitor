@@ -10,6 +10,7 @@ import type {
   OfflinePageViewModel
 } from '@/src/export/offline/types'
 import { formatOnlineInverterCountHtml } from '@/src/domain/online-inverter-count'
+import { fleetLastKnownClass, fleetLastKnownTitle } from '@/src/domain/fleet-last-known'
 
 function metricCard(label: string, value: string, className = '') {
   const cls = className ? ` metric-card ${className}` : ' metric-card'
@@ -120,20 +121,26 @@ function renderOverview(vm: OfflineOverviewViewModel) {
   <article class="fleet-risk warning ${offlineItems.length ? 'is-active' : ''}"><span>待处理离线</span><strong>${vm.summary.actionableOfflineCount}</strong><p>${escapeHtml(offlineSummary)}</p></article>
   <article class="fleet-risk neutral"><span>在线 / CT 总数</span><strong>${vm.summary.onlineCtCount} / ${vm.summary.activeTotal}</strong><p>${vm.summary.staleOfflineCount ? `${vm.summary.staleOfflineCount} 台离线超过 7 天，停止提醒` : '没有停止提醒的离线 CT'}</p></article>
 </section>
-<section class="fleet-section"><div class="panel-heading"><div><p class="eyebrow">CT fleet</p><h2>CT 风险与运行概览</h2><p class="muted">每行是一台 CT，每列是一个关键运行指标；不展示型号。</p></div><span class="readonly-badge">共 ${vm.items.length} 台</span></div><div class="fleet-table-scroll" tabindex="0" aria-label="CT 风险与运行概览表格，可横向滚动查看全部指标"><table class="fleet-risk-table"><caption>CT 风险与运行概览</caption><thead><tr><th scope="col">CT SN</th><th scope="col">通信状态</th><th scope="col">当前逆流状态</th><th scope="col">今日发电量</th><th scope="col">在线微逆个数</th><th scope="col">运行状态</th><th scope="col">限流状态</th><th scope="col">Sub1G</th><th scope="col">WiFi 信号</th><th scope="col">最后上报</th><th scope="col">详情</th></tr></thead><tbody>
-${vm.items.map((item) => `<tr class="${item.reverseState === 'active' ? 'reverse-row' : ''} ${item.offlineAlert ? 'offline-row' : ''}" data-device-sn="${escapeHtml(item.deviceSn)}">
+<section class="fleet-section"><div class="panel-heading"><div><p class="eyebrow">CT fleet</p><h2>CT 风险与运行概览</h2><p class="muted">每行是一台 CT，每列是一个关键运行指标；不展示型号。</p></div><span class="readonly-badge">共 ${vm.items.length} 台</span></div><div class="fleet-table-scroll" tabindex="0" aria-label="CT 风险与运行概览表格，可横向滚动查看全部指标"><table class="fleet-risk-table"><caption>CT 风险与运行概览</caption><thead><tr><th scope="col">CT SN</th><th scope="col">通信状态</th><th scope="col">运行状态</th><th scope="col">限流状态</th><th scope="col">当前逆流状态</th><th scope="col">今日发电量</th><th scope="col">微逆发电状态</th><th scope="col">在线微逆个数</th><th scope="col">Sub1G</th><th scope="col">WiFi 信号</th><th scope="col">最后上报</th><th scope="col">详情</th></tr></thead><tbody>
+${vm.items.map((item) => {
+  const lastKnown = fleetLastKnownClass(item.isOnline)
+  const lastKnownTitle = fleetLastKnownTitle(item.isOnline) ?? ''
+  const titleAttr = lastKnownTitle ? ` title="${escapeHtml(lastKnownTitle)}"` : ''
+  return `<tr class="${item.reverseState === 'active' ? 'reverse-row' : ''} ${item.offlineAlert ? 'offline-row' : ''} ${!item.isOnline ? 'ct-offline-row' : ''}" data-device-sn="${escapeHtml(item.deviceSn)}">
   <th scope="row"><a class="fleet-table-sn" href="${escapeHtml(item.href)}">${escapeHtml(item.deviceSn)}</a><span class="fleet-table-subtext">${escapeHtml(offlineLabel(item))}</span></th>
   <td><span class="badge ${item.isOnline ? 'online' : 'offline'}">${item.isOnline ? 'CT 在线' : 'CT 离线'}</span></td>
+  <td class="${lastKnown}"${titleAttr}>${escapeHtml(item.runtimeState)}</td>
+  <td class="${lastKnown}"${titleAttr}>${escapeHtml(item.limitState)}</td>
   <td><span class="fleet-table-reverse ${item.reverseState === 'active' ? 'danger-value' : ''}">${escapeHtml(reverseLabel(item))}</span></td>
-  <td class="fleet-table-value">${escapeHtml(item.todayEnergy)}</td>
-  <td>${formatOnlineInverterCountHtml(item.onlineInverterCount, item.inverterCount || 8)}</td>
-  <td>${escapeHtml(item.runtimeState)}</td>
-  <td>${escapeHtml(item.limitState)}</td>
-  <td>${escapeHtml(item.sub1gState)}</td>
-  <td>${escapeHtml(item.wifiSignal)}</td>
+  <td class="fleet-table-value ${lastKnown}"${titleAttr}>${escapeHtml(item.todayEnergy)}</td>
+  <td class="${lastKnown}"${titleAttr}>${escapeHtml(item.inverterGenerationLabel)}</td>
+  <td class="${lastKnown}"${titleAttr}>${formatOnlineInverterCountHtml(item.onlineInverterCount, item.inverterCount || 8)}</td>
+  <td class="${lastKnown}"${titleAttr}>${escapeHtml(item.sub1gState)}</td>
+  <td class="${lastKnown}"${titleAttr}>${escapeHtml(item.wifiSignal)}</td>
   <td><time>${escapeHtml(item.lastReportedAt)}</time></td>
   <td><a class="fleet-table-action" href="${escapeHtml(item.href)}">查看详情</a></td>
-</tr>`).join('')}
+</tr>`
+}).join('')}
 </tbody></table></div></section>`
 }
 
