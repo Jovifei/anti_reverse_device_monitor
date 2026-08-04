@@ -1,24 +1,41 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useTransition } from 'react'
+import { decideSoftRefresh } from '@/src/domain/soft-refresh-policy'
 
-/** Soft-refresh cadence. Device detail RSC is heavy; keep this conservative. */
+/** Soft-refresh cadence for the light fleet list only. */
 const INTERVAL_MS = 45_000
-/** Minimum gap after a refresh starts before another may begin. */
 const COOLDOWN_MS = 30_000
-/** Abort hung /api/live so the poller cannot wedge forever. */
 const LIVE_FETCH_MS = 4_000
-/** If RSC refresh never settles, stop treating isPending as a hard lockout. */
+/** Clear stuck client pending flag — never start another refresh while one is pending. */
 const PENDING_STALE_MS = 60_000
+
+type LiveFingerprint = {
+  syncedAt: string | null
+  lastReportedAt: string | null
+  status: string | null
+}
+
+function fingerprintOf(payload: LiveFingerprint | null): string | null {
+  if (!payload) return null
+  return `${payload.syncedAt ?? ''}|${payload.lastReportedAt ?? ''}|${payload.status ?? ''}`
+}
 
 export function LiveSourcePoller() {
   const router = useRouter()
+  const pathname = usePathname() || '/devices'
   const [isPending, startTransition] = useTransition()
   const isPendingRef = useRef(false)
   const pendingSinceRef = useRef(0)
   const inFlightRef = useRef(false)
   const lastStartedRef = useRef(0)
+  const lastFingerprintRef = useRef<string | null>(null)
+  const pathnameRef = useRef(pathname)
+
+  useEffect(() => {
+    pathnameRef.current = pathname
+  }, [pathname])
 
   useEffect(() => {
     isPendingRef.current = isPending
@@ -34,23 +51,77 @@ export function LiveSourcePoller() {
 
     const tick = async () => {
       if (cancelled || document.hidden || inFlightRef.current) return
-      const pendingStale =
-        isPendingRef.current &&
-        pendingSinceRef.current > 0 &&
-        Date.now() - pendingSinceRef.current > PENDING_STALE_MS
-      if (isPendingRef.current && !pendingStale) return
-      const now = Date.now()
-      if (now - lastStartedRef.current < COOLDOWN_MS) return
+
+      const nowMs = Date.now()
+      const pendingMs = pendingSinceRef.current ? nowMs - pendingSinceRef.current : 0
+      const precheck = decideSoftRefresh({
+        pathname: pathnameRef.current,
+        fingerprint: 'probe',
+        lastFingerprint: null,
+        isPending: isPendingRef.current,
+        pendingMs,
+        nowMs,
+        lastStartedMs: lastStartedRef.current,
+        cooldownMs: COOLDOWN_MS,
+        pendingStaleMs: PENDING_STALE_MS
+      })
+
+      if (precheck.action === 'clear-stale-pending') {
+        // Drop the wedged client lockout without stacking another RSC flight.
+        pendingSinceRef.current = 0
+        isPendingRef.current = false
+        return
+      }
+      if (precheck.action === 'skip' && (precheck.reason === 'heavy-route' || precheck.reason === 'pending' || precheck.reason === 'cooldown')) {
+        return
+      }
 
       inFlightRef.current = true
-      lastStartedRef.current = now
+      lastStartedRef.current = nowMs
       try {
-        // Fire-and-forget: awaiting /api/live during a wedged Next process parks the poller.
         const controller = new AbortController()
-        window.setTimeout(() => controller.abort(), LIVE_FETCH_MS)
-        void fetch('/api/live', { method: 'POST', cache: 'no-store', signal: controller.signal }).catch(() => {})
+        const abortTimer = window.setTimeout(() => controller.abort(), LIVE_FETCH_MS)
+        let fingerprint: string | null = null
+        try {
+          const response = await fetch('/api/live', { method: 'GET', cache: 'no-store', signal: controller.signal })
+          if (response.ok) {
+            const payload = (await response.json()) as LiveFingerprint
+            fingerprint = fingerprintOf(payload)
+          }
+        } catch {
+          // Fingerprint is best-effort; skip refresh rather than blind-refreshing.
+        } finally {
+          window.clearTimeout(abortTimer)
+        }
 
         if (cancelled) return
+
+        const decision = decideSoftRefresh({
+          pathname: pathnameRef.current,
+          fingerprint,
+          lastFingerprint: lastFingerprintRef.current,
+          isPending: isPendingRef.current,
+          pendingMs: pendingSinceRef.current ? Date.now() - pendingSinceRef.current : 0,
+          nowMs: Date.now(),
+          lastStartedMs: lastStartedRef.current,
+          cooldownMs: COOLDOWN_MS,
+          pendingStaleMs: PENDING_STALE_MS
+        })
+
+        if (decision.action === 'clear-stale-pending') {
+          pendingSinceRef.current = 0
+          isPendingRef.current = false
+          return
+        }
+        if (decision.action === 'seed-fingerprint') {
+          lastFingerprintRef.current = fingerprint
+          return
+        }
+        if (decision.action !== 'refresh') return
+
+        // Bust cache only when we will actually refresh the light fleet page.
+        void fetch('/api/live', { method: 'POST', cache: 'no-store' }).catch(() => {})
+        lastFingerprintRef.current = fingerprint
         startTransition(() => {
           router.refresh()
         })
