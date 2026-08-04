@@ -19,6 +19,12 @@ import {
   numericValue,
   WIFI_SIGNAL_ALIASES
 } from '@/src/domain/monitoring'
+import {
+  SUSTAINED_REVERSE_LOOKBACK_DAYS,
+  SUSTAINED_REVERSE_MINUTES,
+  reversePhaseMetricKeys,
+  summarizeDeviceSustainedReverse
+} from '@/src/domain/sustained-reverse-flow'
 import { resolveStatusLabel } from '@/src/domain/dictionaries'
 import { DeviceRepository } from '@/src/repositories/device-repository'
 import { TelemetryRepository } from '@/src/repositories/telemetry-repository'
@@ -39,6 +45,7 @@ export interface DeviceListResponse {
     staleOfflineCount: number
     ctsWithOfflineInverters: number
     offlineInverterUnitCount: number
+    sustainedReverseCtCount: number
   }
   items: {
     id: number
@@ -54,6 +61,9 @@ export interface DeviceListResponse {
     reverseFlow: boolean
     reverseFlowPhases: Array<'A' | 'B' | 'C'>
     reverseState: 'normal' | 'active' | 'unknown' | 'unknown-last-seen-reverse'
+    hasSustainedReverse: boolean
+    sustainedReverseMaxMinutes: number | null
+    sustainedReversePhases: Array<'A' | 'B' | 'C'>
     offlineMinutes: number | null
     offlineAlert: boolean
     todayEnergy: string
@@ -148,8 +158,10 @@ export class DeviceService {
     const activeCutoff = new Date(now)
     activeCutoff.setDate(activeCutoff.getDate() - ACTIVE_WINDOW_DAYS)
     const onlineCutoff = new Date(now.getTime() - OFFLINE_THRESHOLD_MINUTES * 60_000)
+    const sustainedWindowStart = new Date(now)
+    sustainedWindowStart.setDate(sustainedWindowStart.getDate() - SUSTAINED_REVERSE_LOOKBACK_DAYS)
     const records = await this.repo.findDashboardRecords()
-    const activeItems = records
+    const baseActiveItems = records
       .filter((item) => item.platformOnline || (item.lastReportedAt !== null && item.lastReportedAt >= activeCutoff))
       .map((item) => {
         const phaseMetric = (aliases: string[]) => numericValue(findLatestMetric(item.latestRows, aliases))
@@ -202,6 +214,30 @@ export class DeviceService {
           wifiSignal: displayWifiSignal(findLatestMetric(item.latestRows, WIFI_SIGNAL_ALIASES))
         }
       })
+
+    const phaseRows = await this.telemetryRepository.listCtPhasePowerForDevices({
+      deviceIds: baseActiveItems.map((item) => item.id),
+      metricKeys: reversePhaseMetricKeys(),
+      startAt: sustainedWindowStart,
+      endAt: now
+    })
+    const rowsByDeviceId = new Map<number, Array<{ metricKey: string; valueNumber: number | null; reportedAt: Date }>>()
+    for (const row of phaseRows) {
+      const list = rowsByDeviceId.get(row.deviceId) ?? []
+      list.push({ metricKey: row.metricKey, valueNumber: row.valueNumber, reportedAt: row.reportedAt })
+      rowsByDeviceId.set(row.deviceId, list)
+    }
+
+    const activeItems = baseActiveItems.map((item) => {
+      const sustained = summarizeDeviceSustainedReverse(rowsByDeviceId.get(item.id) ?? [], now, SUSTAINED_REVERSE_MINUTES)
+      return {
+        ...item,
+        hasSustainedReverse: sustained.hasSustainedReverse,
+        sustainedReverseMaxMinutes: sustained.maxDurationMinutes,
+        sustainedReversePhases: sustained.phases
+      }
+    })
+
     const summary = {
       activeTotal: activeItems.length,
       onlineCtCount: activeItems.filter((item) => item.isOnline).length,
@@ -210,7 +246,8 @@ export class DeviceService {
       actionableOfflineCount: activeItems.filter((item) => item.offlineAlert).length,
       staleOfflineCount: activeItems.filter((item) => !item.isOnline && !item.offlineAlert).length,
       ctsWithOfflineInverters: activeItems.filter((item) => item.hasOfflineInverter).length,
-      offlineInverterUnitCount: activeItems.reduce((sum, item) => sum + item.offlineInverterIndexes.length, 0)
+      offlineInverterUnitCount: activeItems.reduce((sum, item) => sum + item.offlineInverterIndexes.length, 0),
+      sustainedReverseCtCount: activeItems.filter((item) => item.hasSustainedReverse).length
     }
     const matchingItems = activeItems.filter((item) => {
       if (parsed.q && !item.deviceSn.toLowerCase().includes(parsed.q.toLowerCase())) return false
@@ -218,6 +255,7 @@ export class DeviceService {
       if (parsed.status === 'offline') return !item.isOnline
       if (parsed.status === 'reverse') return item.reverseFlow
       if (parsed.status === 'inv-offline') return item.hasOfflineInverter
+      if (parsed.status === 'sustained-reverse') return item.hasSustainedReverse
       return true
     })
     const total = matchingItems.length

@@ -12,7 +12,7 @@ export const deviceListSchema = z.object({
     const trimmed = value.trim()
     return trimmed.length > 0 ? trimmed : undefined
   }, z.string().min(1).max(64).optional()),
-  status: z.enum(['all', 'online', 'offline', 'reverse', 'inv-offline']).default('all')
+  status: z.enum(['all', 'online', 'offline', 'reverse', 'inv-offline', 'sustained-reverse']).default('all')
 })
 
 export const telemetryQuerySchema = z.object({

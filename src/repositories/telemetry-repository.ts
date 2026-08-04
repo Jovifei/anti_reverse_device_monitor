@@ -449,6 +449,36 @@ export class TelemetryRepository {
     })
   }
 
+  /** CT body phase-power samples only — used by fleet sustained-reverse summary. */
+  async listCtPhasePowerForDevices({
+    deviceIds,
+    metricKeys,
+    startAt,
+    endAt
+  }: {
+    deviceIds: number[]
+    metricKeys: string[]
+    startAt: Date
+    endAt: Date
+  }) {
+    if (!deviceIds.length || !metricKeys.length) return []
+    return this.db.telemetry.findMany({
+      where: {
+        deviceId: { in: deviceIds },
+        inverterId: null,
+        metricKey: { in: metricKeys },
+        reportedAt: { gte: startAt, lte: endAt }
+      },
+      select: {
+        deviceId: true,
+        metricKey: true,
+        valueNumber: true,
+        reportedAt: true
+      },
+      orderBy: [{ deviceId: 'asc' }, { reportedAt: 'asc' }, { id: 'asc' }]
+    })
+  }
+
   async getLatestReportedAt({
     deviceSn,
     inverterIndex

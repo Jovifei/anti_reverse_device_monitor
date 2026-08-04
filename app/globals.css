@@ -3442,7 +3442,7 @@ body.metric-dialog-open .metric-card:hover {
 
 .fleet-priority-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -3547,6 +3547,19 @@ body.metric-dialog-open .metric-card:hover {
 .fleet-priority-card.inv-offline.is-active {
   border-color: #efd19b;
   background: #fffaf1;
+}
+
+.fleet-priority-card.sustained-reverse::before {
+  background: #94a3b8;
+}
+
+.fleet-priority-card.sustained-reverse.is-active::before {
+  background: #c92828;
+}
+
+.fleet-priority-card.sustained-reverse.is-active {
+  border-color: #edb1ad;
+  background: #fff4f3;
 }
 
 .fleet-status-tabs {
@@ -3703,6 +3716,16 @@ body.metric-dialog-open .metric-card:hover {
   background: #fff5e4;
 }
 
+.fleet-risk-table tbody tr.sustained-reverse-row td,
+.fleet-risk-table tbody tr.sustained-reverse-row th {
+  background: #fff7f6;
+}
+
+.fleet-risk-table tbody tr.sustained-reverse-row:hover td,
+.fleet-risk-table tbody tr.sustained-reverse-row:hover th {
+  background: #fff1f0;
+}
+
 .fleet-risk-table thead th:first-child,
 .fleet-risk-table tbody th[scope="row"] {
   position: sticky;
@@ -3731,6 +3754,10 @@ body.metric-dialog-open .metric-card:hover {
 
 .fleet-risk-table tbody tr.inv-offline-row th[scope="row"] {
   background: #fffaf1;
+}
+
+.fleet-risk-table tbody tr.sustained-reverse-row th[scope="row"] {
+  background: #fff7f6;
 }
 
 .fleet-table-sn {
@@ -3818,6 +3845,12 @@ body.metric-dialog-open .metric-card:hover {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+@media (max-width: 1400px) {
+  .fleet-priority-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1100px) {

@@ -11,6 +11,7 @@ const FILTERS = [
   { value: 'online', label: '仅在线 CT' },
   { value: 'offline', label: '仅离线 CT' },
   { value: 'reverse', label: '仅逆流告警' },
+  { value: 'sustained-reverse', label: '近7天长时逆流' },
   { value: 'inv-offline', label: '存在离线微逆' }
 ] as const
 
@@ -26,11 +27,18 @@ function fleetListHref(status: (typeof FILTERS)[number]['value'], q: string) {
 function reverseText(device: {
   reverseState: 'normal' | 'active' | 'unknown' | 'unknown-last-seen-reverse'
   reverseFlowPhases: Array<'A' | 'B' | 'C'>
+  hasSustainedReverse?: boolean
+  sustainedReverseMaxMinutes?: number | null
+  sustainedReversePhases?: Array<'A' | 'B' | 'C'>
 }) {
   const phases = device.reverseFlowPhases.join(' / ')
   if (device.reverseState === 'active') return `严重逆流：${phases} 相正在反送电网`
   if (device.reverseState === 'unknown-last-seen-reverse') return `当前逆流未知；离线前观测到 ${phases} 相逆流`
   if (device.reverseState === 'unknown') return 'CT 已离线，当前逆流状态未知'
+  if (device.hasSustainedReverse && device.sustainedReverseMaxMinutes) {
+    const sustainedPhases = (device.sustainedReversePhases ?? []).join(' / ')
+    return `当前未逆流；近7天${sustainedPhases ? ` ${sustainedPhases} 相` : ''}曾持续 ≥40 分钟（最长 ${device.sustainedReverseMaxMinutes} 分钟）`
+  }
   return '三相当前未检测到逆流'
 }
 
@@ -61,7 +69,8 @@ export default async function DeviceListPage({
   const q = resolvedSearchParams.q?.trim() || ''
   const status = FILTERS.find((item) => item.value === resolvedSearchParams.status)?.value ?? 'all'
   const devices = [...result.items].sort((left, right) => {
-    const priority = (device: typeof left) => device.reverseState === 'active' ? 0 : device.offlineAlert ? 1 : device.isOnline ? 2 : 3
+    const priority = (device: typeof left) =>
+      device.reverseState === 'active' ? 0 : device.hasSustainedReverse ? 1 : device.offlineAlert ? 2 : device.isOnline ? 3 : 4
     return priority(left) - priority(right) || left.deviceSn.localeCompare(right.deviceSn)
   })
 
@@ -104,6 +113,20 @@ export default async function DeviceListPage({
         <span>正在逆流</span>
         <strong>{result.summary.criticalReverseFlowCount}</strong>
         <p>{result.summary.criticalReverseFlowCount ? '在线 CT 的当前逆流，需优先处理' : '当前没有在线 CT 逆流'} · 点击筛选</p>
+      </Link>
+      <Link
+        href={fleetListHref('sustained-reverse', q)}
+        className={`fleet-priority-card sustained-reverse ${result.summary.sustainedReverseCtCount ? 'is-active' : ''} ${status === 'sustained-reverse' ? 'is-selected' : ''}`}
+        aria-current={status === 'sustained-reverse' ? 'page' : undefined}
+      >
+        <span>近7天长时逆流</span>
+        <strong>{result.summary.sustainedReverseCtCount}</strong>
+        <p>
+          {result.summary.sustainedReverseCtCount
+            ? `${result.summary.sustainedReverseCtCount} 台 CT 近 7 天出现过持续 ≥40 分钟逆流`
+            : '近 7 天没有持续 ≥40 分钟的逆流'}
+          {' '}· 点击筛选
+        </p>
       </Link>
       <Link
         href={fleetListHref('offline', q)}
@@ -150,10 +173,10 @@ export default async function DeviceListPage({
             const primary = deviceSnPrimaryLabel(device.deviceSn)
             const secondary = deviceSnSecondaryLabel(device.deviceSn)
             const wifiRaw = parseWifiNumber(device.wifiSignal)
-            return <tr className={`${device.reverseState === 'active' ? 'reverse-row' : ''} ${device.offlineAlert ? 'offline-row' : ''} ${device.hasOfflineInverter ? 'inv-offline-row' : ''}`} key={device.id}>
+            return <tr className={`${device.reverseState === 'active' ? 'reverse-row' : ''} ${device.hasSustainedReverse && device.reverseState !== 'active' ? 'sustained-reverse-row' : ''} ${device.offlineAlert ? 'offline-row' : ''} ${device.hasOfflineInverter ? 'inv-offline-row' : ''}`} key={device.id}>
               <th scope="row"><Link className="fleet-table-sn" href={`/devices/${encodeURIComponent(device.deviceSn)}`}>{primary}</Link><span className="fleet-table-subtext">{secondary ? `${secondary} · ${connectionText}` : connectionText}</span></th>
               <td><span className={`badge ${device.isOnline ? 'online' : 'offline'}`}>{device.isOnline ? 'CT 在线' : 'CT 离线'}</span></td>
-              <td><span className={`fleet-table-reverse ${device.reverseState === 'active' ? 'danger-value' : ''}`}>{reverseText(device)}</span></td>
+              <td><span className={`fleet-table-reverse ${device.reverseState === 'active' || device.hasSustainedReverse ? 'danger-value' : ''}`}>{reverseText(device)}</span></td>
               <td className={`fleet-table-value ${device.todayEnergy !== '—' ? 'is-energy' : ''}`}>{device.todayEnergy}</td>
               <td className="fleet-table-value fleet-table-inverters">
                 <OnlineInverterCount online={device.onlineInverterCount} total={device.inverterCount || 8} />

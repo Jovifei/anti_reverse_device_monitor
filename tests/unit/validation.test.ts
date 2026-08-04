@@ -33,4 +33,10 @@ describe('device list query validation', () => {
       pageSize: 20
     })
   })
+
+  it('accepts sustained-reverse status filter', () => {
+    expect(parseDeviceListQuery({ status: 'sustained-reverse' })).toMatchObject({
+      status: 'sustained-reverse'
+    })
+  })
 })
