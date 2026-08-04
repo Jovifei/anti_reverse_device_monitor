@@ -84,6 +84,26 @@ npm run source:sync -- --device-id <mongo_device_id>
 2. `npm run dev` 或再跑 `start-monitor.ps1` 的第 5 步  
 3. 硬刷新浏览器（勿死等旧标签）
 
+### 卡死自动重启（watchdog）
+
+常驻脚本：`scripts/next-watchdog.ps1`（`start-monitor.ps1` 结束时会自动开一个窗口；也可单独跑）。
+
+| 项 | 行为 |
+|----|------|
+| 探测 | 每 30s `GET http://127.0.0.1:3000/api/live`，超时 8s |
+| 判死 | 连续 2 次失败（端口在听但无响应）→ 杀 Next 并重启 |
+| 未监听 | 自动 `npm run dev`（`NODE_OPTIONS=--max-old-space-size=4096`） |
+| 冷却 | 两次重启间隔至少 90s，避免抖动 |
+
+```bash
+# 单独启动 watchdog（保持窗口开着）
+npm run dev:watchdog
+# 或
+powershell -File scripts/next-watchdog.ps1
+```
+
+`open-monitor.ps1` 仍做**启动时一次**健康检查：端口在听但不健康则先杀再起。Watchdog 负责**运行中**持续监护。
+
 ## 5. 总览筛选能力（运维观察）
 
 | 筛选 / 卡片 | 含义 |

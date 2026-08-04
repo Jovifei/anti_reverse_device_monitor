@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "dev:watchdog": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/next-watchdog.ps1",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

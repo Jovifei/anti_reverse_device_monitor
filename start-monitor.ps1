@@ -71,6 +71,20 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ''
-Write-Host 'Done. You can close this window; keep source-worker and Next.js windows open.' -ForegroundColor Green
+Write-Host '[watchdog] Ensuring Next health watchdog is running...'
+$existingWatchdog = Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe' OR Name = 'pwsh.exe'" -ErrorAction SilentlyContinue |
+  Where-Object { $_.CommandLine -and $_.CommandLine -match 'next-watchdog\.ps1' }
+if ($existingWatchdog) {
+  Write-Host ("[watchdog] already running (pid {0}); skip." -f ($existingWatchdog | Select-Object -First 1 -ExpandProperty ProcessId)) -ForegroundColor Yellow
+} else {
+  Start-Process -FilePath 'powershell.exe' -ArgumentList @(
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "$PSScriptRoot\scripts\next-watchdog.ps1"
+  ) -WindowStyle Normal
+  Write-Host '[watchdog] started in a new window (auto-restart if Next wedges).' -ForegroundColor Cyan
+}
+
+Write-Host ''
+Write-Host 'Done. Keep source-worker, Next.js, and next-watchdog windows open.' -ForegroundColor Green
 Write-Host 'Worker should log: [source:worker] cycle status=completed ...' -ForegroundColor DarkGray
+Write-Host 'Watchdog probes /api/live every 30s; wedged Next is killed and restarted.' -ForegroundColor DarkGray
 Read-Host 'Press Enter to exit'

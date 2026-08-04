@@ -46,9 +46,10 @@ if (Test-PortOpen 3000) {
 }
 
 if ($needStart) {
-  Write-Host '[open-monitor] starting npm run dev in a new window...'
+  Write-Host '[open-monitor] starting npm run dev in a new window (heap 4096 MB)...'
   $repo = (Get-Location).Path
-  Start-Process -FilePath 'cmd.exe' -ArgumentList @('/k', "cd /d `"$repo`" && npm run dev") -WindowStyle Normal
+  $cmd = "chcp 65001>nul & cd /d `"$repo`" & set NODE_OPTIONS=--max-old-space-size=4096& npm run dev"
+  Start-Process -FilePath 'cmd.exe' -ArgumentList @('/k', $cmd) -WindowStyle Normal
   $deadline = (Get-Date).AddMinutes(2)
   while (-not (Test-PortOpen 3000)) {
     if ((Get-Date) -gt $deadline) {
