@@ -1,55 +1,70 @@
 # 防逆流设备运行可视化系统
 
-一期为 Next.js + TypeScript + Prisma + SQLite 的只读动态 MVP。系统导入脱敏 Excel 后，按 CT SN 查询最近 7 天的运行数据；浏览器不持有数据库密码，也不具备 MQTT、OTA、参数下发、配对或解绑能力。
+只读观察系统：Next.js + TypeScript + Prisma + SQLite。从公司 Mongo `device_log_*`（或 Excel）同步到本地库后，按 CT SN 查看最近约 7 天的运行、逆流与微逆状态。浏览器不持有数据库密码；不具备 MQTT/OTA/参数下发/配对解绑。
 
-## 运行
+## 日常运行（推荐）
 
-1. `npm install`
-2. 复制 `config/.env.local.example` 为 `.env.local`，配置 `APP_DATABASE_URL=file:../data/device-monitor.db`
-3. `npm run prisma:generate`
-4. 在首次使用前创建空文件 `data/device-monitor.db`，再执行 `npx prisma db push`
-5. `npm run import:excel <excel_file> [sn]`
-6. `npm run dev`
+1. 配置 `.env.local`（自 `.env.local.example`），填 Mongo，并设 `SOURCE_DB_ENABLED=true`、`SOURCE_DB_TYPE=mongodb`
+2. 准备 `config/device-sn-map.xlsx`（SN ↔ device_id）
+3. 双击或执行：`.\start-monitor.ps1`  
+   （迁移 → 应用 SN 映射 → `source:sync` → 开 `source:worker` → 起 Next 并打开浏览器）
+4. 打开 `http://localhost:3000/devices`
 
-## 一期功能
+完整说明见 [操作手册](docs/11_OPS_RUNBOOK.md)。
+
+手工拆分：
+
+```bash
+npm install
+npm run devices:apply-map
+npm run source:sync
+npm run source:worker   # 另开终端常驻
+npm run dev
+```
+
+## 主要能力
 
 - 完整 SN 或可唯一识别的末尾编号查询；
-- CT 运行状态、三相反送严重告警、1/3/7 天 ECharts 功率与电网质量曲线；
-- 固定 1～8 微逆卡片及微逆详情页；
-- online_state、工作状态和故障位掩码领域字典解码；
-- 7 天在线/离线窗口、故障变化、retention 和数据质量报告；
-- Excel/Fixture Adapter；
-- 二期公司数据源的只读 Adapter 合同、Mock 和 Stub；
-- Mongo 设备日志只读增量同步（独立 Worker 进程，10s 间隔，复合游标幂等）；
-- 离线 HTML 导出（单文件 / Bundle / ZIP，自包含 ECharts，零网络依赖）；
-- 45 秒软刷新（`POST /api/live` → `revalidatePath` → `router.refresh`，不触发全页加载）；
-- 北京日出日落昼夜背景带；
-- Docker Compose 双服务部署（Web + Sync Worker）。
+- 总览优先卡：正在逆流 / 近7天长时逆流(≥40分钟) / 待处理离线 / 存在离线微逆 / 在线活跃；
+- CT 运行状态、三相反送告警、1/3/7 天功率与电网质量曲线；
+- 固定 1～8 微逆卡片及微逆详情；在线微逆个数、离线通道标注；
+- online_state、工作状态、故障位掩码字典解码；
+- Mongo 只读增量同步（独立 Worker + checkpoint）；
+- 总览软刷新：指纹变化才刷新；**详情页不自动 soft-refresh**（防 Next 卡死）；
+- 离线 HTML 导出；Docker Compose（Web + Sync Worker）。
 
 ## 技术文档
 
-如需复盘学习系统实现原理、数据流和架构决策，见 [技术路线总览](docs/10-STUD-学习/01-STUD-技术路线总览.md)。
+| 文档 | 说明 |
+|------|------|
+| [docs/README.md](docs/README.md) | 文档索引 |
+| [操作手册](docs/11_OPS_RUNBOOK.md) | 启动、同步、卡死恢复、Docker |
+| [项目总览](docs/01_PROJECT_OVERVIEW.md) | 背景与业务问题 |
+| [当前完成情况](docs/05_CURRENT_STATUS_AND_DELIVERABLES.md) | 交付与限制 |
+| [Mongo 只读说明](docs/MONGODB_READONLY_SOURCE.md) | 联调与 Docker 命令 |
+| [技术路线学习](docs/10-STUD-学习/01-STUD-技术路线总览.md) | 实现原理 |
 
 ## 验证命令
 
-- `npm run typecheck`
-- `npm run lint`
-- `npm test`
-- `npm run build`
-- `npm run test:e2e`
-- `npm run verify-data`
-- `npm run cleanup -- --dry-run`
-- `npm run export:html:demo`
-- `npm run test:offline-html`
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm run verify-data
+```
 
-详细验收记录见 [一期验收报告](docs/PHASE1_ACCEPTANCE_REPORT.md)。公司数据源接入步骤见 [二期 Adapter 指南](docs/PHASE2_SOURCE_ADAPTER_GUIDE.md)。Mongo 日志只读接入见 [Mongo 只读说明](docs/MONGODB_READONLY_SOURCE.md)。Docker 部署见同文档「Docker」节。离线 HTML 导出见 [离线导出指南](docs/OFFLINE_HTML_EXPORT_GUIDE.md)。
+## Docker（正式）
 
-## 离线 HTML 快照
+```bash
+copy .env.docker.example .env.docker
+# 编辑密钥与 SOURCE_DB_ENABLED=true
+docker compose up --build -d
+docker compose --profile sync up -d sync
+```
 
-已实现：单设备自包含 HTML、多设备 Bundle、ZIP，以及从 SQLite / Demo / Excel 导出。命令：`npm run export:html`、`npm run export:html:demo`、`npm run export:html:excel`。生成物位于 `artifacts/offline-ui/`（gitignore）。
+详见 [操作手册 §6](docs/11_OPS_RUNBOOK.md#6-docker-部署正式)。
 
-## 二期状态
+## 二期说明
 
-二期离线同步基础已交付：字段映射校验、脱敏探查、复合游标、Mock→SQLite 幂等同步、checkpoint 与同步审计。真实公司只读数据源尚未配置，因此二期真实联调状态为 `PARTIAL`；详见 `docs/PHASE2_ACCEPTANCE_REPORT.md`。使用根目录 `.env.local.example` 创建本地配置，真实字段映射只放在已忽略的 `config/source-field-mapping.local.json`。
-
-二期命令：`npm run source:validate-mapping`、`npm run source:inspect`、`npm run source:sync -- --dry-run`。
+真实 Mongo 只读联调已在本地可用（取决于你的 `.env.local`）。字段映射与 Adapter 合同见 `docs/PHASE2_*` 与 `docs/MONGODB_READONLY_SOURCE.md`。

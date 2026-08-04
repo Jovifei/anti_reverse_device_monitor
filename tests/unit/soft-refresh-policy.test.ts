@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { decideSoftRefresh, isHeavyMonitorRoute } from '@/src/domain/soft-refresh-policy'
+import {
+  DEFAULT_HEAVY_FULL_REFRESH_MIN_MS,
+  decideSoftRefresh,
+  isHeavyMonitorRoute
+} from '@/src/domain/soft-refresh-policy'
 
 describe('isHeavyMonitorRoute', () => {
   it('treats fleet list as light and device/inverter pages as heavy', () => {
@@ -20,7 +24,10 @@ describe('decideSoftRefresh', () => {
     nowMs: 100_000,
     lastStartedMs: 0,
     cooldownMs: 30_000,
-    pendingStaleMs: 60_000
+    pendingStaleMs: 60_000,
+    dataStale: false,
+    lastHeavyFullRefreshMs: 0,
+    heavyFullRefreshMinMs: DEFAULT_HEAVY_FULL_REFRESH_MIN_MS
   }
 
   it('never stacks another refresh while pending — even after stale', () => {
@@ -31,8 +38,7 @@ describe('decideSoftRefresh', () => {
     })
   })
 
-  it('skips heavy routes and unchanged fingerprints', () => {
-    expect(decideSoftRefresh({ ...base, pathname: '/devices/SN1' }).action).toBe('skip')
+  it('skips unchanged fingerprints on fleet', () => {
     expect(decideSoftRefresh({ ...base, fingerprint: 'x', lastFingerprint: 'x' }).action).toBe('skip')
   })
 
@@ -45,5 +51,63 @@ describe('decideSoftRefresh', () => {
       action: 'seed-fingerprint',
       reason: 'first-fingerprint'
     })
+  })
+
+  it('notifies stale on heavy route when fingerprint changes but gate is closed', () => {
+    const nowMs = 100_000
+    expect(
+      decideSoftRefresh({
+        ...base,
+        pathname: '/devices/SN1',
+        fingerprint: 'new',
+        lastFingerprint: 'old',
+        nowMs,
+        lastHeavyFullRefreshMs: nowMs - 60_000
+      })
+    ).toEqual({ action: 'notify-stale', reason: 'heavy-fingerprint-changed' })
+  })
+
+  it('refreshes heavy route when fingerprint changes and gate is open', () => {
+    const nowMs = 400_000
+    expect(
+      decideSoftRefresh({
+        ...base,
+        pathname: '/devices/SN1',
+        fingerprint: 'new',
+        lastFingerprint: 'old',
+        nowMs,
+        lastHeavyFullRefreshMs: nowMs - DEFAULT_HEAVY_FULL_REFRESH_MIN_MS
+      })
+    ).toEqual({ action: 'refresh', reason: 'heavy-fingerprint-gated' })
+  })
+
+  it('refreshes heavy route when already stale and gate opens later', () => {
+    const nowMs = 400_000
+    expect(
+      decideSoftRefresh({
+        ...base,
+        pathname: '/devices/SN1/inverters/1',
+        fingerprint: 'same',
+        lastFingerprint: 'same',
+        dataStale: true,
+        nowMs,
+        lastHeavyFullRefreshMs: nowMs - DEFAULT_HEAVY_FULL_REFRESH_MIN_MS
+      })
+    ).toEqual({ action: 'refresh', reason: 'heavy-stale-gated' })
+  })
+
+  it('waits on heavy stale when gate still closed', () => {
+    const nowMs = 100_000
+    expect(
+      decideSoftRefresh({
+        ...base,
+        pathname: '/devices/SN1',
+        fingerprint: 'same',
+        lastFingerprint: 'same',
+        dataStale: true,
+        nowMs,
+        lastHeavyFullRefreshMs: nowMs - 60_000
+      })
+    ).toEqual({ action: 'skip', reason: 'heavy-waiting-gate' })
   })
 })

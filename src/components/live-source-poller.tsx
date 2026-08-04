@@ -2,13 +2,16 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useTransition } from 'react'
-import { decideSoftRefresh } from '@/src/domain/soft-refresh-policy'
+import {
+  DEFAULT_HEAVY_FULL_REFRESH_MIN_MS,
+  decideSoftRefresh,
+  isHeavyMonitorRoute
+} from '@/src/domain/soft-refresh-policy'
+import { useLiveDataStale } from '@/src/components/live-data-stale-context'
 
-/** Soft-refresh cadence for the light fleet list only. */
 const INTERVAL_MS = 45_000
 const COOLDOWN_MS = 30_000
 const LIVE_FETCH_MS = 4_000
-/** Clear stuck client pending flag — never start another refresh while one is pending. */
 const PENDING_STALE_MS = 60_000
 
 type LiveFingerprint = {
@@ -26,16 +29,31 @@ export function LiveSourcePoller() {
   const router = useRouter()
   const pathname = usePathname() || '/devices'
   const [isPending, startTransition] = useTransition()
+  const { dataStale, setDataStale, lastHeavyFullRefreshMs, markHeavyFullRefresh } = useLiveDataStale()
+
   const isPendingRef = useRef(false)
   const pendingSinceRef = useRef(0)
   const inFlightRef = useRef(false)
   const lastStartedRef = useRef(0)
   const lastFingerprintRef = useRef<string | null>(null)
   const pathnameRef = useRef(pathname)
+  const dataStaleRef = useRef(dataStale)
+  const lastHeavyFullRefreshMsRef = useRef(lastHeavyFullRefreshMs)
 
   useEffect(() => {
     pathnameRef.current = pathname
-  }, [pathname])
+    if (!isHeavyMonitorRoute(pathname)) {
+      setDataStale(false)
+    }
+  }, [pathname, setDataStale])
+
+  useEffect(() => {
+    dataStaleRef.current = dataStale
+  }, [dataStale])
+
+  useEffect(() => {
+    lastHeavyFullRefreshMsRef.current = lastHeavyFullRefreshMs
+  }, [lastHeavyFullRefreshMs])
 
   useEffect(() => {
     isPendingRef.current = isPending
@@ -54,30 +72,17 @@ export function LiveSourcePoller() {
 
       const nowMs = Date.now()
       const pendingMs = pendingSinceRef.current ? nowMs - pendingSinceRef.current : 0
-      const precheck = decideSoftRefresh({
-        pathname: pathnameRef.current,
-        fingerprint: 'probe',
-        lastFingerprint: null,
-        isPending: isPendingRef.current,
-        pendingMs,
-        nowMs,
-        lastStartedMs: lastStartedRef.current,
-        cooldownMs: COOLDOWN_MS,
-        pendingStaleMs: PENDING_STALE_MS
-      })
 
-      if (precheck.action === 'clear-stale-pending') {
-        // Drop the wedged client lockout without stacking another RSC flight.
-        pendingSinceRef.current = 0
-        isPendingRef.current = false
-        return
-      }
-      if (precheck.action === 'skip' && (precheck.reason === 'heavy-route' || precheck.reason === 'pending' || precheck.reason === 'cooldown')) {
+      // Precheck without fingerprint: only pending / clear-stale (must still poll heavy routes).
+      if (isPendingRef.current) {
+        if (pendingMs >= PENDING_STALE_MS) {
+          pendingSinceRef.current = 0
+          isPendingRef.current = false
+        }
         return
       }
 
       inFlightRef.current = true
-      lastStartedRef.current = nowMs
       try {
         const controller = new AbortController()
         const abortTimer = window.setTimeout(() => controller.abort(), LIVE_FETCH_MS)
@@ -105,7 +110,10 @@ export function LiveSourcePoller() {
           nowMs: Date.now(),
           lastStartedMs: lastStartedRef.current,
           cooldownMs: COOLDOWN_MS,
-          pendingStaleMs: PENDING_STALE_MS
+          pendingStaleMs: PENDING_STALE_MS,
+          dataStale: dataStaleRef.current,
+          lastHeavyFullRefreshMs: lastHeavyFullRefreshMsRef.current,
+          heavyFullRefreshMinMs: DEFAULT_HEAVY_FULL_REFRESH_MIN_MS
         })
 
         if (decision.action === 'clear-stale-pending') {
@@ -117,11 +125,22 @@ export function LiveSourcePoller() {
           lastFingerprintRef.current = fingerprint
           return
         }
+        if (decision.action === 'notify-stale') {
+          lastFingerprintRef.current = fingerprint
+          setDataStale(true)
+          lastStartedRef.current = Date.now()
+          return
+        }
         if (decision.action !== 'refresh') return
 
-        // Bust cache only when we will actually refresh the light fleet page.
+        lastStartedRef.current = Date.now()
         void fetch('/api/live', { method: 'POST', cache: 'no-store' }).catch(() => {})
         lastFingerprintRef.current = fingerprint
+        if (isHeavyMonitorRoute(pathnameRef.current)) {
+          markHeavyFullRefresh()
+        } else {
+          setDataStale(false)
+        }
         startTransition(() => {
           router.refresh()
         })
@@ -145,7 +164,7 @@ export function LiveSourcePoller() {
       window.clearInterval(timer)
       document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [router, startTransition])
+  }, [router, startTransition, setDataStale, markHeavyFullRefresh])
 
   return null
 }

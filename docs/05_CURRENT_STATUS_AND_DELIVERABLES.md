@@ -1,26 +1,20 @@
 # 当前完成情况与交付物
 
-## 一期 SQLite 动态 MVP：已完成
+> 更新日期：2026-08-04。实现声明以当前仓库代码为准。
 
-交付内容：
+## 已交付（本地联调可用）
 
 - Next.js 15 App Router、TypeScript、Prisma 与 SQLite schema/migrations；
-- Excel 导入（`ExcelSourceAdapter` + `DeviceLogExcelAdapter`）、去重、SIID/PIID 透传、数据质量报告；
-- Mongo 设备日志只读增量同步（`MongoLogSourceAdapter` + `SourceSyncService`），独立 Worker 进程；
-- 复合游标幂等同步（`sourceRecordId` 三级去重），checkpoint 与同步审计；
-- 多 SN 查询，支持完整 SN 和唯一末尾编号；
-- CT 动态运行页：核心 KPI、平台连通性、三相逆流区间、ECharts 功率/电网质量曲线；
-- 北京日出日落昼夜背景带（NOAA 近似算法）；
-- 固定 1～8 微逆卡片和独立详情页；
-- 状态字典、故障掩码解码与故障变化历史；
-- CT 和微逆在线/离线窗口分析（15 分钟心跳间隙模型）；
-- 可配置 7 天 retention，且不删除元数据、latest 状态、checkpoint 或导入审计；
-- Unit（25 文件 88 测试）、SQLite integration 与 Playwright E2E 测试；
-- 离线 HTML 快照导出（单文件 / Bundle / ZIP），CLI 支持 SQLite / Demo / Excel；
-- 离线 HTML 自描述回环（从 HTML 提取视图模型，重新渲染）；
-- 手写 ZIP 打包器（零依赖）；
-- Docker Compose 双服务部署（Web + Sync Worker）；
-- 软刷新机制（45s 间隔，`POST /api/live` → `revalidatePath` → `router.refresh`）。
+- Excel 导入与 Mongo `device_log_*` 只读增量同步（`SourceSyncService` + 独立 `source:worker`）；
+- 复合游标幂等写入、checkpoint / sync 批次审计；
+- `start-monitor.ps1`：迁移 → SN 映射 → 追同步 → Worker → Next；
+- 多 SN 查询（完整 SN / 唯一后缀）；
+- 总览优先卡与筛选：正在逆流、**近7天长时逆流(≥40min)**、待处理离线、存在离线微逆、在线/活跃；
+- CT 详情：KPI、三相逆流区间、ECharts、昼夜背景、固定 1～8 微逆卡、连通性/故障历史；
+- 在线微逆个数展示、离线微逆通道号标注；
+- 软刷新策略：总览指纹变化才刷；**详情页禁止自动 soft-refresh**（避免 Next 假死）；
+- Prisma SQLite `socket_timeout` + `connection_limit=1`；
+- 离线 HTML 导出；Docker Compose（`app` + `sync` profile）。
 
 页面入口：
 
@@ -28,21 +22,18 @@
 - `/devices/[sn]`
 - `/devices/[sn]/inverters/[index]`
 
+操作见 [11_OPS_RUNBOOK.md](./11_OPS_RUNBOOK.md)。
+
 ## 已知限制
 
-- 未连接真实公司数据库（二期状态 `PARTIAL`），新增 12 台设备使用 Demo 种子数据；
-- 逆流检测无迟滞阈值，`-0.01W` 即触发严重告警，且只有一级严重性（`critical`）；
-- 故障严重性判断 `hasCriticalFault` 使用英文正则匹配中文字典，始终返回 `false`；
-- 图表不降采样，`sampling: undefined` 显式设置，所有原始样本点全量绘制；
-- 设备列表筛选和排序在内存中完成（服务端全量查询，前端 post-hoc 处理）；
-- CSS 在线和离线路径独立维护，已产生结构性分歧；
-- 图表运行时在线和离线路径手工移植，`client-runtime.ts` 是 `telemetry-chart.tsx` 的独立实现；
-- 设备详情页一次 RSC 渲染约 25 个并发服务调用，性能敏感；
-- 微逆 SN、版本、相位和接入点未进入 Excel 导出，始终显示 `—`。
+- 逆流检测无迟滞阈值，负功率即计为逆流区间；长时逆流按区间时长 ≥40 分钟统计；
+- 设备详情页一次 RSC 仍很重（约 8 路摘要 + 8 路曲线）；自动刷新已禁用，手动刷新仍可能较慢；
+- 隔夜后首次 `source:sync` 可能达十几分钟（checkpoint 空窗大），属预期；
+- Docker 部署依赖本机 Docker；构建时打入 `config/`，改注册表需重建或挂载；
+- 图表不降采样；列表筛选在服务端对活跃设备聚合后分页；
+- ⚠️ 本开发机若未安装 Docker，Compose 路径待环境验证。
 
-## 二期当前状态（2026-07-22）
+## 二期 / Mongo
 
-- 状态：`PARTIAL`。
-- 已完成：一期基线冻结、Source Adapter 合同升级、映射验证、脱敏探查、Mock 增量同步、SQLite checkpoint/批次/错误审计、迁移与测试。
-- 阻断：未提供真实只读连接、只读权限证明、源类型/视图、SIID/PIID 字段映射与真实设备样本；未尝试连接或写入公司数据库。
-- 入口：`docs/PHASE2_ACCEPTANCE_REPORT.md`、`docs/PHASE2_SOURCE_INSPECTION_REPORT.md`、`docs/PHASE2_DATA_QUALITY_REPORT.md`。
+- 本地可对真实 Mongo 只读联调（凭 `.env.local`）。
+- 入口：`docs/MONGODB_READONLY_SOURCE.md`、`docs/PHASE2_ACCEPTANCE_REPORT.md`。

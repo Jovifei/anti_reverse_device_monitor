@@ -3169,6 +3169,66 @@ button:disabled {
   white-space: nowrap;
 }
 
+.data-stale-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid #c4a35a;
+  background: #fff8e8;
+  color: #5c4a1f;
+}
+
+.data-stale-banner p {
+  margin: 0;
+  flex: 1 1 240px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.live-phase-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.live-phase-chip {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  background: #f3f6f9;
+  border: 1px solid #d5dde5;
+}
+
+.live-phase-chip .label {
+  font-size: 0.8rem;
+  color: #5b6b7c;
+}
+
+.live-phase-chip strong {
+  font-family: var(--font-data);
+  font-size: 1.15rem;
+}
+
+.live-phase-chip .hint {
+  font-size: 0.8rem;
+  color: #5b6b7c;
+}
+
+.live-phase-chip.is-danger {
+  border-color: #c92828;
+  background: #fff1f1;
+}
+
+.live-phase-chip.is-danger .hint,
+.live-phase-chip.is-danger strong {
+  color: #c92828;
+}
+
 .fault-list {
   min-height: 25px;
 }

@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import { DataStaleBanner } from '@/src/components/data-stale-banner'
 import { DatedRecordScroll } from '@/src/components/dated-record-scroll'
 import { DeviceSnSearch } from '@/src/components/device-sn-search'
 import { MetricHistoryDialog } from '@/src/components/metric-history-dialog'
 import { OfflineWindowLabel } from '@/src/components/offline-window-label'
+import { SoftRefreshButton } from '@/src/components/soft-refresh-button'
 import { TelemetryChart, type ClientChartSeries } from '@/src/components/telemetry-chart'
 import { faultDisplayNames } from '@/src/domain/faults'
 import {
@@ -75,8 +77,12 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
         <h1>微型逆变器 {summary.inverterIndex}：{phaseLabel}{summary.inverterSn ? ` · ${summary.inverterSn}` : ''}</h1>
         <p className="muted">软件 {summary.softwareVersion ?? EMPTY} · Sub1G {summary.sub1gVersion ?? EMPTY}</p>
       </div>
-      <DeviceSnSearch initialSn={summary.deviceSn} />
+      <div className="header-actions">
+        <SoftRefreshButton />
+        <DeviceSnSearch initialSn={summary.deviceSn} />
+      </div>
     </header>
+    <DataStaleBanner />
 
     <section className={`inv-gen-compose ${generating ? 'is-on' : 'is-off'}`} aria-label="发电功率总览">
       <div className="inv-gen-compose-row">

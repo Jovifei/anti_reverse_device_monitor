@@ -60,20 +60,21 @@ SOURCE_DB_VIEW=...
 - OTA；
 - 重启设备。
 
-## 4. Docker 部署建议
+## 4. Docker 部署（当前）
 
-一期可以本地运行。
-
-三期推荐：
+本地日常仍可用 `start-monitor.ps1`。仓库已提供正式 Compose：
 
 ```text
 docker-compose.yml
-├── web
-├── worker
-├── postgres
-├── redis（可选）
-└── nginx
+├── app          # Next.js Web（SQLite volume）
+└── sync         # --profile sync；Mongo→SQLite 增量 Worker
 ```
+
+推荐：`docker compose up --build -d` 后执行 `docker compose --profile sync up -d sync` 常驻同步。密钥放 `.env.docker`（自 `.env.docker.example`），勿写入镜像层。操作细节见 [11_OPS_RUNBOOK.md](./11_OPS_RUNBOOK.md)。
+
+⚠️ Compose 在本仓库已验证文件齐全；是否在目标机跑通取决于本机是否安装 Docker。
+
+三期目标（未实现）：PostgreSQL + Redis + Nginx / SSO。
 
 ## 5. 备份
 

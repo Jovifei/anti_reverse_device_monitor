@@ -9,6 +9,12 @@ export type SoftRefreshDecisionInput = {
   cooldownMs: number
   /** After this, treat a stuck transition as stale — but do NOT start another refresh. */
   pendingStaleMs: number
+  /** True when heavy route already showed "new data" and waits for gated full refresh. */
+  dataStale?: boolean
+  /** Last full router.refresh on a heavy route (0 = never). */
+  lastHeavyFullRefreshMs?: number
+  /** Minimum gap between heavy full refreshes (default 5 minutes). */
+  heavyFullRefreshMinMs?: number
 }
 
 export type SoftRefreshDecision =
@@ -16,6 +22,10 @@ export type SoftRefreshDecision =
   | { action: 'refresh'; reason: string }
   | { action: 'seed-fingerprint'; reason: string }
   | { action: 'clear-stale-pending'; reason: string }
+  | { action: 'notify-stale'; reason: string }
+
+/** Default: detail/inverter full RSC at most once per 5 minutes when data is stale. */
+export const DEFAULT_HEAVY_FULL_REFRESH_MIN_MS = 5 * 60_000
 
 /** Heavy RSC routes: full soft-refresh reloads 8 inverter charts/history and can wedge Next. */
 const HEAVY_ROUTE = /^\/devices\/[^/]+/i
@@ -27,14 +37,17 @@ export function isHeavyMonitorRoute(pathname: string): boolean {
   return HEAVY_ROUTE.test(pathname)
 }
 
+function heavyGateOpen(input: SoftRefreshDecisionInput): boolean {
+  const minMs = input.heavyFullRefreshMinMs ?? DEFAULT_HEAVY_FULL_REFRESH_MIN_MS
+  const last = input.lastHeavyFullRefreshMs ?? 0
+  return input.nowMs - last >= minMs
+}
+
 /**
- * Decide whether LiveSourcePoller may call router.refresh().
+ * Decide whether LiveSourcePoller may call router.refresh() or only notify stale UI.
  * Never stacks a second refresh while one is pending — that is what wedges Next.
  */
 export function decideSoftRefresh(input: SoftRefreshDecisionInput): SoftRefreshDecision {
-  if (isHeavyMonitorRoute(input.pathname)) {
-    return { action: 'skip', reason: 'heavy-route' }
-  }
   if (input.isPending) {
     if (input.pendingMs >= input.pendingStaleMs) {
       return { action: 'clear-stale-pending', reason: 'pending-stale' }
@@ -50,7 +63,24 @@ export function decideSoftRefresh(input: SoftRefreshDecisionInput): SoftRefreshD
   if (input.lastFingerprint === null) {
     return { action: 'seed-fingerprint', reason: 'first-fingerprint' }
   }
-  if (input.fingerprint === input.lastFingerprint) {
+
+  const heavy = isHeavyMonitorRoute(input.pathname)
+  const changed = input.fingerprint !== input.lastFingerprint
+
+  if (heavy) {
+    if (changed) {
+      if (heavyGateOpen(input)) {
+        return { action: 'refresh', reason: 'heavy-fingerprint-gated' }
+      }
+      return { action: 'notify-stale', reason: 'heavy-fingerprint-changed' }
+    }
+    if (input.dataStale && heavyGateOpen(input)) {
+      return { action: 'refresh', reason: 'heavy-stale-gated' }
+    }
+    return { action: 'skip', reason: input.dataStale ? 'heavy-waiting-gate' : 'unchanged' }
+  }
+
+  if (!changed) {
     return { action: 'skip', reason: 'unchanged' }
   }
   return { action: 'refresh', reason: 'fingerprint-changed' }

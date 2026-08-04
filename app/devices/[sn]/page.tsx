@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { DataStaleBanner } from '@/src/components/data-stale-banner'
 import { DatedRecordScroll } from '@/src/components/dated-record-scroll'
+import { DeviceLiveKpiBand } from '@/src/components/device-live-kpis'
 import { DeviceSnSwitcher } from '@/src/components/device-sn-switcher'
 import { MetricHistoryDialog } from '@/src/components/metric-history-dialog'
 import { OfflineWindowLabel } from '@/src/components/offline-window-label'
@@ -8,6 +10,7 @@ import { OnlineInverterCount } from '@/src/components/online-inverter-count'
 import { SoftRefreshButton } from '@/src/components/soft-refresh-button'
 import { TelemetryChart, type ClientChartSeries } from '@/src/components/telemetry-chart'
 import { WifiSignalView } from '@/src/components/wifi-signal-view'
+import { buildInitialLiveKpis } from '@/src/domain/live-kpis'
 import { deviceSnSecondaryLabel } from '@/src/domain/device-identity'
 import {
   CT_KPI_ALIASES,
@@ -37,11 +40,6 @@ import { resolveStatusLabel } from '@/src/domain/dictionaries'
 import { DeviceService } from '@/src/services/device-service'
 
 const EMPTY = '—'
-
-function MetricCard({ label, value, hint, hero, danger }: { label: string; value: string; hint?: string; hero?: boolean; danger?: boolean }) {
-  const className = ['metric-card', hero ? 'is-hero' : '', danger ? 'is-danger' : ''].filter(Boolean).join(' ')
-  return <div className={className}><div className="label">{label}</div><div className="value">{value}</div>{hint ? <div className="hint">{hint}</div> : null}</div>
-}
 
 function HistoryMetric({ label, value, series, title }: { label: string; value: string; series: ClientChartSeries[]; title: string }) {
   return (
@@ -113,10 +111,6 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
   const isLastKnown = !history.platform.isOnline
   const lastKnownAt = history.platform.lastSeenAt ?? device.lastReportedAt
   const reverseHeading = reverseNow.length ? '严重告警：检测到功率反送电网' : '防逆流运行正常'
-  const loadPowerRow = findLatestMetric(latest, ['load_power', 'ct.load_power'])
-  const generationPowerRow = findLatestMetric(latest, ['inverter_total_power', 'total_generation_power', 'micro_total_power'])
-  const gridPowerRow = findLatestMetric(latest, ['grid_power', 'ct.grid_power'])
-  const gridPowerValue = numericValue(gridPowerRow)
   const lastKnownHint = isLastKnown ? '最后已知值' : undefined
   const identitySecondary = deviceSnSecondaryLabel(canonicalSn)
   const rawExcelHref = `/api/devices/${encodeURIComponent(canonicalSn)}/raw-excel`
@@ -185,6 +179,7 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
         {lastKnownAt ? <p className="muted header-last-report">最后上报：{formatTime(lastKnownAt)}</p> : null}
       </div>
     </header>
+    <DataStaleBanner />
 
     <section className="panel ct-overview-panel">
       <div className="ct-overview-heading">
@@ -258,18 +253,11 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
           />
         </div>
       </div>
-      <div className="ct-kpi-band" aria-label="功率与发电量摘要">
-        <div className="power-hero-grid overview-inner-grid">
-          <MetricCard label="当前家庭负载功率" value={displayValue(loadPowerRow, 'W')} hint={lastKnownHint} hero />
-          <MetricCard label="微逆发电总功率" value={displayValue(generationPowerRow, 'W')} hint={lastKnownHint} hero />
-          <MetricCard label="当前电网功率" value={displayValue(gridPowerRow, 'W')} hint={lastKnownHint} hero danger={gridPowerValue !== null && gridPowerValue < 0} />
-        </div>
-        <div className="energy-secondary-grid overview-inner-grid">
-          <MetricCard label="今日发电时长" value={displayValue(findLatestMetric(latest, CT_KPI_ALIASES.todayDuration), 'h')} hint={lastKnownHint} hero />
-          <MetricCard label="今日发电量" value={displayEnergyKwh(findLatestMetric(latest, CT_KPI_ALIASES.todayEnergy))} hint={lastKnownHint} hero />
-          <MetricCard label="累计发电量" value={displayEnergyKwh(findLatestMetric(latest, CT_KPI_ALIASES.totalEnergy))} hint={lastKnownHint} hero />
-        </div>
-      </div>
+      <DeviceLiveKpiBand
+        deviceSn={canonicalSn}
+        showPhases
+        initial={buildInitialLiveKpis(latest, lastKnownHint)}
+      />
     </section>
 
     <section className={`reverse-safety-panel ${reverseNow.length ? 'is-danger' : ''}`} data-testid="reverse-safety-panel">

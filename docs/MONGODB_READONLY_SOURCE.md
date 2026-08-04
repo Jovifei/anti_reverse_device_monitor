@@ -47,14 +47,20 @@ npm run dev
 
 ## Docker（正式）
 
+完整步骤与注意点见 [11_OPS_RUNBOOK.md §6](./11_OPS_RUNBOOK.md#6-docker-部署正式)。摘要：
+
 ```bash
 copy .env.docker.example .env.docker
-# 编辑 .env.docker；准备 config/devices.json
+# 编辑密钥；SOURCE_DB_ENABLED=true；准备 config/devices.json
 docker compose up --build -d
+# 常驻增量（推荐）
+docker compose --profile sync up -d sync
+# 或一次性追数
 docker compose --profile sync run --rm sync
 ```
 
-- `app`：Web；`sync`：独立一次性同步（与 Web 分离）。
+- `app`：Web；`sync`：独立同步进程（与 Web 分离，推荐常驻）。
+- ⚠️ 本开发机若未装 Docker，Compose 路径待环境验证。
 - 调试也可：`docker compose exec app npm run source:sync -- --device-id …`
 
 ## 查询效率

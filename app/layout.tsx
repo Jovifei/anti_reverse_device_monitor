@@ -1,4 +1,5 @@
 ﻿import './globals.css'
+import { LiveDataStaleProvider } from '@/src/components/live-data-stale-context'
 import { LiveSourcePoller } from '@/src/components/live-source-poller'
 
 export const metadata = {
@@ -16,8 +17,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <LiveSourcePoller />
-        {children}
+        <LiveDataStaleProvider>
+          <LiveSourcePoller />
+          {children}
+        </LiveDataStaleProvider>
       </body>
     </html>
   )

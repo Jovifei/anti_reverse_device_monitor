@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useRef, useState, useTransition } from 'react'
+import { useLiveDataStaleOptional } from '@/src/components/live-data-stale-context'
 
 const LIVE_FETCH_MS = 4_000
 /** Brief UI feedback; never wait on RSC or /api/live (those can hang under SQLite lock). */
@@ -11,6 +12,7 @@ const PENDING_FAILSAFE_MS = 8_000
 
 export function SoftRefreshButton({ label = '刷新数据' }: { label?: string }) {
   const router = useRouter()
+  const stale = useLiveDataStaleOptional()
   const [busy, setBusy] = useState(false)
   const [, startTransition] = useTransition()
   const failsafeRef = useRef<number | null>(null)
@@ -51,6 +53,8 @@ export function SoftRefreshButton({ label = '刷新数据' }: { label?: string }
         const controller = new AbortController()
         window.setTimeout(() => controller.abort(), LIVE_FETCH_MS)
         void fetch('/api/live', { method: 'POST', cache: 'no-store', signal: controller.signal }).catch(() => {})
+
+        stale?.clearStaleAfterManualRefresh()
 
         startTransition(() => {
           router.refresh()
