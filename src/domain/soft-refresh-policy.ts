@@ -40,6 +40,8 @@ export function isHeavyMonitorRoute(pathname: string): boolean {
 function heavyGateOpen(input: SoftRefreshDecisionInput): boolean {
   const minMs = input.heavyFullRefreshMinMs ?? DEFAULT_HEAVY_FULL_REFRESH_MIN_MS
   const last = input.lastHeavyFullRefreshMs ?? 0
+  // 0 = never armed / never refreshed → do not auto full-refresh yet (banner only).
+  if (last <= 0) return false
   return input.nowMs - last >= minMs
 }
 

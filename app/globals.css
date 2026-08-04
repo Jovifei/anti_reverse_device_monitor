@@ -2347,7 +2347,10 @@ button:disabled {
 }
 
 .inverter-state-grid .inverter-total-energy-cell strong {
-  font-size: 16px;
+  margin-top: 5px;
+  color: var(--blue-deep);
+  font-size: clamp(15px, 1.4vw, 18px);
+  font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.25;
   white-space: nowrap;
@@ -2472,6 +2475,13 @@ button:disabled {
   color: #1f2d3d;
   font-size: 13px;
   font-weight: 700;
+}
+
+.inv-card-secondary-row .inverter-metric-cell.is-duration-energy strong {
+  margin-top: 5px;
+  color: var(--blue-deep);
+  font-size: clamp(15px, 1.4vw, 18px);
+  font-weight: 800;
 }
 
 .inverter-metrics {

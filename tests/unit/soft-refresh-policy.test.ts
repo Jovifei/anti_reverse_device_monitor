@@ -67,6 +67,20 @@ describe('decideSoftRefresh', () => {
     ).toEqual({ action: 'notify-stale', reason: 'heavy-fingerprint-changed' })
   })
 
+  it('does not auto-refresh heavy route on first fingerprint change when never refreshed', () => {
+    const nowMs = 400_000
+    expect(
+      decideSoftRefresh({
+        ...base,
+        pathname: '/devices/SN1',
+        fingerprint: 'new',
+        lastFingerprint: 'old',
+        nowMs,
+        lastHeavyFullRefreshMs: 0
+      })
+    ).toEqual({ action: 'notify-stale', reason: 'heavy-fingerprint-changed' })
+  })
+
   it('refreshes heavy route when fingerprint changes and gate is open', () => {
     const nowMs = 400_000
     expect(

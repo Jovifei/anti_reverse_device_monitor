@@ -355,7 +355,10 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
             </div>
           </div>
           <div className="inv-card-secondary-row">
-            <div className="inverter-metric-cell"><span className="label">今日发电时长</span><strong>{value(INVERTER_KPI_ALIASES.todayDuration, 'h')}</strong></div>
+            <div className="inverter-metric-cell is-duration-energy">
+              <span className="label">今日发电时长</span>
+              <strong>{value(INVERTER_KPI_ALIASES.todayDuration, 'h')}</strong>
+            </div>
             <HistoryMetric label="内部温度" value={value(['internal_temperature', 'temperature'], '°C')} title={`微型逆变器 ${inverterIndex} 内部温度历史`} series={temperatureSeries} />
             <HistoryMetric label="丢包率" value={value(['packet_loss_rate', 'packet_loss'], '%')} title={`微型逆变器 ${inverterIndex} 丢包率历史`} series={packetLossSeries} />
           </div>

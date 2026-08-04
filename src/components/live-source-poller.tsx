@@ -29,7 +29,15 @@ export function LiveSourcePoller() {
   const router = useRouter()
   const pathname = usePathname() || '/devices'
   const [isPending, startTransition] = useTransition()
-  const { dataStale, setDataStale, lastHeavyFullRefreshMs, markHeavyFullRefresh } = useLiveDataStale()
+  const {
+    dataStale,
+    setDataStale,
+    lastHeavyFullRefreshMs,
+    markHeavyFullRefresh,
+    armHeavyRefreshClock,
+    beginRefreshInFlight,
+    endRefreshInFlight
+  } = useLiveDataStale()
 
   const isPendingRef = useRef(false)
   const pendingSinceRef = useRef(0)
@@ -61,8 +69,9 @@ export function LiveSourcePoller() {
       if (!pendingSinceRef.current) pendingSinceRef.current = Date.now()
     } else {
       pendingSinceRef.current = 0
+      endRefreshInFlight()
     }
-  }, [isPending])
+  }, [isPending, endRefreshInFlight])
 
   useEffect(() => {
     let cancelled = false
@@ -73,11 +82,11 @@ export function LiveSourcePoller() {
       const nowMs = Date.now()
       const pendingMs = pendingSinceRef.current ? nowMs - pendingSinceRef.current : 0
 
-      // Precheck without fingerprint: only pending / clear-stale (must still poll heavy routes).
       if (isPendingRef.current) {
         if (pendingMs >= PENDING_STALE_MS) {
           pendingSinceRef.current = 0
           isPendingRef.current = false
+          endRefreshInFlight()
         }
         return
       }
@@ -119,6 +128,7 @@ export function LiveSourcePoller() {
         if (decision.action === 'clear-stale-pending') {
           pendingSinceRef.current = 0
           isPendingRef.current = false
+          endRefreshInFlight()
           return
         }
         if (decision.action === 'seed-fingerprint') {
@@ -128,10 +138,14 @@ export function LiveSourcePoller() {
         if (decision.action === 'notify-stale') {
           lastFingerprintRef.current = fingerprint
           setDataStale(true)
+          armHeavyRefreshClock()
+          lastHeavyFullRefreshMsRef.current =
+            lastHeavyFullRefreshMsRef.current > 0 ? lastHeavyFullRefreshMsRef.current : Date.now()
           lastStartedRef.current = Date.now()
           return
         }
         if (decision.action !== 'refresh') return
+        if (!beginRefreshInFlight()) return
 
         lastStartedRef.current = Date.now()
         void fetch('/api/live', { method: 'POST', cache: 'no-store' }).catch(() => {})
@@ -164,7 +178,15 @@ export function LiveSourcePoller() {
       window.clearInterval(timer)
       document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [router, startTransition, setDataStale, markHeavyFullRefresh])
+  }, [
+    router,
+    startTransition,
+    setDataStale,
+    markHeavyFullRefresh,
+    armHeavyRefreshClock,
+    beginRefreshInFlight,
+    endRefreshInFlight
+  ])
 
   return null
 }
