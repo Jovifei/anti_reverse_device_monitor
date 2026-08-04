@@ -173,20 +173,21 @@ describe('CT history chart alarm colors', () => {
 })
 
 describe('groupByLocalDate', () => {
-  it('buckets records by Asia/Shanghai calendar day', async () => {
+  it('buckets by local day: newest day first, within-day descending', async () => {
     const { formatClockTime, formatDateOnly, groupByLocalDate } = await import('@/src/domain/monitoring')
     const items = [
-      { at: '2026-07-24T10:48:13.000Z', label: 'a' },
       { at: '2026-07-24T11:01:19.000Z', label: 'b' },
-      { at: '2026-07-25T01:10:29.000Z', label: 'c' }
+      { at: '2026-07-25T01:10:29.000Z', label: 'c' },
+      { at: '2026-07-24T10:48:13.000Z', label: 'a' }
     ]
     const groups = groupByLocalDate(items, (item) => item.at)
     expect(groups.map((group) => group.date)).toEqual([
-      formatDateOnly(items[0].at),
-      formatDateOnly(items[2].at)
+      formatDateOnly(items[1].at),
+      formatDateOnly(items[0].at)
     ])
-    expect(groups[0].items.map((item) => item.label)).toEqual(['a', 'b'])
-    expect(formatClockTime(items[0].at)).toMatch(/^\d{2}:\d{2}:\d{2}$/)
+    expect(groups[0].items.map((item) => item.label)).toEqual(['c'])
+    expect(groups[1].items.map((item) => item.label)).toEqual(['b', 'a'])
+    expect(formatClockTime(items[2].at)).toMatch(/^\d{2}:\d{2}:\d{2}$/)
   })
 })
 

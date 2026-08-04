@@ -304,7 +304,11 @@ export function formatClockTime(value: Date | string | null | undefined) {
   }).format(parsed)
 }
 
-/** Group items by local calendar day (newest day first). */
+/**
+ * Group items by local calendar day.
+ * Day headings: newest calendar day first.
+ * Within each day: chronological descending (24:00 → 00:00).
+ */
 export function groupByLocalDate<T>(items: T[], getAt: (item: T) => Date | string) {
   const buckets = new Map<string, T[]>()
   for (const item of items) {
@@ -314,7 +318,16 @@ export function groupByLocalDate<T>(items: T[], getAt: (item: T) => Date | strin
     if (list) list.push(item)
     else buckets.set(key, [item])
   }
-  return Array.from(buckets.entries()).map(([date, dayItems]) => ({ date, items: dayItems }))
+  const toMs = (value: Date | string) => {
+    const ms = new Date(value).getTime()
+    return Number.isFinite(ms) ? ms : 0
+  }
+  return Array.from(buckets.entries())
+    .map(([date, dayItems]) => ({
+      date,
+      items: [...dayItems].sort((a, b) => toMs(getAt(b)) - toMs(getAt(a)))
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date))
 }
 
 export function getInverterStatus(raw: number | null) {

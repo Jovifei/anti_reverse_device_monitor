@@ -49,7 +49,7 @@ flowchart TB
 - 同步 Worker 是独立 OS 进程，通过 SQLite 文件与 Web 进程通信；
 - 100% 服务端数据获取，浏览器不做任何遥测 API 调用；
 - 6 个 Client Component（LiveSourcePoller、SoftRefreshButton、TelemetryChart、MetricHistoryDialog、DeviceSnSwitcher、DeviceSnSearch）；
-- 软刷新：约 45s 轮询 `/api/live` 指纹；**仅总览**在指纹变化时 `POST /api/live` + `router.refresh()`；`/devices/[sn]…` 禁止自动 soft-refresh（`soft-refresh-policy.ts`）；
+- 软刷新：约 45s 轮询 `/api/live` 指纹；总览指纹变化才 `POST` + `router.refresh()`；详情/微逆先 `notify-stale`（横幅 + 启动 5min 计时，`lastHeavyFullRefreshMs=0` 不立刻整页刷），满 5min 且无 pending 才整页刷；手动按钮与 Poller 共享 `refreshInFlight` 锁；KPI 另约 60s 拉 `/latest`（`soft-refresh-policy.ts` / `device-live-kpis.tsx`）；
 - 不连接生产控制通道，不修改设备参数；
 - 可导出离线 HTML 快照（自包含，零网络）。
 
@@ -132,7 +132,8 @@ src/
 ├── domain/                    领域模型与状态规则
 │   ├── monitoring.ts           逆流判定、状态标签、图表系列定义、间隙处理
 │   ├── sustained-reverse-flow.ts 近7天长时逆流(≥40min)判定
-│   ├── soft-refresh-policy.ts  自动 soft-refresh 决策（重路由/指纹/不叠刷）
+│   ├── soft-refresh-policy.ts  自动 soft-refresh 决策（重路由/指纹/5min 门禁/不叠刷）
+│   ├── live-kpis.ts            详情 KPI 快照派生（服务端可调用）
 │   ├── beijing-sun.ts          北京日出日落计算（NOAA 近似）
 │   ├── faults.ts               故障位掩码解码
 │   ├── dictionaries.ts          字典加载（状态、故障）
@@ -153,6 +154,9 @@ src/
 ├── components/                 6 个 Client Component + 纯渲染组件
 │   ├── telemetry-chart.tsx     ECharts 图表（458 行，核心组件）
 │   ├── live-source-poller.tsx  45s 指纹轮询 + 条件 soft-refresh
+│   ├── live-data-stale-context.tsx  有新数据横幅状态 + 共享刷新锁
+│   ├── device-live-kpis.tsx    详情 KPI 约 60s 局部轮询
+│   ├── data-stale-banner.tsx   「有新数据」提示条
 │   ├── metric-history-dialog.tsx 弹窗图表
 │   └── ...                     其他组件
 └── export/offline/             离线 HTML 导出

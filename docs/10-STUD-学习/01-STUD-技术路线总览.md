@@ -149,29 +149,36 @@ flowchart TB
 
 - **页面遥测以 RSC 直查为主**：不是浏览器每秒狂拉曲线 API；唯一轻量轮询是 `GET /api/live` 指纹。
 - **少量 Client Component**：`LiveSourcePoller`、`SoftRefreshButton`、`TelemetryChart` 等。
-- **软刷新有门禁**：`decideSoftRefresh`——总览指纹变化才 refresh；详情指纹变先 `notify-stale`，满 5 分钟才整页刷；pending 时绝不叠刷。
+- **软刷新有门禁**：`decideSoftRefresh`——总览指纹变化才 refresh；详情指纹变先 `notify-stale` 并 `armHeavyRefreshClock`（从未整页刷过时 **不**立刻 refresh）；满 5 分钟才整页刷；pending / 共享 `refreshInFlight` 绝不叠刷。
 - **同步 Worker 是独立 OS 进程**：`npm run source:worker` 写 SQLite；Web 进程主要只读。
+
+
 
 ### 1.4 软刷新策略（防 Next 假死）
 
 **功能介绍：** 防止「定时刷新」把服务器刷死，同时保留「有数据更新」的体验。
 
-| 页面 | 自动行为 |
-|------|----------|
-| 总览 | 指纹变化 → soft-refresh（轻量列表） |
-| 详情 / 微逆 | 指纹变化 →「有新数据」横幅；KPI 约 60s 局部拉 `latest`；**≥5min** 且无 pending 才整页刷一次 |
-| 曲线 / 7 天历史 | 点「刷新数据」立刻；或等上面的 5min 门禁 |
+
+| 页面         | 自动行为                                                                          |
+| ---------- | ----------------------------------------------------------------------------- |
+| 总览         | 指纹变化 → soft-refresh（轻量列表）                                                     |
+| 详情 / 微逆    | 指纹变化 →「有新数据」横幅并启动 5min 计时；KPI 约 60s 局部拉 `latest`；**满 5min** 且无 pending 才整页刷一次 |
+| 曲线 / 7 天历史 | 点「刷新数据」立刻；或等上面的 5min 门禁                                                       |
+
 
 设备详情一次 RSC 极重（历史 + 8 路摘要 + 8 路 7 天曲线）。旧逻辑约每 45s **无条件** refresh，并在 pending 超时后再叠刷，曾导致 Next 高 CPU / `CLOSE_WAIT` / 全站超时。
 
-| 参数 / 规则 | 值 | 说明 |
-|---|---|---|
-| 指纹轮询 | 45 秒 | 仅探测，不等于每次都整页 refresh |
-| 冷却 | 30 秒 | `cooldownMs` |
-| 指纹 GET 超时 | 4 秒 | 失败则跳过，不盲刷 |
-| 重路由整页门禁 | ≥5 分钟 | `DEFAULT_HEAVY_FULL_REFRESH_MIN_MS` |
-| KPI 局部 | ~60 秒 | `device-live-kpis.tsx` → `/latest` |
-| pending | 进行中 | skip；stale 只清客户端锁，不叠刷 |
+
+| 参数 / 规则   | 值                 | 说明                                      |
+| --------- | ----------------- | --------------------------------------- |
+| 指纹轮询      | 45 秒              | 仅探测，不等于每次都整页 refresh                    |
+| 冷却        | 30 秒              | `cooldownMs`                            |
+| 指纹 GET 超时 | 4 秒               | 失败则跳过，不盲刷                               |
+| 重路由整页门禁   | ≥5 分钟             | `lastHeavyFullRefreshMs≤0` 只横幅计时，不立刻整页刷 |
+| KPI 局部    | ~60 秒             | `device-live-kpis.tsx` → `/latest`      |
+| 共享刷新锁     | `refreshInFlight` | SoftRefreshButton 与 Poller 互斥           |
+| pending   | 进行中               | skip；stale 只清客户端锁，不叠刷                   |
+
 
 新鲜度：Worker≈10s 起一轮；KPI 体感约 1～2 分钟；**不是秒级实时**。
 
@@ -587,7 +594,7 @@ MongoLogSourceAdapter.fetchTelemetry()
 
 ### 5.3 CT 设备详情页
 
-**功能介绍：** 单台 CT 的「全面板」：KPI、三相逆流、功率/电网质量曲线、8 路微逆卡、上下线历史。一次打开很重，所以 **禁止自动 soft-refresh**。
+**功能介绍：** 单台 CT 的「全面板」：KPI（约 60s 局部刷新）、三相逆流、功率/电网质量曲线、8 路微逆卡、上下线历史。整页 RSC 很重，故 **短间隔不整页刷**；指纹变先提示，满 5min 门禁或手动「刷新数据」才整页重算曲线。
 
 **一次渲染约大量服务调用（概念上）：**
 
@@ -861,6 +868,6 @@ npm run test:offline-html  # 离线 HTML 验收
 2. [11_OPS_RUNBOOK.md](../11_OPS_RUNBOOK.md) 亲手起一次系统
 3. **§4 数据摄入**（Mongo → SQLite）再看 **§2 表结构**
 4. **§3 领域逻辑**（在线/逆流/故障位）对照现场现象
-5. **§5 UI** + **§1.4 软刷新**（为何详情页不自动刷）
+5. **§5 UI** + **§1.4 软刷新**（KPI 局部 vs 曲线 5min 门禁）
 6. 需要打包再看 **§8 部署**
 

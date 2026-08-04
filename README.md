@@ -30,7 +30,7 @@ npm run dev
 - 固定 1～8 微逆卡片及微逆详情；在线微逆个数、离线通道标注；
 - online_state、工作状态、故障位掩码字典解码；
 - Mongo 只读增量同步（独立 Worker + checkpoint）；
-- 总览软刷新：指纹变化才刷新；**详情页不自动 soft-refresh**（防 Next 卡死）；
+- 总览软刷新：指纹变化才刷新；详情 KPI 约 60s 局部更新，曲线手动或满 5 分钟门禁整页刷（防 Next 卡死）；
 - 离线 HTML 导出；Docker Compose（Web + Sync Worker）。
 
 ## 技术文档

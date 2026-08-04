@@ -69,7 +69,8 @@ npm run source:sync -- --device-id <mongo_device_id>
 | 总览：指纹变化才 soft-refresh | `soft-refresh-policy.ts`、`LiveSourcePoller` |
 | 详情/微逆：指纹变 →「有新数据」横幅并启动 5 分钟计时；满 5 分钟且无 pending 才自动整页刷 | 同上 + `DataStaleBanner` |
 | KPI 带约 60s 拉 `/api/devices/[sn]/latest` 局部更新 | `device-live-kpis.tsx` |
-| pending 时禁止再开第二次刷新 | 同上 |
+| pending 时禁止再开第二次刷新；手动按钮与 Poller 共享 `refreshInFlight` | 同上 + `live-data-stale-context.tsx` |
+| `lastHeavyFullRefreshMs≤0` 只横幅计时，不立刻整页刷（已单测） | `soft-refresh-policy.ts` |
 | Prisma SQLite 补 `socket_timeout` + `connection_limit=1` | `src/lib/sqlite-url.ts`、`src/lib/prisma.ts` |
 | open-monitor：端口在听但不健康则杀进程重启 | `scripts/open-monitor.ps1` |
 
