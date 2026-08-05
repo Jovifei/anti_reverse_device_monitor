@@ -10,6 +10,7 @@ import {
   formatOfflineWindowRange,
   formatTime,
   isGenerating,
+  resolveFleetLimitState,
   resolveInverterCardStatus
 } from '@/src/domain/monitoring'
 
@@ -49,6 +50,23 @@ describe('CT fleet inverter generation status', () => {
     expect(ctInverterGenerationStatusLabel('generating')).toBe('发电')
     expect(ctInverterGenerationStatusLabel('idle')).toBe('未发电')
     expect(ctInverterGenerationStatusLabel('offline')).toBe('离线')
+  })
+})
+
+describe('resolveFleetLimitState', () => {
+  it('forces 限流失败 when any phase is reversing, ignoring reported limit_state', () => {
+    expect(resolveFleetLimitState({ reverseFlowPhases: ['C'], reportedLabel: '正常发电' })).toBe('限流失败')
+    expect(resolveFleetLimitState({ reverseFlowPhases: ['A', 'B'], reportedLabel: '限流中' })).toBe('限流失败')
+  })
+
+  it('keeps non-failed reported labels when no phase is reversing', () => {
+    expect(resolveFleetLimitState({ reverseFlowPhases: [], reportedLabel: '限流中' })).toBe('限流中')
+    expect(resolveFleetLimitState({ reverseFlowPhases: [], reportedLabel: '正常发电' })).toBe('正常发电')
+    expect(resolveFleetLimitState({ reverseFlowPhases: [], reportedLabel: null })).toBe('—')
+  })
+
+  it('suppresses stale 限流失败 when no phase is reversing', () => {
+    expect(resolveFleetLimitState({ reverseFlowPhases: [], reportedLabel: '限流失败' })).toBe('限流中')
   })
 })
 

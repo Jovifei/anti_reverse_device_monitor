@@ -755,8 +755,7 @@ button:disabled {
   color: #43516a;
 }
 
-.readonly-badge,
-.fault-clear {
+.readonly-badge {
   display: inline-flex;
   margin-top: 8px;
   padding: 6px 9px;
@@ -766,6 +765,20 @@ button:disabled {
   color: var(--blue-deep);
   font-size: 12px;
   font-weight: 800;
+}
+
+/* 无故障：纯文案，不使用故障胶囊底 */
+.fault-clear {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .active-alert {
@@ -1142,13 +1155,47 @@ button:disabled {
 
 .fault-name {
   display: inline-block;
-  background: var(--red-wash);
-  color: #b32828;
   padding: 4px 7px;
   margin: 8px 4px 0 0;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
+}
+
+.fault-name.is-soft {
+  background: #eef2f6;
+  color: #5f6d7d;
+  border: 1px solid #d5dde6;
+}
+
+.fault-name.is-alert {
+  background: var(--red-wash);
+  color: #b32828;
+  border: 1px solid #f0c4c4;
+}
+
+.fault-clear.has-recent-fault,
+.fault-name.is-soft.has-recent-fault {
+  border: none;
+  background: transparent;
+  color: #9a6700;
+}
+
+.fault-name.is-soft.has-recent-fault {
+  border: 1px solid #f0cf96;
+  background: #fff8ed;
+  border-radius: 999px;
+  padding: 4px 7px;
+}
+
+.fault-event-alert {
+  color: #b32828;
+}
+
+.record-scroll-fault .fault-name {
+  margin: 0 2px 0 0;
+  padding: 1px 6px;
+  vertical-align: baseline;
 }
 
 .detail-grid {
@@ -2917,6 +2964,30 @@ button:disabled {
   margin: 0;
 }
 
+.inv-fault-panel h2 {
+  margin: 0 0 4px;
+}
+
+.inv-current-fault {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 20px;
+  min-height: 28px;
+}
+
+.inv-current-fault .fault-clear,
+.inv-current-fault .fault-name {
+  margin-top: 0;
+}
+
+.inv-fault-panel h3 {
+  margin: 0 0 12px;
+  padding-top: 4px;
+  border-top: 1px solid #e4ebf5;
+}
+
 .inv-detail-footer-nav {
   margin: 4px 0 0;
 }
@@ -3185,7 +3256,9 @@ button:disabled {
 .fleet-risk-table td.is-last-known .fleet-table-inv-offline,
 .fleet-risk-table td.is-last-known .wifi-signal,
 .fleet-risk-table td.is-last-known .wifi-signal-value,
-.fleet-risk-table td.is-last-known .wifi-bars {
+.fleet-risk-table td.is-last-known .wifi-bars,
+.fleet-risk-table td.is-last-known .fleet-table-reverse,
+.fleet-risk-table td.is-last-known .fleet-table-reverse.danger-value {
   color: #6b7785 !important;
   opacity: 0.78;
   filter: grayscale(0.55);
@@ -3276,7 +3349,17 @@ button:disabled {
 }
 
 .fault-list {
-  min-height: 25px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 12px;
+  min-height: 28px;
+}
+
+.fault-list .fault-clear,
+.fault-list .fault-name {
+  margin-top: 0;
 }
 
 .inverter-card.offline .inverter-state-grid>div,
@@ -3548,7 +3631,7 @@ body.metric-dialog-open .metric-card:hover {
 
 .fleet-priority-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -3653,6 +3736,19 @@ body.metric-dialog-open .metric-card:hover {
 .fleet-priority-card.inv-offline.is-active {
   border-color: #efd19b;
   background: #fffaf1;
+}
+
+.fleet-priority-card.inv-fault::before {
+  background: #94a3b8;
+}
+
+.fleet-priority-card.inv-fault.is-active::before {
+  background: #b45309;
+}
+
+.fleet-priority-card.inv-fault.is-active {
+  border-color: #f0cf96;
+  background: #fff8ed;
 }
 
 .fleet-priority-card.sustained-reverse::before {
@@ -3902,6 +3998,11 @@ body.metric-dialog-open .metric-card:hover {
 
 .fleet-table-reverse.danger-value {
   color: #a82824;
+}
+
+.fleet-risk-table .limit-failed.danger-value {
+  color: #a82824;
+  font-weight: 800;
 }
 
 .fleet-table-value {

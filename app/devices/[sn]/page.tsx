@@ -10,6 +10,7 @@ import { OnlineInverterCount } from '@/src/components/online-inverter-count'
 import { SoftRefreshButton } from '@/src/components/soft-refresh-button'
 import { TelemetryChart, type ClientChartSeries } from '@/src/components/telemetry-chart'
 import { WifiSignalView } from '@/src/components/wifi-signal-view'
+import { faultNameClassName, formatCurrentFaultLabel, hadRecentReportableInverterFault, isReportableInverterFaultName } from '@/src/domain/faults'
 import { buildInitialLiveKpis } from '@/src/domain/live-kpis'
 import { deviceSnSecondaryLabel } from '@/src/domain/device-identity'
 import {
@@ -312,7 +313,11 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
         paired: binding?.paired,
         power
       })
-      const faultNames = summary?.faults.flatMap((fault) => fault.faults.map((item) => item.name)) ?? []
+      const faultNames = Array.from(new Set(summary?.faults.flatMap((fault) => fault.faults.map((item) => item.name)) ?? []))
+      const currentFaultLabels = faultNames.length ? faultNames : ['当前无故障']
+      const recentReportableFault = hadRecentReportableInverterFault(summary?.faultChanges ?? [])
+      const currentHasReportableFault = currentFaultLabels.some((name) => isReportableInverterFaultName(name))
+      const showRecentFaultHint = recentReportableFault && !currentHasReportableFault
       const chart = inverterCharts[offset]
       const powerSeries = chart?.power ?? []
       const pv1Series = powerSeries.filter((item) => item.key === 'pv1')
@@ -363,7 +368,16 @@ export default async function DeviceDetailPage({ params }: { params: Promise<{ s
             <HistoryMetric label="丢包率" value={value(['packet_loss_rate', 'packet_loss'], '%')} title={`微型逆变器 ${inverterIndex} 丢包率历史`} series={packetLossSeries} />
           </div>
         </div>
-        {faultNames.length ? <div className="fault-list">{Array.from(new Set(faultNames)).slice(0, 3).map((name) => <span key={name} className="fault-name">{name}</span>)}</div> : <p className="inverter-meta">当前无故障</p>}
+        <div className="fault-list">
+          {currentFaultLabels.slice(0, 3).map((name) => (
+            <span
+              key={name}
+              className={`${faultNameClassName(name)}${showRecentFaultHint ? ' has-recent-fault' : ''}`}
+            >
+              {formatCurrentFaultLabel(name, showRecentFaultHint)}
+            </span>
+          ))}
+        </div>
         {binding?.paired ? <Link className="card-link" href={`/devices/${encodeURIComponent(canonicalSn)}/inverters/${inverterIndex}`}>查看微逆详情</Link> : <span className="inverter-meta">{binding?.paired === false ? '未配对通道' : '暂无遥测数据'}</span>}
       </article>
     })}</div></section>

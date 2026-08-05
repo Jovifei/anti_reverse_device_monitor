@@ -105,9 +105,19 @@ function renderOverview(vm: OfflineOverviewViewModel) {
     ? `${offlineItems.length} 台 CT 离线不足 7 天，需要确认`
     : '没有需要提醒的离线 CT'
   const reverseLabel = (item: OfflineOverviewViewModel['items'][number]) => {
+    const sustained = item.hasSustainedReverse && item.sustainedReverseMaxMinutes
+      ? `近7天${item.sustainedReversePhases ? ` ${item.sustainedReversePhases} 相` : ''}曾持续 ≥40 分钟（最长 ${item.sustainedReverseMaxMinutes} 分钟）`
+      : ''
     if (item.reverseState === 'active') return `严重逆流：${item.reversePhases} 相`
-    if (item.reverseState === 'unknown-last-seen-reverse') return `当前逆流未知；离线前观测到 ${item.reversePhases} 相逆流`
-    if (item.reverseState === 'unknown') return 'CT 已离线，当前逆流状态未知'
+    if (item.reverseState === 'unknown-last-seen-reverse') {
+      return sustained
+        ? `当前逆流未知；离线前观测到 ${item.reversePhases} 相逆流，${sustained}`
+        : `当前逆流未知；离线前观测到 ${item.reversePhases} 相逆流`
+    }
+    if (item.reverseState === 'unknown') {
+      return sustained ? `CT 已离线，当前逆流状态未知，${sustained}` : 'CT 已离线，当前逆流状态未知'
+    }
+    if (sustained) return `当前未逆流；${sustained}`
     return '三相当前未检测到逆流'
   }
   const offlineLabel = (item: OfflineOverviewViewModel['items'][number]) => {
@@ -130,8 +140,8 @@ ${vm.items.map((item) => {
   <th scope="row"><a class="fleet-table-sn" href="${escapeHtml(item.href)}">${escapeHtml(item.deviceSn)}</a><span class="fleet-table-subtext">${escapeHtml(offlineLabel(item))}</span></th>
   <td><span class="badge ${item.isOnline ? 'online' : 'offline'}">${item.isOnline ? 'CT 在线' : 'CT 离线'}</span></td>
   <td class="${lastKnown}"${titleAttr}>${escapeHtml(item.runtimeState)}</td>
-  <td class="${lastKnown}"${titleAttr}>${escapeHtml(item.limitState)}</td>
-  <td><span class="fleet-table-reverse ${item.reverseState === 'active' ? 'danger-value' : ''}">${escapeHtml(reverseLabel(item))}</span></td>
+  <td class="${item.limitState === '限流失败' ? '' : lastKnown}"${item.limitState === '限流失败' ? ' title="任一相 CT 功率逆流 → 限流失败"' : titleAttr}><span class="${item.limitState === '限流失败' ? 'danger-value limit-failed' : ''}">${escapeHtml(item.limitState)}</span></td>
+  <td class="${lastKnown}"${titleAttr}><span class="fleet-table-reverse ${item.isOnline && (item.reverseState === 'active' || item.hasSustainedReverse) ? 'danger-value' : ''}">${escapeHtml(reverseLabel(item))}</span></td>
   <td class="fleet-table-value ${lastKnown}"${titleAttr}>${escapeHtml(item.todayEnergy)}</td>
   <td class="${lastKnown}"${titleAttr}>${escapeHtml(item.inverterGenerationLabel)}</td>
   <td class="${lastKnown}"${titleAttr}>${formatOnlineInverterCountHtml(item.onlineInverterCount, item.inverterCount || 8)}</td>

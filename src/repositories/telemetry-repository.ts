@@ -479,6 +479,32 @@ export class TelemetryRepository {
     })
   }
 
+  /** Paired-inverter fault masks in a window — used by fleet “近7天微逆故障”. */
+  async listInverterFaultMasksForDevices({
+    deviceIds,
+    startAt,
+    endAt
+  }: {
+    deviceIds: number[]
+    startAt: Date
+    endAt: Date
+  }) {
+    if (!deviceIds.length) return []
+    return this.db.telemetry.findMany({
+      where: {
+        deviceId: { in: deviceIds },
+        inverterId: { not: null },
+        metricKey: { contains: 'fault' },
+        reportedAt: { gte: startAt, lte: endAt },
+        valueNumber: { not: null, gt: 0 }
+      },
+      select: {
+        deviceId: true,
+        valueNumber: true
+      }
+    })
+  }
+
   async getLatestReportedAt({
     deviceSn,
     inverterIndex

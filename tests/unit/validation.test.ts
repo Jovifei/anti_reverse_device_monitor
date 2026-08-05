@@ -39,4 +39,10 @@ describe('device list query validation', () => {
       status: 'sustained-reverse'
     })
   })
+
+  it('accepts inv-fault status filter', () => {
+    expect(parseDeviceListQuery({ status: 'inv-fault' })).toMatchObject({
+      status: 'inv-fault'
+    })
+  })
 })

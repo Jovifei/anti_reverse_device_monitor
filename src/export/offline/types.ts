@@ -121,6 +121,9 @@ export interface OfflineOverviewItem {
   offlineAlert: boolean
   reverseState: 'normal' | 'active' | 'unknown' | 'unknown-last-seen-reverse'
   reversePhases: string
+  hasSustainedReverse?: boolean
+  sustainedReverseMaxMinutes?: number | null
+  sustainedReversePhases?: string
   todayEnergy: string
   onlineInverterCount: number
   inverterCount: number

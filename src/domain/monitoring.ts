@@ -95,6 +95,25 @@ export const CT_KPI_ALIASES = {
   workMode: ['work_mode']
 }
 
+/**
+ * Fleet 限流列：与逆流列对齐。
+ * - 任一相 CT 功率逆流 → 限流失败（不采信上报）
+ * - 当前无逆流时抑制陈旧「限流失败」，回落为限流中
+ */
+export const FLEET_LIMIT_FAILED_LABEL = '限流失败'
+export const FLEET_LIMIT_CLEAR_LABEL = '限流中'
+
+export function resolveFleetLimitState(params: {
+  reverseFlowPhases: ReadonlyArray<string>
+  reportedLabel?: string | null
+}) {
+  if (params.reverseFlowPhases.length > 0) return FLEET_LIMIT_FAILED_LABEL
+  const reported = params.reportedLabel?.trim()
+  if (!reported) return '—'
+  if (reported === FLEET_LIMIT_FAILED_LABEL) return FLEET_LIMIT_CLEAR_LABEL
+  return reported
+}
+
 export const INVERTER_KPI_ALIASES = {
   onlineState: ['online_state'],
   workState: ['work_state'],

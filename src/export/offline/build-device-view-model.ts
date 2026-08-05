@@ -19,6 +19,7 @@ import {
   INVERTER_KPI_ALIASES,
   isGenerating,
   numericValue,
+  resolveFleetLimitState,
   WIFI_SIGNAL_ALIASES,
   type MetricRow
 } from '@/src/domain/monitoring'
@@ -207,7 +208,10 @@ export async function buildDeviceViewModel(
     softwareVersion: displayOrEmpty(device.softwareVersion),
     sub1gVersion: displayOrEmpty(device.sub1gVersion),
     ctState: resolveStatusLabel('ct_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.state))) ?? EMPTY,
-    limitState: resolveStatusLabel('limit_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.limitState))) ?? EMPTY,
+    limitState: resolveFleetLimitState({
+      reverseFlowPhases: reverseNow.map((item) => item.phase),
+      reportedLabel: resolveStatusLabel('limit_state', numericValue(findLatestMetric(latest, CT_KPI_ALIASES.limitState)))
+    }),
     sub1gState: deriveCtSub1gStatus({
       rawState: numericValue(findLatestMetric(latest, CT_KPI_ALIASES.sub1gState)),
       hasPairedInverters: device.inverterBindings.some((item) => item.paired === true),

@@ -13,7 +13,8 @@ const FILTERS = [
   { value: 'offline', label: '仅离线 CT' },
   { value: 'reverse', label: '仅逆流告警' },
   { value: 'sustained-reverse', label: '近7天长时逆流' },
-  { value: 'inv-offline', label: '存在离线微逆' }
+  { value: 'inv-offline', label: '存在离线微逆' },
+  { value: 'inv-fault', label: '近7天微逆故障' }
 ] as const
 
 function fleetListHref(status: (typeof FILTERS)[number]['value'], q: string) {
@@ -25,6 +26,16 @@ function fleetListHref(status: (typeof FILTERS)[number]['value'], q: string) {
   return query ? `/devices?${query}` : '/devices'
 }
 
+function sustainedReverseClause(device: {
+  hasSustainedReverse?: boolean
+  sustainedReverseMaxMinutes?: number | null
+  sustainedReversePhases?: Array<'A' | 'B' | 'C'>
+}) {
+  if (!device.hasSustainedReverse || !device.sustainedReverseMaxMinutes) return ''
+  const sustainedPhases = (device.sustainedReversePhases ?? []).join(' / ')
+  return `近7天${sustainedPhases ? ` ${sustainedPhases} 相` : ''}曾持续 ≥40 分钟（最长 ${device.sustainedReverseMaxMinutes} 分钟）`
+}
+
 function reverseText(device: {
   reverseState: 'normal' | 'active' | 'unknown' | 'unknown-last-seen-reverse'
   reverseFlowPhases: Array<'A' | 'B' | 'C'>
@@ -33,13 +44,17 @@ function reverseText(device: {
   sustainedReversePhases?: Array<'A' | 'B' | 'C'>
 }) {
   const phases = device.reverseFlowPhases.join(' / ')
+  const sustained = sustainedReverseClause(device)
   if (device.reverseState === 'active') return `严重逆流：${phases} 相正在反送电网`
-  if (device.reverseState === 'unknown-last-seen-reverse') return `当前逆流未知；离线前观测到 ${phases} 相逆流`
-  if (device.reverseState === 'unknown') return 'CT 已离线，当前逆流状态未知'
-  if (device.hasSustainedReverse && device.sustainedReverseMaxMinutes) {
-    const sustainedPhases = (device.sustainedReversePhases ?? []).join(' / ')
-    return `当前未逆流；近7天${sustainedPhases ? ` ${sustainedPhases} 相` : ''}曾持续 ≥40 分钟（最长 ${device.sustainedReverseMaxMinutes} 分钟）`
+  if (device.reverseState === 'unknown-last-seen-reverse') {
+    return sustained
+      ? `当前逆流未知；离线前观测到 ${phases} 相逆流，${sustained}`
+      : `当前逆流未知；离线前观测到 ${phases} 相逆流`
   }
+  if (device.reverseState === 'unknown') {
+    return sustained ? `CT 已离线，当前逆流状态未知，${sustained}` : 'CT 已离线，当前逆流状态未知'
+  }
+  if (sustained) return `当前未逆流；${sustained}`
   return '三相当前未检测到逆流'
 }
 
@@ -81,7 +96,17 @@ export default async function DeviceListPage({
   const status = FILTERS.find((item) => item.value === resolvedSearchParams.status)?.value ?? 'all'
   const devices = [...result.items].sort((left, right) => {
     const priority = (device: typeof left) =>
-      device.reverseState === 'active' ? 0 : device.hasSustainedReverse ? 1 : device.offlineAlert ? 2 : device.isOnline ? 3 : 4
+      device.reverseState === 'active'
+        ? 0
+        : device.hasSustainedReverse
+          ? 1
+          : device.hasRecentInverterFault
+            ? 2
+            : device.offlineAlert
+              ? 3
+              : device.isOnline
+                ? 4
+                : 5
     return priority(left) - priority(right) || left.deviceSn.localeCompare(right.deviceSn)
   })
 
@@ -163,6 +188,20 @@ export default async function DeviceListPage({
         </p>
       </Link>
       <Link
+        href={fleetListHref('inv-fault', q)}
+        className={`fleet-priority-card inv-fault ${result.summary.recentInverterFaultCtCount ? 'is-active' : ''} ${status === 'inv-fault' ? 'is-selected' : ''}`}
+        aria-current={status === 'inv-fault' ? 'page' : undefined}
+      >
+        <span>近7天微逆故障</span>
+        <strong>{result.summary.recentInverterFaultCtCount}</strong>
+        <p>
+          {result.summary.recentInverterFaultCtCount
+            ? `${result.summary.recentInverterFaultCtCount} 台 CT 近 7 天出现过需关注的微逆故障（不含 PV 欠压/电压异常）`
+            : '近 7 天没有需关注的微逆故障'}
+          {' '}· 点击筛选
+        </p>
+      </Link>
+      <Link
         href={fleetListHref('online', q)}
         className={`fleet-priority-card online ${status === 'online' ? 'is-selected' : ''}`}
         aria-current={status === 'online' ? 'page' : undefined}
@@ -191,6 +230,7 @@ export default async function DeviceListPage({
             return <tr className={joinClass(
               device.reverseState === 'active' && 'reverse-row',
               device.hasSustainedReverse && device.reverseState !== 'active' && 'sustained-reverse-row',
+              device.hasRecentInverterFault && 'inv-fault-row',
               device.offlineAlert && 'offline-row',
               !device.isOnline && 'ct-offline-row',
               device.hasOfflineInverter && 'inv-offline-row'
@@ -198,8 +238,10 @@ export default async function DeviceListPage({
               <th scope="row"><Link className="fleet-table-sn" href={`/devices/${encodeURIComponent(device.deviceSn)}`}>{primary}</Link><span className="fleet-table-subtext">{secondary ? `${secondary} · ${connectionText}` : connectionText}</span></th>
               <td><span className={`badge ${device.isOnline ? 'online' : 'offline'}`}>{device.isOnline ? 'CT 在线' : 'CT 离线'}</span></td>
               <td className={lastKnown} title={lastKnownTitle}><span className={`status-chip tone-${runtimeTone(device.runtimeState)}`}>{device.runtimeState}</span></td>
-              <td className={lastKnown} title={lastKnownTitle}>{device.limitState}</td>
-              <td><span className={`fleet-table-reverse ${device.reverseState === 'active' || device.hasSustainedReverse ? 'danger-value' : ''}`}>{reverseText(device)}</span></td>
+              <td className={device.limitState === '限流失败' ? undefined : lastKnown} title={device.limitState === '限流失败' ? '任一相 CT 功率逆流 → 限流失败' : lastKnownTitle}>
+                <span className={device.limitState === '限流失败' ? 'danger-value limit-failed' : undefined}>{device.limitState}</span>
+              </td>
+              <td className={lastKnown} title={lastKnownTitle}><span className={joinClass('fleet-table-reverse', device.isOnline && (device.reverseState === 'active' || device.hasSustainedReverse) && 'danger-value')}>{reverseText(device)}</span></td>
               <td className={joinClass('fleet-table-value', device.todayEnergy !== '—' && 'is-energy', lastKnown)} title={lastKnownTitle}>{device.todayEnergy}</td>
               <td className={lastKnown} title={genTitle}><span className={`status-chip tone-${generationTone(device.inverterGenerationStatus)}`}>{device.inverterGenerationLabel}</span></td>
               <td className={joinClass('fleet-table-value', 'fleet-table-inverters', lastKnown)} title={lastKnownTitle}>

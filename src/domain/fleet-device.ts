@@ -16,6 +16,8 @@ export interface FleetDeviceItem {
   hasSustainedReverse: boolean
   sustainedReverseMaxMinutes: number | null
   sustainedReversePhases: Array<'A' | 'B' | 'C'>
+  /** Near-7d inverter fault other than PV1/PV2 undervoltage / PV voltage abnormal. */
+  hasRecentInverterFault: boolean
   offlineMinutes: number | null
   offlineAlert: boolean
   todayEnergy: string

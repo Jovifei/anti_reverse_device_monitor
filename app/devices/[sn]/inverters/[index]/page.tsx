@@ -6,7 +6,7 @@ import { MetricHistoryDialog } from '@/src/components/metric-history-dialog'
 import { OfflineWindowLabel } from '@/src/components/offline-window-label'
 import { SoftRefreshButton } from '@/src/components/soft-refresh-button'
 import { TelemetryChart, type ClientChartSeries } from '@/src/components/telemetry-chart'
-import { faultDisplayNames } from '@/src/domain/faults'
+import { faultDisplayNames, faultNameClassName, formatCurrentFaultLabel, hadRecentReportableInverterFault, isReportableInverterFaultName } from '@/src/domain/faults'
 import {
   INVERTER_KPI_ALIASES,
   displayEnergyKwh,
@@ -65,6 +65,9 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
   const transitionGroups = groupByLocalDate(summary.connectivity.transitions, (item) => item.at)
   const offlineGroups = groupByLocalDate(summary.connectivity.offlineWindows, (item) => item.startAt)
   const faultGroups = groupByLocalDate(summary.faultChanges, (item) => item.at)
+  const recentReportableFault = hadRecentReportableInverterFault(summary.faultChanges)
+  const currentHasReportableFault = (faultNames ?? []).some((name) => isReportableInverterFaultName(name))
+  const showRecentFaultHint = recentReportableFault && !currentHasReportableFault
 
   return <main className="inv-detail-page">
     <header className="page-header">
@@ -222,20 +225,39 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
 
     <section className="panel inv-fault-panel">
       <h2>当前故障</h2>
-      {faultNames === null ? <p className="muted">{EMPTY}</p> : faultNames.map((name) => <span key={name} className={name === '当前无故障' ? 'fault-clear' : 'fault-name'}>{name}</span>)}
+      <div className="inv-current-fault" aria-live="polite">
+        {faultNames === null ? <p className="muted">{EMPTY}</p> : faultNames.map((name) => (
+          <span
+            key={name}
+            className={`${faultNameClassName(name)}${showRecentFaultHint ? ' has-recent-fault' : ''}`}
+          >
+            {formatCurrentFaultLabel(name, showRecentFaultHint)}
+          </span>
+        ))}
+      </div>
       <h3>故障码变化记录</h3>
       <DatedRecordScroll
         groups={faultGroups}
         emptyText="最近 7 天没有故障变化。"
         scrollClassName="record-scroll-fault"
         itemKey={(event) => `${event.at}-${event.eventType}-${event.fromMask}-${event.toMask}`}
-        renderItem={(event) => (
-          <>
-            <strong>{faultEventLabel[event.eventType]}</strong> · {formatClockTime(event.at)}
-            <br />
-            {event.toFaults.length ? event.toFaults.join('、') : '故障已恢复'}
-          </>
-        )}
+        renderItem={(event) => {
+          const hasAlert = event.toFaults.some((name) => isReportableInverterFaultName(name))
+          return (
+            <>
+              <strong className={hasAlert ? 'fault-event-alert' : undefined}>{faultEventLabel[event.eventType]}</strong> · {formatClockTime(event.at)}
+              <br />
+              {event.toFaults.length
+                ? event.toFaults.map((name, index) => (
+                    <span key={`${event.at}-${name}-${index}`}>
+                      {index > 0 ? '、' : null}
+                      <span className={faultNameClassName(name)}>{name}</span>
+                    </span>
+                  ))
+                : '故障已恢复'}
+            </>
+          )
+        }}
       />
     </section>
 

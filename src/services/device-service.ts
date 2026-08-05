@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import { decodeFaultMask, hasCriticalFault } from '@/src/domain/faults'
+import { decodeFaultMask, hasCriticalFault, hasReportableInverterFault } from '@/src/domain/faults'
 import { parseDeviceListQuery, parseSn, parseTelemetryQuery } from '@/src/domain/validation'
 import { parseSnLookup } from '@/src/domain/validation'
 import {
@@ -19,6 +19,7 @@ import {
   metricMatches,
   numericValue,
   resolveCtInverterGenerationStatus,
+  resolveFleetLimitState,
   WIFI_SIGNAL_ALIASES
 } from '@/src/domain/monitoring'
 import {
@@ -51,6 +52,7 @@ export interface DeviceListResponse {
     ctsWithOfflineInverters: number
     offlineInverterUnitCount: number
     sustainedReverseCtCount: number
+    recentInverterFaultCtCount: number
   }
   items: FleetDeviceItem[]
   page: number
@@ -199,7 +201,10 @@ export class DeviceService {
           inverterGenerationStatus,
           inverterGenerationLabel: ctInverterGenerationStatusLabel(inverterGenerationStatus),
           runtimeState: resolveStatusLabel('ct_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.state))) ?? '—',
-          limitState: resolveStatusLabel('limit_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.limitState))) ?? '—',
+          limitState: resolveFleetLimitState({
+            reverseFlowPhases,
+            reportedLabel: resolveStatusLabel('limit_state', numericValue(findLatestMetric(item.latestRows, CT_KPI_ALIASES.limitState)))
+          }),
           sub1gState: sub1g.label,
           wifiSignal: displayWifiSignal(findLatestMetric(item.latestRows, WIFI_SIGNAL_ALIASES))
         }
@@ -218,13 +223,25 @@ export class DeviceService {
       rowsByDeviceId.set(row.deviceId, list)
     }
 
+    const faultRows = await this.telemetryRepository.listInverterFaultMasksForDevices({
+      deviceIds: baseActiveItems.map((item) => item.id),
+      startAt: sustainedWindowStart,
+      endAt: now
+    })
+    const devicesWithReportableFault = new Set<number>()
+    for (const row of faultRows) {
+      if (devicesWithReportableFault.has(row.deviceId)) continue
+      if (hasReportableInverterFault(row.valueNumber)) devicesWithReportableFault.add(row.deviceId)
+    }
+
     const activeItems = baseActiveItems.map((item) => {
       const sustained = summarizeDeviceSustainedReverse(rowsByDeviceId.get(item.id) ?? [], now, SUSTAINED_REVERSE_MINUTES)
       return {
         ...item,
         hasSustainedReverse: sustained.hasSustainedReverse,
         sustainedReverseMaxMinutes: sustained.maxDurationMinutes,
-        sustainedReversePhases: sustained.phases
+        sustainedReversePhases: sustained.phases,
+        hasRecentInverterFault: devicesWithReportableFault.has(item.id)
       }
     })
 
@@ -237,7 +254,8 @@ export class DeviceService {
       staleOfflineCount: activeItems.filter((item) => !item.isOnline && !item.offlineAlert).length,
       ctsWithOfflineInverters: activeItems.filter((item) => item.hasOfflineInverter).length,
       offlineInverterUnitCount: activeItems.reduce((sum, item) => sum + item.offlineInverterIndexes.length, 0),
-      sustainedReverseCtCount: activeItems.filter((item) => item.hasSustainedReverse).length
+      sustainedReverseCtCount: activeItems.filter((item) => item.hasSustainedReverse).length,
+      recentInverterFaultCtCount: activeItems.filter((item) => item.hasRecentInverterFault).length
     }
     const matchingItems = activeItems.filter((item) => {
       if (parsed.q && !item.deviceSn.toLowerCase().includes(parsed.q.toLowerCase())) return false
@@ -246,6 +264,7 @@ export class DeviceService {
       if (parsed.status === 'reverse') return item.reverseFlow
       if (parsed.status === 'inv-offline') return item.hasOfflineInverter
       if (parsed.status === 'sustained-reverse') return item.hasSustainedReverse
+      if (parsed.status === 'inv-fault') return item.hasRecentInverterFault
       return true
     })
     const total = matchingItems.length
