@@ -35,6 +35,9 @@ import {
   TelemetryService,
   type InverterHistorySummary
 } from '@/src/services/telemetry-service'
+import type { FleetDeviceItem } from '@/src/domain/fleet-device'
+
+export type { FleetDeviceItem } from '@/src/domain/fleet-device'
 
 export interface DeviceListResponse {
   total: number
@@ -49,34 +52,7 @@ export interface DeviceListResponse {
     offlineInverterUnitCount: number
     sustainedReverseCtCount: number
   }
-  items: {
-    id: number
-    deviceSn: string
-    productModel: string | null
-    platformOnline: boolean
-    lastReportedAt: Date | null
-    inverterCount: number
-    onlineInverterCount: number
-    offlineInverterIndexes: number[]
-    hasOfflineInverter: boolean
-    isOnline: boolean
-    reverseFlow: boolean
-    reverseFlowPhases: Array<'A' | 'B' | 'C'>
-    reverseState: 'normal' | 'active' | 'unknown' | 'unknown-last-seen-reverse'
-    hasSustainedReverse: boolean
-    sustainedReverseMaxMinutes: number | null
-    sustainedReversePhases: Array<'A' | 'B' | 'C'>
-    offlineMinutes: number | null
-    offlineAlert: boolean
-    todayEnergy: string
-    /** Aggregate micro-inverter generation: generating | idle (online, not generating) | offline */
-    inverterGenerationStatus: 'generating' | 'idle' | 'offline'
-    inverterGenerationLabel: string
-    runtimeState: string
-    limitState: string
-    sub1gState: string
-    wifiSignal: string
-  }[]
+  items: FleetDeviceItem[]
   page: number
   pageSize: number
 }

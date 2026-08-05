@@ -188,7 +188,13 @@ export default async function DeviceListPage({
             const genExtra = device.inverterGenerationStatus === 'idle' ? '在线但是未发电' : undefined
             const lastKnownTitle = fleetLastKnownTitle(device.isOnline)
             const genTitle = fleetLastKnownTitle(device.isOnline, genExtra)
-            return <tr className={`${device.reverseState === 'active' ? 'reverse-row' : ''} ${device.hasSustainedReverse && device.reverseState !== 'active' ? 'sustained-reverse-row' : ''} ${device.offlineAlert ? 'offline-row' : ''} ${!device.isOnline ? 'ct-offline-row' : ''} ${device.hasOfflineInverter ? 'inv-offline-row' : ''}`} key={device.id}>
+            return <tr className={joinClass(
+              device.reverseState === 'active' && 'reverse-row',
+              device.hasSustainedReverse && device.reverseState !== 'active' && 'sustained-reverse-row',
+              device.offlineAlert && 'offline-row',
+              !device.isOnline && 'ct-offline-row',
+              device.hasOfflineInverter && 'inv-offline-row'
+            )} key={device.id}>
               <th scope="row"><Link className="fleet-table-sn" href={`/devices/${encodeURIComponent(device.deviceSn)}`}>{primary}</Link><span className="fleet-table-subtext">{secondary ? `${secondary} · ${connectionText}` : connectionText}</span></th>
               <td><span className={`badge ${device.isOnline ? 'online' : 'offline'}`}>{device.isOnline ? 'CT 在线' : 'CT 离线'}</span></td>
               <td className={lastKnown} title={lastKnownTitle}><span className={`status-chip tone-${runtimeTone(device.runtimeState)}`}>{device.runtimeState}</span></td>

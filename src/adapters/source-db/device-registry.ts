@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { z } from 'zod'
+import { placeholderSnFromDeviceId } from '@/src/domain/device-identity'
 
 const deviceEntrySchema = z.object({
   sn: z.string().min(1).optional(),
@@ -18,14 +19,7 @@ const registrySchema = z.object({
 export type DeviceRegistryEntry = z.infer<typeof deviceEntrySchema>
 export type DeviceRegistry = z.infer<typeof registrySchema>
 
-export function placeholderSnFromDeviceId(deviceId: string): string {
-  const prefix = deviceId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) || 'unknown'
-  return `unknown-${prefix}`
-}
-
-export function isPlaceholderSn(deviceSn: string): boolean {
-  return deviceSn.startsWith('unknown-')
-}
+export { isPlaceholderSn, placeholderSnFromDeviceId } from '@/src/domain/device-identity'
 
 export function resolveDeviceSn(entry: Pick<DeviceRegistryEntry, 'sn' | 'device_id'>): string {
   const sn = entry.sn?.trim()
