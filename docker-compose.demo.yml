@@ -1,0 +1,67 @@
+# Isolated DEMO deployment — independent of the production compose and .env.docker.
+#
+# Design constraints (per DOCKER_DEMO_DEPLOYMENT_VALIDATION):
+#   - Does NOT read .env.docker  -> no MONGODB_URI, no production secrets
+#   - SOURCE_DB_ENABLED=false     -> app never attempts a Mongo connection
+#   - Independent named volume `demo-data` -> fully isolated from production `app-data`
+#   - Project name `anti-reverse-demo` (set via -p) -> volume prefix is isolated
+#   - demo-seed runs ONCE (restart: "no"), overrides the app entrypoint, and
+#     applies the canonical migration chain itself (DEMO_USE_MIGRATIONS=true)
+#
+# Run:
+#   docker compose -p anti-reverse-demo -f docker-compose.demo.yml build
+#   docker compose -p anti-reverse-demo -f docker-compose.demo.yml up -d
+#   docker compose -p anti-reverse-demo -f docker-compose.demo.yml down   # keeps data (no -v)
+
+services:
+  demo-seed:
+    build: .
+    image: anti-reverse-demo:local
+    # Override the default app entrypoint so the seed runs directly (the seed
+    # script applies the canonical migration chain via `prisma migrate deploy`).
+    entrypoint: ["sh", "-c", "exec npm run demo:seed"]
+    environment:
+      APP_DATABASE_URL: file:../data/device-monitor.db
+      DEMO_DATABASE_FILE: device-monitor.db
+      DEMO_USE_MIGRATIONS: "true"
+      SOURCE_DB_ENABLED: "false"
+    volumes:
+      - demo-data:/app/data
+    restart: "no"
+    init: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  app:
+    build: .
+    image: anti-reverse-demo:local
+    depends_on:
+      demo-seed:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:3102:3000"
+    environment:
+      APP_DATABASE_URL: file:../data/device-monitor.db
+      SOURCE_DB_ENABLED: "false"
+    volumes:
+      - demo-data:/app/data
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  demo-data:

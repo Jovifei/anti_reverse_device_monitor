@@ -2,19 +2,33 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - "${APP_BIND_HOST:-127.0.0.1}:${APP_PORT:-3102}:3000"
     env_file:
       - .env.docker
     environment:
+      # APP_DATABASE_URL is intentionally set here: it is NOT defined in .env.docker.
+      # SOURCE_*/MONGODB_* are sourced exclusively from .env.docker (env_file) to avoid
+      # duplicate definitions that would wrongly override the env file values.
       APP_DATABASE_URL: file:../data/device-monitor.db
-      SOURCE_DB_ENABLED: ${SOURCE_DB_ENABLED:-false}
-      SOURCE_DB_TYPE: mongodb
-      SOURCE_SYNC_INTERVAL_SECONDS: ${SOURCE_SYNC_INTERVAL_SECONDS:-10}
     volumes:
       - app-data:/app/data
     restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Production sync: docker compose --profile sync run --rm sync
+  # Production sync worker: docker compose --profile sync up -d
+  # (Not started in this validation round — Mongo is not yet authorized.)
   sync:
     profiles: ["sync"]
     build: .
@@ -22,12 +36,19 @@ services:
       - .env.docker
     environment:
       APP_DATABASE_URL: file:../data/device-monitor.db
-      SOURCE_DB_ENABLED: "true"
-      SOURCE_DB_TYPE: mongodb
-      SOURCE_SYNC_INTERVAL_SECONDS: ${SOURCE_SYNC_INTERVAL_SECONDS:-10}
     volumes:
       - app-data:/app/data
     command: ["npm", "run", "source:worker"]
+    restart: unless-stopped
+    init: true
+    depends_on:
+      app:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   app-data:

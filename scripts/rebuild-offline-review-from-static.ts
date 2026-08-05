@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { loadEchartsMinJs } from '@/src/export/offline/echarts-asset'
 import { extractEmbeddedOfflineViewModel } from '@/src/export/offline/embedded-view-model'
+import { ctInverterGenerationStatusLabel, resolveCtInverterGenerationStatus } from '@/src/domain/monitoring'
 import { safeFileToken } from '@/src/export/offline/html-utils'
 import { renderOfflineHtmlDocument } from '@/src/export/offline/render-html'
 import type { OfflineDeviceViewModel, OfflineInverterViewModel, OfflineOverviewViewModel } from '@/src/export/offline/types'
@@ -87,6 +88,14 @@ function buildOverview(devices: OfflineDeviceViewModel[]): OfflineOverviewViewMo
     const reverseState = device.ctOnline
       ? (device.reverseNow ? 'active' as const : 'normal' as const)
       : (device.reverseNow ? 'unknown-last-seen-reverse' as const : 'unknown' as const)
+    const onlineInverterCount = device.inverters.filter((item) => item.statusVariant === 'online').length
+    const anyGenerating = device.inverters.some((item) => item.generating === '是')
+    const inverterGenerationLabel = ctInverterGenerationStatusLabel(
+      resolveCtInverterGenerationStatus({
+        onlineInverterCount,
+        generationPower: anyGenerating ? 100 : onlineInverterCount > 0 ? 0 : null
+      })
+    )
     return {
       deviceSn: device.deviceSn,
       isOnline: device.ctOnline,
@@ -96,8 +105,9 @@ function buildOverview(devices: OfflineDeviceViewModel[]): OfflineOverviewViewMo
       reverseState,
       reversePhases: device.reversePhases.length ? device.reversePhases.join(' / ') : '—',
       todayEnergy: device.todayEnergy,
-      onlineInverterCount: device.inverters.filter((item) => item.statusVariant === 'online').length,
+      onlineInverterCount,
       inverterCount: device.inverters.filter((item) => item.statusVariant !== 'unpaired').length || device.inverters.length || 8,
+      inverterGenerationLabel,
       runtimeState: device.ctState,
       limitState: device.limitState,
       sub1gState: device.sub1gState,

@@ -1,0 +1,4 @@
+# Prevent CRLF from breaking shell scripts executed inside Linux containers.
+# docker-entrypoint.sh is run by /bin/sh (dash) in the image; a CRLF
+# line ending turns `set -eu` into `set -eu\r` and crashes the container.
+*.sh text eol=lf
