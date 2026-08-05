@@ -232,25 +232,15 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
     const unitByName = Object.fromEntries(visible.map((item) => [item.label, item.unit || '']))
     const bands = enableDayNight ? buildBeijingDayNightBands(axisWindow.startMs, axisWindow.endMs) : null
     const showSunLabels = days <= 1
-    const dayNightBlur = {
-      markArea: { itemStyle: { opacity: 1 } },
-      markLine: { lineStyle: { opacity: 0.85 }, label: { opacity: 1 } }
-    }
-    const dayNightSeries = bands && bands.markAreaData.length
-      ? [{
-          name: '昼夜背景',
-          type: 'line' as const,
-          data: [],
-          silent: true,
-          tooltip: { show: false },
-          legendHoverLink: false,
-          emphasis: { disabled: true },
-          blur: dayNightBlur,
-          markArea: { silent: true, data: bands.markAreaData },
+    // Attach day/night to the first metric line — never as its own series (that stole palette[0]
+    // and made ECharts legend/tooltip disagree with the checkbox colors).
+    const dayNightDecor = bands && bands.markAreaData.length
+      ? {
+          markArea: { silent: true as const, data: bands.markAreaData, z: 0 },
           markLine: showSunLabels
             ? {
-                silent: true,
-                symbol: 'none',
+                silent: true as const,
+                symbol: 'none' as const,
                 label: { show: true, formatter: '{b}', color: '#8a6a1a', fontSize: 10, position: 'insideEndTop' as const },
                 lineStyle: { color: '#d4a017', type: 'dashed' as const, width: 1, opacity: 0.85 },
                 data: [
@@ -259,16 +249,143 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
                 ]
               }
             : undefined
-        }]
-      : []
+        }
+      : null
 
     const { start: zoomStart, end: zoomEnd } = zoomRef.current
     const optionFrame = requestAnimationFrame(() => {
       if (!chartRef.current || chartRef.current.isDisposed()) return
+      const dataSeries = visible.flatMap((item) => {
+        const yAxisIndex = axisPlan.dual && item.unit === 'Hz' ? 1 : 0
+        const resetPoints = item.dailyReset
+          ? item.points.flatMap((point, index) => {
+              if (index === 0) return [point]
+              const prev = item.points[index - 1]
+              if (point[1] === null || prev[1] === null) return [point]
+              const cur = partsInTz(new Date(point[0]).getTime())
+              const before = partsInTz(new Date(prev[0]).getTime())
+              const crossed = cur.year !== before.year || cur.month !== before.month || cur.day !== before.day
+              return crossed && point[1] < prev[1] ? [[point[0], null] as [string, null], point] : [point]
+            })
+          : item.points
+        const chartPoints = breakChartTimeGaps(resetPoints)
+        const lineBase = {
+          name: item.label,
+          type: 'line' as const,
+          showSymbol: false,
+          symbol: 'none' as const,
+          smooth: item.step ? false : 0.12,
+          step: item.step,
+          connectNulls: false,
+          sampling: undefined,
+          yAxisIndex,
+          // Bind stroke + marker to the metric color (never rely on global palette index).
+          color: item.color,
+          itemStyle: { color: item.color },
+          emphasis: { focus: 'series' as const },
+          blur: { lineStyle: { opacity: 0.18 } }
+        }
+        if (!item.markNegative) {
+          return [{
+            ...lineBase,
+            lineStyle: { width: 2.25, color: item.color },
+            data: chartPoints
+          }]
+        }
+        const split = splitNegativeWarningPoints(chartPoints as ChartPoint[])
+        const zeroLine = {
+          silent: true,
+          symbol: 'none' as const,
+          lineStyle: { color: ZERO_REFERENCE_COLOR, type: 'dashed' as const },
+          label: { formatter: '0 W 基准线', color: '#66788e' },
+          data: [{ yAxis: 0 }]
+        }
+        const layers: echarts.SeriesOption[] = [{
+          ...lineBase,
+          lineStyle: { width: 2.25, color: item.color },
+          data: split.normal,
+          markLine: zeroLine
+        }]
+        if (split.warningDots.length > 0) {
+          layers.push({
+            name: `${item.label}·负值`,
+            type: 'line',
+            showSymbol: false,
+            symbol: 'none',
+            smooth: item.step ? false : 0.12,
+            step: item.step,
+            connectNulls: false,
+            yAxisIndex,
+            color: NEGATIVE_WARN_COLOR,
+            itemStyle: { color: NEGATIVE_WARN_COLOR },
+            lineStyle: { width: 2.75, color: NEGATIVE_WARN_COLOR },
+            data: split.warning,
+            z: 3,
+            silent: true,
+            tooltip: { show: false },
+            legendHoverLink: false,
+            emphasis: { disabled: true }
+          })
+          layers.push({
+            name: `${item.label}·负值点`,
+            type: 'scatter',
+            yAxisIndex,
+            data: split.warningDots,
+            symbolSize: 8,
+            color: NEGATIVE_WARN_COLOR,
+            itemStyle: { color: NEGATIVE_WARN_COLOR, borderColor: '#fff', borderWidth: 1 },
+            tooltip: { show: false },
+            silent: true,
+            legendHoverLink: false,
+            z: 4
+          })
+        }
+        return layers
+      })
+
+      // Paint day/night on the first metric line so no phantom series exists in the option.
+      if (dayNightDecor && dataSeries.length > 0) {
+        const host = dataSeries[0] as echarts.SeriesOption & {
+          markArea?: unknown
+          markLine?: unknown
+        }
+        host.markArea = dayNightDecor.markArea
+        if (dayNightDecor.markLine) {
+          const existing = host.markLine
+          host.markLine = existing && typeof existing === 'object' && 'data' in existing
+            ? {
+                ...dayNightDecor.markLine,
+                data: [
+                  ...((existing as { data?: unknown[] }).data || []),
+                  ...dayNightDecor.markLine.data
+                ]
+              }
+            : dayNightDecor.markLine
+        }
+      }
+
+      // Wipe prior option so a stale in-chart legend cannot survive HMR / partial updates.
+      chartRef.current.clear()
       chartRef.current.setOption({
       animationDuration: 320,
       animationEasing: 'cubicOut',
       color: visible.map((item) => item.color),
+      // Checkbox row selects series; in-chart legend mirrors the same canonical colors.
+      legend: {
+        show: true,
+        top: 7,
+        type: 'scroll',
+        icon: 'circle',
+        itemWidth: 10,
+        itemHeight: 10,
+        selectedMode: false,
+        textStyle: { color: '#43516a', fontSize: 12 },
+        data: visible.map((item) => ({
+          name: item.label,
+          itemStyle: { color: item.color },
+          lineStyle: { color: item.color }
+        }))
+      },
       grid: { left: 68, right: axisPlan.gridRight, top: 42, bottom: days <= 1 ? 84 : 98 },
       tooltip: {
         trigger: 'axis',
@@ -296,12 +413,15 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
               const text = raw === null || raw === undefined ? '—' : Number(raw).toLocaleString('zh-CN', { maximumFractionDigits: 2 })
               const unit = unitByName[row.seriesName ?? ''] || ''
               const warn = typeof raw === 'number' && raw < 0
-              return `${row.marker ?? ''}${row.seriesName ?? ''}: ${text}${unit ? ` ${unit}` : ''}${warn ? '（负值警示）' : ''}`
+              const seriesColor = visible.find((entry) => entry.label === row.seriesName)?.color
+              const marker = seriesColor
+                ? `<span style="display:inline-block;margin-right:6px;border-radius:50%;width:8px;height:8px;background:${seriesColor}"></span>`
+                : (row.marker ?? '')
+              return `${marker}${row.seriesName ?? ''}: ${text}${unit ? ` ${unit}` : ''}${warn ? '（负值警示）' : ''}`
             })
           return [timeLine, ...lines].join('<br/>')
         }
       },
-      legend: { top: 7, type: 'scroll', textStyle: { color: '#667085' }, data: visible.map((item) => item.label) },
       xAxis: {
         type: 'time',
         min: axisWindow.startMs,
@@ -331,90 +451,7 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
           labelFormatter: (value: number) => (Number.isFinite(value) ? formatAxisLabel(value, days) : '')
         }
       ],
-      series: [
-        ...dayNightSeries,
-        ...visible.flatMap((item) => {
-          const yAxisIndex = axisPlan.dual && item.unit === 'Hz' ? 1 : 0
-          const resetPoints = item.dailyReset
-            ? item.points.flatMap((point, index) => {
-                if (index === 0) return [point]
-                const prev = item.points[index - 1]
-                if (point[1] === null || prev[1] === null) return [point]
-                const cur = partsInTz(new Date(point[0]).getTime())
-                const before = partsInTz(new Date(prev[0]).getTime())
-                const crossed = cur.year !== before.year || cur.month !== before.month || cur.day !== before.day
-                return crossed && point[1] < prev[1] ? [[point[0], null] as [string, null], point] : [point]
-              })
-            : item.points
-          const chartPoints = breakChartTimeGaps(resetPoints)
-          const lineBase = {
-            name: item.label,
-            type: 'line' as const,
-            showSymbol: false,
-            symbol: 'none' as const,
-            smooth: item.step ? false : 0.12,
-            step: item.step,
-            connectNulls: false,
-            sampling: undefined,
-            yAxisIndex,
-            emphasis: { focus: 'series' as const },
-            blur: { lineStyle: { opacity: 0.18 } }
-          }
-          if (!item.markNegative) {
-            return [{
-              ...lineBase,
-              lineStyle: { width: 2.25, color: item.color },
-              data: chartPoints
-            }]
-          }
-          const split = splitNegativeWarningPoints(chartPoints as ChartPoint[])
-          const zeroLine = {
-            silent: true,
-            symbol: 'none' as const,
-            lineStyle: { color: ZERO_REFERENCE_COLOR, type: 'dashed' as const },
-            label: { formatter: '0 W 基准线', color: '#66788e' },
-            data: [{ yAxis: 0 }]
-          }
-          // Primary series blanks negatives so only the red warning stroke/points remain visible there.
-          const layers: echarts.SeriesOption[] = [{
-            ...lineBase,
-            lineStyle: { width: 2.25, color: item.color },
-            data: split.normal,
-            markLine: zeroLine
-          }]
-          if (split.warningDots.length > 0) {
-            layers.push({
-              name: `${item.label}·负值`,
-              type: 'line',
-              showSymbol: false,
-              symbol: 'none',
-              smooth: item.step ? false : 0.12,
-              step: item.step,
-              connectNulls: false,
-              yAxisIndex,
-              lineStyle: { width: 2.75, color: NEGATIVE_WARN_COLOR },
-              data: split.warning,
-              z: 3,
-              silent: true,
-              tooltip: { show: false },
-              legendHoverLink: false,
-              emphasis: { disabled: true }
-            })
-            layers.push({
-              name: `${item.label}·负值点`,
-              type: 'scatter',
-              yAxisIndex,
-              data: split.warningDots,
-              symbolSize: 8,
-              itemStyle: { color: NEGATIVE_WARN_COLOR, borderColor: '#fff', borderWidth: 1 },
-              tooltip: { show: false },
-              silent: true,
-              z: 4
-            })
-          }
-          return layers
-        })
-      ]
+      series: dataSeries
     }, { notMerge: true })
     })
 
@@ -441,7 +478,16 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
         ...series.filter((item) => advancedKeys.includes(item.key))
       ]
     : series
-  const renderToggle = (item: ClientChartSeries) => <label key={item.key}><input type="checkbox" checked={selected.has(item.key)} onChange={() => toggle(item.key)} disabled={item.points.length === 0} /><i style={{ backgroundColor: chartSeriesDisplayColor(item.key, item.color) }} />{item.label}{item.unit ? ` (${item.unit})` : ''}</label>
+  const renderToggle = (item: ClientChartSeries) => {
+    const color = chartSeriesDisplayColor(item.key, item.color)
+    return (
+      <label key={item.key} title={`${item.label}：曲线色 ${color}`}>
+        <input type="checkbox" checked={selected.has(item.key)} onChange={() => toggle(item.key)} disabled={item.points.length === 0} />
+        <i style={{ backgroundColor: color }} aria-hidden="true" />
+        <span>{item.label}{item.unit ? ` (${item.unit})` : ''}</span>
+      </label>
+    )
+  }
 
   return <section className="chart-panel">
     <div className="panel-heading"><h2>{title}</h2><button type="button" className="secondary-button" onClick={resetZoom}>复位缩放</button></div>
@@ -452,7 +498,7 @@ export function TelemetryChart({ title, series, height = 430, initialSelectedKey
       <span>滚轮缩放 · 拖动平移 · 双击复位</span>
       {enableDayNight ? <span className="day-night-legend"><i className="day" />昼 <i className="night" />夜 · 北京日出日落</span> : null}
     </div>
-    <div className="series-toggles">{orderedSeries.map(renderToggle)}</div>
+    <div className="series-toggles" role="group" aria-label="曲线开关（颜色与图例一致）">{orderedSeries.map(renderToggle)}</div>
     {visible.length > 0 ? <div ref={containerRef} className="chart" style={{ height }} /> : <div className="empty-chart">当前范围没有可绘制的数据</div>}
   </section>
 }

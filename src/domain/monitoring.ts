@@ -62,7 +62,9 @@ const CANONICAL_CHART_COLORS: Record<string, string> = Object.fromEntries(
     ...CT_POWER_METRICS,
     ...GRID_QUALITY_METRICS,
     ...INVERTER_POWER_METRICS,
-    INVERTER_TEMPERATURE_METRIC
+    INVERTER_TEMPERATURE_METRIC,
+    { key: 'inverter-today-energy', color: '#8b5e34' },
+    { key: 'packet-loss', color: '#64748b' }
   ].map((metric) => [metric.key, metric.color])
 )
 

@@ -230,7 +230,8 @@ export function clientRuntimeSource(): string {
       'ct-a':'#A67C00', 'ct-b':'#168449', 'ct-c':'#1463d9',
       'inv-a':'#65a30d', 'inv-b':'#7c3aed', 'inv-c':'#4f46e5',
       voltage:'#2563eb', frequency:'#9333ea',
-      power:'#ea580c', pv1:'#1463d9', pv2:'#0d9488', temperature:'#0f766e'
+      power:'#ea580c', pv1:'#1463d9', pv2:'#0d9488', temperature:'#0f766e',
+      'inverter-today-energy':'#8b5e34', 'packet-loss':'#64748b'
     };
     if (canonical[item.key]) return canonical[item.key];
     const requested = String(item.color || '').trim().toLowerCase();
@@ -252,26 +253,122 @@ export function clientRuntimeSource(): string {
     });
     const axisWindow = axisWindowFor(series.filter(function(s){ return selected.has(s.key); }), days);
     const bands = enableDayNight ? buildBeijingDayNightBands(axisWindow.startMs, axisWindow.endMs) : null;
-    const dayNightSeries = (bands && bands.markAreaData.length) ? [{
-      name: '昼夜背景', type:'line', data:[], silent:true, tooltip:{ show:false },
-      markArea: { silent:true, data: bands.markAreaData },
+    const dayNightDecor = (bands && bands.markAreaData.length) ? {
+      markArea: { silent:true, data: bands.markAreaData, z:0 },
       markLine: days <= 1 ? {
         silent:true, symbol:'none',
         label:{ show:true, formatter:'{b}', color:'#8a6a1a', fontSize:10, position:'insideEndTop' },
         lineStyle:{ color:'#d4a017', type:'dashed', width:1, opacity:0.85 },
         data: bands.sunriseLines.map(function(item){ return { xAxis:item.xAxis, name:item.name }; })
           .concat(bands.sunsetLines.map(function(item){ return { xAxis:item.xAxis, name:item.name, lineStyle:{ color:'#6b7280' } }; }))
-      } : undefined
-    }] : [];
+      } : null
+    } : null;
     let chart = state.charts.get(el);
     if (!chart) {
       chart = echarts.init(el);
       state.charts.set(el, chart);
       el.addEventListener('dblclick', () => chart.dispatchAction({ type:'dataZoom', start:0, end:100 }));
     }
+    const NEG = '#c92828';
+    const ZERO = '#94a3b8';
+    const dataSeries = visible.flatMap(function(item){
+      const yIndex = yAxisIndexFor(item, axisPlan.dual);
+      if (!item.markNegative) {
+        return [{
+          name: item.label, type:'line', showSymbol:false, symbol:'none',
+          smooth: item.step ? false : 0.12,
+          step: item.step || false,
+          connectNulls:false, sampling: null,
+          yAxisIndex: yIndex,
+          color: item.color,
+          itemStyle:{ color: item.color },
+          lineStyle:{ width:2.25, color: item.color },
+          data: item.points
+        }];
+      }
+      const normal = [];
+      const warning = [];
+      const warningDots = [];
+      (item.points || []).forEach(function(point){
+        var value = point[1];
+        if (typeof value === 'number' && value < 0) {
+          normal.push([point[0], null]);
+          warning.push(point);
+          warningDots.push(point);
+        } else {
+          normal.push(point);
+          warning.push([point[0], null]);
+        }
+      });
+      const layers = [{
+        name: item.label, type:'line', showSymbol:false, symbol:'none',
+        smooth: item.step ? false : 0.12,
+        step: item.step || false,
+        connectNulls:false, sampling: null,
+        yAxisIndex: yIndex,
+        color: item.color,
+        itemStyle:{ color: item.color },
+        lineStyle:{ width:2.25, color: item.color },
+        data: normal,
+        markLine: { silent:true, symbol:'none', lineStyle:{ color:ZERO, type:'dashed' }, label:{ formatter:'0 W 基准线', color:'#66788e' }, data:[{ yAxis:0 }] }
+      }];
+      if (warningDots.length) {
+        layers.push({
+          name: item.label + '·负值', type:'line', showSymbol:false, symbol:'none',
+          smooth: item.step ? false : 0.12,
+          step: item.step || false,
+          connectNulls:false, sampling: null,
+          yAxisIndex: yIndex,
+          color: NEG,
+          itemStyle:{ color: NEG },
+          lineStyle:{ width:2.75, color: NEG },
+          data: warning,
+          z: 3, silent:true, tooltip:{ show:false }, legendHoverLink:false
+        });
+        layers.push({
+          name: item.label + '·负值点', type:'scatter', yAxisIndex: yIndex,
+          data: warningDots, symbolSize:8,
+          color: NEG,
+          itemStyle:{ color:NEG, borderColor:'#fff', borderWidth:1 },
+          tooltip:{ show:false }, silent:true, legendHoverLink:false, z:4
+        });
+      }
+      return layers;
+    });
+    if (dayNightDecor && dataSeries.length) {
+      var host = dataSeries[0];
+      host.markArea = dayNightDecor.markArea;
+      if (dayNightDecor.markLine) {
+        if (host.markLine && host.markLine.data) {
+          host.markLine = Object.assign({}, dayNightDecor.markLine, {
+            data: (host.markLine.data || []).concat(dayNightDecor.markLine.data)
+          });
+        } else {
+          host.markLine = dayNightDecor.markLine;
+        }
+      }
+    }
+    chart.clear();
     chart.setOption({
       animationDuration: 280,
-      color: visible.map(item => item.color),
+      color: visible.map(function(item){ return item.color; }),
+      legend: {
+        show: true,
+        top: 7,
+        type: 'scroll',
+        icon: 'circle',
+        itemWidth: 10,
+        itemHeight: 10,
+        selectedMode: false,
+        textStyle: { color: '#43516a', fontSize: 12 },
+        data: visible.map(function(item){
+          return {
+            name: item.label,
+            itemStyle: { color: item.color },
+            lineStyle: { color: item.color }
+          };
+        })
+      },
       grid: { left: 68, right: axisPlan.gridRight, top: 42, bottom: days <= 1 ? 84 : 98 },
       tooltip: {
         trigger: 'axis',
@@ -324,12 +421,15 @@ export function clientRuntimeSource(): string {
             var text = (v === null || v === undefined) ? '—' : Number(v).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
             var unit = unitByName[p.seriesName] || '';
             var warn = typeof v === 'number' && v < 0 ? '（负值警示）' : '';
-            return p.marker + p.seriesName + ': ' + text + (unit ? (' ' + unit) : '') + warn;
+            var seriesColor = (visible.find(function(entry){ return entry.label === p.seriesName; }) || {}).color;
+            var marker = seriesColor
+              ? ('<span style="display:inline-block;margin-right:6px;border-radius:50%;width:8px;height:8px;background:' + seriesColor + '"></span>')
+              : (p.marker || '');
+            return marker + p.seriesName + ': ' + text + (unit ? (' ' + unit) : '') + warn;
           });
           return [head].concat(lines).join('<br/>');
         }
       },
-      legend: { top: 7, type: 'scroll', data: visible.map(function(item){ return item.label; }) },
       xAxis: {
         type: 'time',
         min: axisWindow.startMs,
@@ -350,65 +450,7 @@ export function clientRuntimeSource(): string {
         { type:'inside', xAxisIndex:0, start:0, end:100, zoomOnMouseWheel:true, moveOnMouseMove:true, moveOnMouseWheel:true },
         { type:'slider', xAxisIndex:0, start:0, end:100, height:24, bottom:16, labelFormatter: function(value){ return formatAxisLabel(value, days); } }
       ],
-      series: dayNightSeries.concat(visible.flatMap(item => {
-        const yIndex = yAxisIndexFor(item, axisPlan.dual);
-        const NEG = '#c92828';
-        const ZERO = '#94a3b8';
-        if (!item.markNegative) {
-          return [{
-            name: item.label, type:'line', showSymbol:false, symbol:'none',
-            smooth: item.step ? false : 0.12,
-            step: item.step || false,
-            connectNulls:false, sampling: null,
-            yAxisIndex: yIndex,
-            lineStyle:{ width:2.25, color: item.color },
-            data: item.points
-          }];
-        }
-        const normal = [];
-        const warning = [];
-        const warningDots = [];
-        (item.points || []).forEach(function(point){
-          var value = point[1];
-          if (typeof value === 'number' && value < 0) {
-            normal.push([point[0], null]);
-            warning.push(point);
-            warningDots.push(point);
-          } else {
-            normal.push(point);
-            warning.push([point[0], null]);
-          }
-        });
-        const layers = [{
-          name: item.label, type:'line', showSymbol:false, symbol:'none',
-          smooth: item.step ? false : 0.12,
-          step: item.step || false,
-          connectNulls:false, sampling: null,
-          yAxisIndex: yIndex,
-          lineStyle:{ width:2.25, color: item.color },
-          data: normal,
-          markLine: { silent:true, symbol:'none', lineStyle:{ color:ZERO, type:'dashed' }, label:{ formatter:'0 W 基准线', color:'#66788e' }, data:[{ yAxis:0 }] }
-        }];
-        if (warningDots.length) {
-          layers.push({
-            name: item.label + '·负值', type:'line', showSymbol:false, symbol:'none',
-            smooth: item.step ? false : 0.12,
-            step: item.step || false,
-            connectNulls:false, sampling: null,
-            yAxisIndex: yIndex,
-            lineStyle:{ width:2.75, color: NEG },
-            data: warning,
-            z: 3, silent:true, tooltip:{ show:false }, legendHoverLink:false
-          });
-          layers.push({
-            name: item.label + '·负值点', type:'scatter', yAxisIndex: yIndex,
-            data: warningDots, symbolSize:8,
-            itemStyle:{ color:NEG, borderColor:'#fff', borderWidth:1 },
-            tooltip:{ show:false }, silent:true, z:4
-          });
-        }
-        return layers;
-      }))
+      series: dataSeries
     }, { notMerge:true });
     return { chart, selected, days, enableDayNight };
   }
@@ -440,7 +482,8 @@ export function clientRuntimeSource(): string {
       seriesBox.innerHTML = series.map(s => {
         const adv = advancedKeys.includes(s.key) ? ' data-advanced="1"' : '';
         const unit = s.unit ? (' (' + s.unit + ')') : '';
-        return '<label'+adv+'><input type="checkbox" value="'+s.key+'" '+(selected.has(s.key)?'checked':'')+'/><i style="background:'+s.color+'"></i>'+s.label+unit+'</label>';
+        const color = chartSeriesDisplayColor(s);
+        return '<label'+adv+'><input type="checkbox" value="'+s.key+'" '+(selected.has(s.key)?'checked':'')+'/><i style="background:'+color+'"></i>'+s.label+unit+'</label>';
       }).join('');
       seriesBox.addEventListener('change', (e) => {
         const t = e.target;

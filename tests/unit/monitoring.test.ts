@@ -183,6 +183,22 @@ describe('CT history chart alarm colors', () => {
     expect(chartSeriesDisplayColor('unknown-series', '#c92828')).toBe('#2563eb')
     expect(chartSeriesDisplayColor('unknown-series', '#0d9488')).toBe('#0d9488')
   })
+
+  it('keeps CT power overview metrics on distinct canonical colors', () => {
+    expect(chartSeriesDisplayColor('load', '#000')).toBe('#1463d9')
+    expect(chartSeriesDisplayColor('grid', '#000')).toBe('#0d9488')
+    expect(chartSeriesDisplayColor('generation', '#000')).toBe('#ea580c')
+  })
+
+  it('covers grid-quality and inverter chart keys', () => {
+    expect(chartSeriesDisplayColor('voltage', '#000')).toBe('#2563eb')
+    expect(chartSeriesDisplayColor('frequency', '#000')).toBe('#9333ea')
+    expect(chartSeriesDisplayColor('power', '#000')).toBe('#ea580c')
+    expect(chartSeriesDisplayColor('pv1', '#000')).toBe('#1463d9')
+    expect(chartSeriesDisplayColor('pv2', '#000')).toBe('#0d9488')
+    expect(chartSeriesDisplayColor('packet-loss', '#000')).toBe('#64748b')
+    expect(chartSeriesDisplayColor('inverter-today-energy', '#000')).toBe('#8b5e34')
+  })
 })
 
 describe('groupByLocalDate', () => {
