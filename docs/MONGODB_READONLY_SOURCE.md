@@ -21,7 +21,9 @@
 | GC2001000000252 | 69c4e61a495848939ee23928 |
 | GC2001000000457 | 69c4e417495848939eb67a46 |
 
-完整 SN↔device_id 映射表或查询网址后续接入；在此之前复制 `config/devices.example.json` → `config/devices.json`。
+完整 SN↔device_id 映射已入库：`config/devices.json`（与 `config/devices.example.json`、`config/device-sn-map.xlsx` 同源 12 台）。页面仍只按 SN 交互，不展示 `device_id`。
+
+本地缺 `devices.json` 时会回退读取 `devices.example.json`；一键脚本也会自动从 example 播种。
 
 ## 本地联调步骤
 

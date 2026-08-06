@@ -30,17 +30,27 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ''
-Write-Host '[2/5] Applying SN map Excel → config/devices.json...'
-if (-not (Test-Path 'config\device-sn-map.xlsx')) {
-  Write-Host '[ERROR] Missing config\device-sn-map.xlsx (SN ↔ device_id map).' -ForegroundColor Red
-  Read-Host 'Press Enter to exit'
-  exit 1
+Write-Host '[2/5] Ensuring SN registry (config/devices.json)...'
+if (-not (Test-Path 'config\devices.json')) {
+  if (Test-Path 'config\devices.example.json') {
+    Copy-Item 'config\devices.example.json' 'config\devices.json' -Force
+    Write-Host '[OK] Seeded config/devices.json from devices.example.json (12 CT SN ↔ device_id).'
+  } else {
+    Write-Host '[ERROR] Missing config/devices.json and config/devices.example.json.' -ForegroundColor Red
+    Read-Host 'Press Enter to exit'
+    exit 1
+  }
 }
-npm run devices:apply-map
-if ($LASTEXITCODE -ne 0) {
-  Write-Host '[ERROR] devices:apply-map failed.' -ForegroundColor Red
-  Read-Host 'Press Enter to exit'
-  exit 1
+if (Test-Path 'config\device-sn-map.xlsx') {
+  Write-Host '[2/5] Applying SN map Excel → config/devices.json...'
+  npm run devices:apply-map
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host '[ERROR] devices:apply-map failed.' -ForegroundColor Red
+    Read-Host 'Press Enter to exit'
+    exit 1
+  }
+} else {
+  Write-Host '[WARN] config/device-sn-map.xlsx missing; using tracked config/devices.json as-is.' -ForegroundColor Yellow
 }
 
 Write-Host ''

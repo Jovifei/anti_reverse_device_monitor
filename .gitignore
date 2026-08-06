@@ -33,8 +33,8 @@ artifacts/
 .env.docker
 config.txt
 config/source-field-mapping.local.json
-config/devices.json
 config/devices.draft.json
+config/devices.local.json
 config/mongo-field-mapping.local.json
 backups/
 test-results/

@@ -27,7 +27,7 @@ flowchart TB
 前置：
 
 - 已有 `.env.local`（自 `.env.local.example` 复制并填 Mongo）
-- 已有 `config/device-sn-map.xlsx`
+- 已有 `config/devices.json`（仓库已跟踪 12 台 SN↔device_id；也可由 `config/device-sn-map.xlsx` 经 `devices:apply-map` 刷新）
 - 已安装 Node.js
 
 浏览器入口：`http://localhost:3000/devices`
