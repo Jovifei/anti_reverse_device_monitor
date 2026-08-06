@@ -2,13 +2,56 @@
 
 只读观察系统：Next.js + TypeScript + Prisma + SQLite。从公司 Mongo `device_log_*`（或 Excel）同步到本地库后，按 CT SN 查看最近约 7 天的运行、逆流与微逆状态。浏览器不持有数据库密码；不具备 MQTT/OTA/参数下发/配对解绑。
 
+## 克隆后一键启动（Windows）
+
+仓库根目录已包含：
+
+| 文件 | 作用 |
+|------|------|
+| `start-monitor.cmd` / `start-monitor.ps1` | 一键：迁移 → 设备注册表 → Mongo 同步 → Worker → 打开浏览器 |
+| `config/devices.json` | **12 台 CT：SN ↔ Mongo `device_id`**（已跟踪） |
+| `config/devices.example.json` | 同上内容的示例副本 |
+| `config/device-sn-map.xlsx` | Excel 映射源（`npm run devices:apply-map` 可刷新 json） |
+
+```bat
+git clone <本仓库>
+cd anti_reverse_device_monitor
+npm install
+copy .env.local.example .env.local
+:: 编辑 .env.local：填 MONGODB_URI / SOURCE_DB_ENABLED=true / SOURCE_DB_TYPE=mongodb
+start-monitor.cmd
+```
+
+或 PowerShell：`.\start-monitor.ps1`  
+浏览器：`http://localhost:3000/devices`
+
+没有 Mongo 密钥时只能先起 Web（空库）：`npm run demo` 或 `npm run dev`。完整同步必须配置 `.env.local`。
+
+### 12 台在运 CT（SN ↔ device_id）
+
+| SN | device_id |
+|----|-----------|
+| GC2001000000038 | 6969cbb8205d9219dcefda3f |
+| GC2001000000044 | 696b1d4c205d9219dc89e5ec |
+| GC2001000000045 | 696b2018205d9219dcc7ca43 |
+| GC2001000000072 | 69ae5c36495848939e4fc7f2 |
+| GC2001000000092 | 69c66240495848939ea70cb6 |
+| GC2001000000161 | 69af80aa495848939e9f6498 |
+| GC2001000000190 | 69c26d33495848939e5b611e |
+| GC2001000000233 | 69f02abe495848939e5ebb4b |
+| GC2001000000252 | 69c4e61a495848939ee23928 |
+| GC2001000000301 | 69fa987d495848939e686a9b |
+| GC2001000000303 | 6a4caab5495848939e7e1478 |
+| GC2001000000457 | 69c4e417495848939eb67a46 |
+
+权威文件：`config/devices.json`。页面只展示 SN，不展示 `device_id`。
+
 ## 日常运行（推荐）
 
 1. 配置 `.env.local`（自 `.env.local.example`），填 Mongo，并设 `SOURCE_DB_ENABLED=true`、`SOURCE_DB_TYPE=mongodb`
-2. 准备 `config/device-sn-map.xlsx`（SN ↔ device_id）
-3. 双击或执行：`.\start-monitor.ps1`  
+2. 双击或执行：`start-monitor.cmd`（或 `.\start-monitor.ps1`）  
    （迁移 → 应用 SN 映射 → `source:sync` → 开 `source:worker` → 起 Next 并打开浏览器）
-4. 打开 `http://localhost:3000/devices`
+3. 打开 `http://localhost:3000/devices`
 
 完整说明见 [操作手册](docs/11_OPS_RUNBOOK.md)。
 
