@@ -1,0 +1,216 @@
+ Image anti-reverse-demo:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.45kB 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.11kB done
+#2 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/node:22-bookworm-slim
+#3 DONE 0.1s
+
+#4 [deps 1/4] FROM docker.io/library/node:22-bookworm-slim@sha256:d649c27dae7ba0137b3cef5dd75baa422c08dc3d9e3fc0c23dfb172dc3cc6436
+#4 resolve docker.io/library/node:22-bookworm-slim@sha256:d649c27dae7ba0137b3cef5dd75baa422c08dc3d9e3fc0c23dfb172dc3cc6436 0.0s done
+#4 DONE 0.0s
+
+#5 [deps 2/4] WORKDIR /app
+#5 CACHED
+
+#6 [internal] load .dockerignore
+#6 transferring context: 304B done
+#6 DONE 0.1s
+
+#7 [internal] load build context
+#7 transferring context: 5.32MB 0.4s done
+#7 DONE 0.5s
+
+#8 [deps 3/4] COPY package.json package-lock.json ./
+#8 DONE 0.1s
+
+#9 [deps 3/4] COPY package.json package-lock.json ./
+#9 CACHED
+
+#10 [deps 4/4] RUN npm ci
+#10 ...
+
+#11 [builder 3/6] RUN apt-get update   && apt-get install -y --no-install-recommends openssl   && rm -rf /var/lib/apt/lists/*
+#11 1.236 Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+#11 2.449 Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+#11 3.358 Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [34.8 kB]
+#11 4.181 Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]
+#11 7.379 Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]
+#11 7.876 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [325 kB]
+#11 8.809 Fetched 9364 kB in 8s (1118 kB/s)
+#11 8.809 Reading package lists...
+#11 9.278 Reading package lists...
+#11 9.669 Building dependency tree...
+#11 9.749 Reading state information...
+#11 9.833 The following additional packages will be installed:
+#11 9.833   libssl3
+#11 9.833 Suggested packages:
+#11 9.833   ca-certificates
+#11 9.852 The following NEW packages will be installed:
+#11 9.853   libssl3 openssl
+#11 10.39 0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.
+#11 10.39 Need to get 3475 kB of archives.
+#11 10.39 After this operation, 8540 kB of additional disk space will be used.
+#11 10.39 Get:1 http://deb.debian.org/debian bookworm/main amd64 libssl3 amd64 3.0.20-1~deb12u2 [2036 kB]
+#11 12.66 Get:2 http://deb.debian.org/debian bookworm/main amd64 openssl amd64 3.0.20-1~deb12u2 [1439 kB]
+#11 14.11 debconf: delaying package configuration, since apt-utils is not installed
+#11 14.14 Fetched 3475 kB in 4s (842 kB/s)
+#11 14.21 Selecting previously unselected package libssl3:amd64.
+#11 14.21 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6096 files and directories currently installed.)
+#11 14.23 Preparing to unpack .../libssl3_3.0.20-1~deb12u2_amd64.deb ...
+#11 14.26 Unpacking libssl3:amd64 (3.0.20-1~deb12u2) ...
+#11 14.43 Selecting previously unselected package openssl.
+#11 14.43 Preparing to unpack .../openssl_3.0.20-1~deb12u2_amd64.deb ...
+#11 14.44 Unpacking openssl (3.0.20-1~deb12u2) ...
+#11 14.58 Setting up libssl3:amd64 (3.0.20-1~deb12u2) ...
+#11 14.62 Setting up openssl (3.0.20-1~deb12u2) ...
+#11 14.68 Processing triggers for libc-bin (2.36-9+deb12u14) ...
+#11 DONE 20.3s
+
+#10 [deps 4/4] RUN npm ci
+#10 338.4 
+#10 338.4 added 406 packages, and audited 407 packages in 6m
+#10 338.4 
+#10 338.4 154 packages are looking for funding
+#10 338.4   run `npm fund` for details
+#10 338.5 
+#10 338.5 5 high severity vulnerabilities
+#10 338.5 
+#10 338.5 To address issues that do not require attention, run:
+#10 338.5   npm audit fix
+#10 338.5 
+#10 338.5 Some issues need review, and may require choosing
+#10 338.5 a different dependency.
+#10 338.5 
+#10 338.5 Run `npm audit` for details.
+#10 338.5 npm notice
+#10 338.5 npm notice New major version of npm available! 10.9.8 -> 12.0.2
+#10 338.5 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+#10 338.5 npm notice To update run: npm install -g npm@12.0.2
+#10 338.5 npm notice
+#10 DONE 338.6s
+
+#12 [builder 4/6] COPY --from=deps /app/node_modules ./node_modules
+#12 DONE 5.4s
+
+#13 [builder 5/6] COPY . .
+#13 DONE 0.2s
+
+#14 [builder 6/6] RUN npx prisma generate && npm run build
+#14 6.636 Prisma schema loaded from prisma/schema.prisma
+#14 6.878 
+#14 6.878 ✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 72ms
+#14 6.878 
+#14 6.878 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#14 6.878 
+#14 6.878 Tip: Curious about the SQL queries Prisma ORM generates? Optimize helps you enhance your visibility: https://pris.ly/tip-2-optimize
+#14 6.878 
+#14 7.076 npm notice
+#14 7.076 npm notice New major version of npm available! 10.9.8 -> 12.0.2
+#14 7.076 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+#14 7.076 npm notice To update run: npm install -g npm@12.0.2
+#14 7.076 npm notice
+#14 7.140 
+#14 7.140 > anti-reverse-device-monitor@0.1.0 build
+#14 7.140 > next build
+#14 7.140 
+#14 7.466    ▲ Next.js 15.5.20
+#14 7.466 
+#14 7.488    Creating an optimized production build ...
+#14 16.76  ✓ Compiled successfully in 7.9s
+#14 16.76    Linting and checking validity of types ...
+#14 20.44    Collecting page data ...
+#14 22.42    Generating static pages (0/6) ...
+#14 22.68    Generating static pages (1/6) 
+#14 22.68    Generating static pages (2/6) 
+#14 22.72    Generating static pages (4/6) 
+#14 22.72  ✓ Generating static pages (6/6)
+#14 23.12    Finalizing page optimization ...
+#14 23.12    Collecting build traces ...
+#14 26.38 
+#14 26.38 Route (app)                                           Size  First Load JS
+#14 26.38 ┌ ○ /                                                157 B         103 kB
+#14 26.38 ├ ○ /_not-found                                      991 B         103 kB
+#14 26.38 ├ ƒ /api/devices                                     157 B         103 kB
+#14 26.38 ├ ƒ /api/devices/[sn]                                157 B         103 kB
+#14 26.38 ├ ƒ /api/devices/[sn]/alarms                         157 B         103 kB
+#14 26.38 ├ ƒ /api/devices/[sn]/health                         157 B         103 kB
+#14 26.38 ├ ƒ /api/devices/[sn]/history                        157 B         103 kB
+#14 26.38 ├ ƒ /api/devices/[sn]/inverters/[index]/latest       157 B         103 kB
+#14 26.38 ├ ƒ /api/devices/[sn]/inverters/[index]/telemetry    157 B         103 kB
+#14 26.38 ├ ƒ /api/devices/[sn]/latest                         157 B         103 kB
+#14 26.38 ├ ƒ /api/devices/[sn]/raw-excel                      157 B         103 kB
+#14 26.38 ├ ƒ /api/devices/[sn]/telemetry                      157 B         103 kB
+#14 26.38 ├ ƒ /api/imports/excel                               157 B         103 kB
+#14 26.38 ├ ƒ /api/live                                        157 B         103 kB
+#14 26.38 ├ ƒ /devices                                       1.07 kB         107 kB
+#14 26.38 ├ ƒ /devices/[sn]                                  1.99 kB         488 kB
+#14 26.38 └ ƒ /devices/[sn]/inverters/[index]                  606 B         486 kB
+#14 26.38 + First Load JS shared by all                       102 kB
+#14 26.38   ├ chunks/255-3981a3d1f3561bd8.js                 46.2 kB
+#14 26.38   ├ chunks/4bd1b696-c023c6e3521b1417.js            54.2 kB
+#14 26.38   └ other shared chunks (total)                    1.92 kB
+#14 26.38 
+#14 26.38 
+#14 26.38 ○  (Static)   prerendered as static content
+#14 26.38 ƒ  (Dynamic)  server-rendered on demand
+#14 26.38 
+#14 DONE 27.9s
+
+#15 [runner  4/13] RUN mkdir -p /app/data /app/config
+#15 CACHED
+
+#16 [runner  3/13] RUN apt-get update   && apt-get install -y --no-install-recommends openssl   && rm -rf /var/lib/apt/lists/*
+#16 CACHED
+
+#17 [runner  4/13] RUN mkdir -p /app/data /app/config
+#17 CACHED
+
+#18 [runner  5/13] COPY --from=builder /app/package.json /app/package-lock.json ./
+#18 DONE 0.1s
+
+#19 [runner  6/13] COPY --from=builder /app/node_modules ./node_modules
+#19 DONE 6.1s
+
+#20 [runner  7/13] COPY --from=builder /app/.next ./.next
+#20 DONE 1.7s
+
+#21 [runner  8/13] COPY --from=builder /app/public ./public
+#21 DONE 0.1s
+
+#22 [runner  9/13] COPY --from=builder /app/prisma ./prisma
+#22 DONE 0.0s
+
+#23 [runner 10/13] COPY --from=builder /app/scripts ./scripts
+#23 DONE 0.0s
+
+#24 [runner 11/13] COPY --from=builder /app/src ./src
+#24 DONE 0.1s
+
+#25 [runner 12/13] COPY --from=builder /app/config ./config
+#25 DONE 0.1s
+
+#26 [runner 13/13] COPY --from=builder /app/tsconfig.json ./tsconfig.json
+#26 DONE 0.1s
+
+#27 exporting to image
+#27 exporting layers
+#27 exporting layers 18.3s done
+#27 exporting manifest sha256:dc1cc409608f5919dd53f09619153c9b9f3964adecb592ae973c05a63d9d2c3a 0.0s done
+#27 exporting config sha256:1038178135a4daef0bf7bcfd4904d1b27c1cc0c4f456ffb668592cf68908a7c4 0.1s done
+#27 exporting attestation manifest sha256:0ac9db32f95bc3891254851086e52fcbecb7911ee8183d145ec988f28f9eae06
+#27 exporting attestation manifest sha256:0ac9db32f95bc3891254851086e52fcbecb7911ee8183d145ec988f28f9eae06 0.1s done
+#27 exporting manifest list sha256:ca744fddc8f7546674cd25befc15e68262f7c7b1622e6eccb95690c1ca9c9069
+#27 exporting manifest list sha256:ca744fddc8f7546674cd25befc15e68262f7c7b1622e6eccb95690c1ca9c9069 0.0s done
+#27 naming to docker.io/library/anti-reverse-demo:local done
+#27 unpacking to docker.io/library/anti-reverse-demo:local
+#27 unpacking to docker.io/library/anti-reverse-demo:local 4.6s done
+#27 DONE 23.2s
+
+#28 resolving provenance for metadata file
+#28 DONE 0.0s
+ Image anti-reverse-demo:local Built 
