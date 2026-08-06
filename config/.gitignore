@@ -1,0 +1,9 @@
+# 本地密钥与设备草稿 —— 切勿提交到 Git。
+# 注意：本文件位于 config/ 目录下，忽略模式相对于 config/ 目录生效。
+
+# 真实 Bearer Token 所在（项目根目录 .env.local 由根 .gitignore 忽略，这里仅作意图声明）
+.env.local
+
+# IoT 同步脚本的本地输出 / 草稿
+devices.local.json
+devices.draft.json
