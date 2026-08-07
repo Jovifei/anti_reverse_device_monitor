@@ -9,7 +9,7 @@
 | 文件 | 作用 |
 |------|------|
 | `start-monitor.cmd` / `start-monitor.ps1` | 一键：迁移 → 设备注册表 → Mongo 同步 → Worker → 打开浏览器 |
-| `config/devices.json` | **12 台 CT：SN ↔ Mongo `device_id`**（已跟踪） |
+| `config/devices.json` | **372 台 CT：SN ↔ IoT `device_id` ↔ 设备名(nickname)**（已跟踪，由 IoT 同步生成） |
 | `config/devices.example.json` | 同上内容的示例副本 |
 | `config/device-sn-map.xlsx` | Excel 映射源（`npm run devices:apply-map` 可刷新 json） |
 
@@ -27,7 +27,9 @@ start-monitor.cmd
 
 没有 Mongo 密钥时只能先起 Web（空库）：`npm run demo` 或 `npm run dev`。完整同步必须配置 `.env.local`。
 
-### 12 台在运 CT（SN ↔ device_id）
+### 设备注册表与 CT 列表（SN ↔ device_id）
+
+> 仓库内 `config/devices.json` 当前已由造梦者 IoT 平台同步生成 **372 台**设备。下方 12 台为早期手工维护样例（仍保留作参考）。
 
 | SN | device_id |
 |----|-----------|
@@ -45,6 +47,44 @@ start-monitor.cmd
 | GC2001000000457 | 69c4e417495848939eb67a46 |
 
 权威文件：`config/devices.json`。页面只展示 SN，不展示 `device_id`。
+
+#### IoT 平台自动同步（推荐）
+
+直接调造梦者 IoT `getDevices` 接口拉取全量设备、自动建立 `SN ↔ IoT device_id ↔ 设备名(nickname)` 映射，**替掉人工填 Excel**：
+
+1. **获取 Bearer Token**：登录 https://iot.dream-maker.com，在个人/开发者中心复制长期 Token（约 1 年有效）。
+2. **写入本地环境变量**（文件位于**项目根目录** `.env.local`，已被 git 忽略，不会入库）：
+   ```bat
+   copy config\.env.local.example .env.local
+   ```
+   编辑根目录 `.env.local`，填入：
+   ```
+   DREAM_MAKER_IOT_BASE_URL=https://iot.dream-maker.com
+   DREAM_MAKER_IOT_TOKEN=<你的 Bearer Token>
+   ```
+   > ⚠️ 真实 Token 切勿提交到 Git；`.env.local` 已在 `.gitignore` 中。
+3. **先干跑预览**（只读、不改文件）：
+   ```bash
+   npm run devices:sync-iot -- --dry-run
+   ```
+4. **正式同步**（写入 `config/devices.json`）：
+   ```bash
+   npm run devices:sync-iot
+   ```
+
+可选参数：
+
+| 参数 | 说明 |
+|------|------|
+| `--dry-run` | 只打印 diff 预览，不写文件 |
+| `--output <path>` | 指定输出路径（默认 `config/devices.json`） |
+| `--product-id <id>` | 覆盖品类 ID（默认 `689adc659f04ec32f7642fbb`） |
+| `--size <n>` | 每页大小（默认 100） |
+| `--prune` | 删除 IoT 列表里不存在的旧项（仍保留人工 Excel 映射项，即带 `label` 的项） |
+
+默认行为：保留 IoT 全部设备、更新已存在项的 `nickname`/`online`、并保留手工 Excel 映射过的 SN；IoT 不在的旧 `device_id` **默认保留不删**，需清理时显式加 `--prune`。
+
+> 早期手工维护的 12 台（`config/device-sn-map.xlsx` + `npm run devices:apply-map`）仍有效，作为人工补漏/覆盖工具保留。
 
 ## 日常运行（推荐）
 

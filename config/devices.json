@@ -2,88 +2,2987 @@
   "version": 1,
   "devices": [
     {
+      "sn": "6055f97d9e80",
+      "device_id": "689b2ab5f3a2fcb9019e796a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "智能CT网关",
+      "online": false
+    },
+    {
+      "sn": "e4b0630c9528",
+      "device_id": "689c2f73f3a2fcb901276232",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "智能CT网关",
+      "online": false
+    },
+    {
+      "sn": "e84a548cfb9f",
+      "device_id": "68d39fa2f3a2fcb90118f685",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "智能CT网关-测试",
+      "online": false
+    },
+    {
+      "sn": "c493bbe4789b",
+      "device_id": "68da1e60f3a2fcb901e4389f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "智能CT网关",
+      "online": false
+    },
+    {
+      "sn": "4417935057e8",
+      "device_id": "691c1993205d9219dc7f6f38",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "智能CT网关测试11",
+      "online": false
+    },
+    {
+      "sn": "441793505804",
+      "device_id": "6938e3fa205d9219dc3bf17a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "宿舍楼（测试）",
+      "online": false
+    },
+    {
+      "sn": "c0cdd69113bc",
+      "device_id": "6949ff9d205d9219dc481f34",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "智能CT网关测试wifi",
+      "online": false
+    },
+    {
+      "sn": "c0cdd69124bc",
+      "device_id": "695cc5f2205d9219dc3c39ce",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "智能CT网关 测试222",
+      "online": false
+    },
+    {
+      "sn": "c0cdd6912efc",
+      "device_id": "695f546f205d9219dceacfff",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器测试，2",
+      "online": false
+    },
+    {
+      "sn": "GEECO1111111121",
+      "device_id": "6968807c205d9219dce7b467",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制办公室",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000004",
+      "device_id": "6969a3c7205d9219dcb473a8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 4",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000006",
+      "device_id": "6969af36205d9219dcba6e13",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 6",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000015",
+      "device_id": "6969b009205d9219dcca1d40",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 15",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000001",
+      "device_id": "6969b1ac205d9219dce9c744",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 1",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000002",
+      "device_id": "6969b251205d9219dcf616e6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 2",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000011",
+      "device_id": "6969b335205d9219dc07b6f9",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 11",
+      "online": false
+    },
+    {
       "sn": "GC2001000000038",
       "device_id": "6969cbb8205d9219dcefda3f",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
+      "label": "anti-reverse-ct",
+      "nickname": "沈灿",
+      "online": true
+    },
+    {
+      "sn": "GC2001000000007",
+      "device_id": "6969ccee205d9219dc0717cc",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 7",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000013",
+      "device_id": "6969cdbe205d9219dc175d54",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "老化测试-CT",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000012",
+      "device_id": "6969ceb6205d9219dc2dfd7d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 12",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000023",
+      "device_id": "6969d946205d9219dc01f3f7",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 23",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000029",
+      "device_id": "696a04e5205d9219dc6a7e92",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器029",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000031",
+      "device_id": "696a0588205d9219dc76c114",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 31",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000056",
+      "device_id": "696a2658205d9219dc20007d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 56",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000042",
+      "device_id": "696b1b54205d9219dc5c93cf",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器42",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000039",
+      "device_id": "696b1c26205d9219dc6e3757",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "钟铭纸箱厂：郭总",
+      "online": false
     },
     {
       "sn": "GC2001000000044",
       "device_id": "696b1d4c205d9219dc89e5ec",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
+      "label": "anti-reverse-ct",
+      "nickname": "南京六合区：陆总",
+      "online": true
+    },
+    {
+      "sn": "GC2001000000003",
+      "device_id": "696b1dd4205d9219dc96566b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 3",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000025",
+      "device_id": "696b1e70205d9219dca64a17",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000040",
+      "device_id": "696b1f03205d9219dcb22a6c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 40",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000016",
+      "device_id": "696b1f80205d9219dcbbfedc",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器-16",
+      "online": false
     },
     {
       "sn": "GC2001000000045",
       "device_id": "696b2018205d9219dcc7ca43",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
+      "label": "anti-reverse-ct",
+      "nickname": "防逆流控制器",
+      "online": true
+    },
+    {
+      "sn": "GC2001000000024",
+      "device_id": "696b21ab205d9219dce7624d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 24",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000041",
+      "device_id": "696b26bb205d9219dc4dc9c5",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 41",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000054",
+      "device_id": "696b280c205d9219dc682596",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "南京江宁区陆朗镇：刘总",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000053",
+      "device_id": "696b2983205d9219dc852244",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "智能CT网关",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000052",
+      "device_id": "696b29f6205d9219dc8ea07d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器昆山",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000010",
+      "device_id": "696b2b48205d9219dca907bb",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000046",
+      "device_id": "696b2d69205d9219dcd3357c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器0046",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000019",
+      "device_id": "696b2e06205d9219dcdfa5fe",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000026",
+      "device_id": "696b2eb7205d9219dcedc275",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器026",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000017",
+      "device_id": "696b2fac205d9219dc013966",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 17",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000008",
+      "device_id": "696b3059205d9219dc103e3f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "测试008",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000021",
+      "device_id": "696b30d6205d9219dc1ac450",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器021",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000014",
+      "device_id": "696b314b205d9219dc23f2f1",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器14",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000005",
+      "device_id": "696b31cf205d9219dc2e73fb",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 5",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000009",
+      "device_id": "696b3241205d9219dc3801e5",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 9",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000037",
+      "device_id": "696b32dc205d9219dc44630f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 37",
+      "online": false
+    },
+    {
+      "sn": "GE2001000000004",
+      "device_id": "696b3cb0205d9219dc05cba8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器014",
+      "online": false
+    },
+    {
+      "sn": "c0cdd6914fc0",
+      "device_id": "696f56cd205d9219dc4c2f61",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器zyd",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000022",
+      "device_id": "697ab5ec205d9219dce39ed9",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GG3001000000052",
+      "device_id": "6981bf5c205d9219dc6554fa",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000028",
+      "device_id": "6983f277205d9219dcf3fbe5",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器28",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000030",
+      "device_id": "698da175205d9219dcb44234",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 30",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000036",
+      "device_id": "698da557205d9219dc05d77a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器测试3",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000098",
+      "device_id": "6996a9b1205d9219dcd5e0bc",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000027",
+      "device_id": "699d42e1205d9219dc20e5f5",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器11",
+      "online": false
+    },
+    {
+      "sn": "GT2001000000001",
+      "device_id": "699d4fd7205d9219dc26efd3",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000184",
+      "device_id": "699fbaf3495848939e4126a9",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000100",
+      "device_id": "69a004b1495848939efd6ad0",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流-1000W 测试-100",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000099",
+      "device_id": "69a004c5495848939efed0ac",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "c0cdd6912dc4",
+      "device_id": "69a699b4495848939e2e16cc",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
     },
     {
       "sn": "GC2001000000072",
       "device_id": "69ae5c36495848939e4fc7f2",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
-    },
-    {
-      "sn": "GC2001000000092",
-      "device_id": "69c66240495848939ea70cb6",
-      "product_id": "689adc659f04ec32f7642fbb",
-      "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
+      "label": "anti-reverse-ct",
+      "nickname": "张进（青峰岭村）",
+      "online": true
     },
     {
       "sn": "GC2001000000161",
       "device_id": "69af80aa495848939e9f6498",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
+      "label": "anti-reverse-ct",
+      "nickname": "张主任（东桥）",
+      "online": true
+    },
+    {
+      "sn": "f42dc9a0f988",
+      "device_id": "69b0bd2a495848939efe47ab",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器-988",
+      "online": false
+    },
+    {
+      "sn": "f42dc9a00224",
+      "device_id": "69b0c7b1495848939ed8bed2",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 224",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000109",
+      "device_id": "69b74e08495848939ecd3d1c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器109",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000070",
+      "device_id": "69b753b0495848939e3bb8e6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GTEST1000000027",
+      "device_id": "69b9359d495848939e2a4c58",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "青稞测试027",
+      "online": false
+    },
+    {
+      "sn": "GTEST1000000046",
+      "device_id": "69b93724495848939e490a5b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器升级测试046",
+      "online": false
+    },
+    {
+      "sn": "GTEST1000000029",
+      "device_id": "69b939dd495848939e806810",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器029测试",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000018",
+      "device_id": "69bbdf90495848939ee8d4af",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 18",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000034",
+      "device_id": "69bbfeaa495848939e692e8f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 34",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000135",
+      "device_id": "69bc98f2495848939e5b9c3f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器135",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000096",
+      "device_id": "69bc9957495848939e63effa",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 96",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000083",
+      "device_id": "69bc9977495848939e66715b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器83",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000114",
+      "device_id": "69bc99c9495848939e6d89f3",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器114",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000126",
+      "device_id": "69bc9a5f495848939e79aafe",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 126",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000130",
+      "device_id": "69bc9aec495848939e856987",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 130",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000133",
+      "device_id": "69bc9b25495848939e8a2e4c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 133",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000111",
+      "device_id": "69bc9b5c495848939e8eafd1",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 111",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000118",
+      "device_id": "69bc9b78495848939e914187",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 118",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000082",
+      "device_id": "69bc9b9e495848939e947c6d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 82",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000097",
+      "device_id": "69bc9c05495848939e9d248a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 97",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000124",
+      "device_id": "69bc9c30495848939ea0ea04",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 124",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000173",
+      "device_id": "69bc9c6a495848939ea5ee56",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 173",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000164",
+      "device_id": "69bc9cb6495848939eac331f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 164",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000085",
+      "device_id": "69bc9ced495848939eb0e510",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 85",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000183",
+      "device_id": "69bc9d7d495848939ebd21a9",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 183",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000139",
+      "device_id": "69bc9dbf495848939ec2c933",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 139",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000087",
+      "device_id": "69bc9de9495848939ec5fec9",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000174",
+      "device_id": "69bc9e72495848939ed1e63c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 174",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000071",
+      "device_id": "69bc9e9f495848939ed58fa8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 71",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000167",
+      "device_id": "69bc9f0c495848939edf6b93",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 167",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000153",
+      "device_id": "69bc9f2b495848939ee2392b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 153",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000075",
+      "device_id": "69bc9f83495848939ee9bd69",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 75",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000152",
+      "device_id": "69bc9fab495848939eed276b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 152",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000116",
+      "device_id": "69bc9fe8495848939ef2126f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 116",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000119",
+      "device_id": "69bca066495848939efc30c8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 119",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000131",
+      "device_id": "69bca0d3495848939e04eac8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 131",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000159",
+      "device_id": "69bca114495848939e09fc98",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 159",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000132",
+      "device_id": "69bca152495848939e0ee691",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 132",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000121",
+      "device_id": "69bca16d495848939e10fa7c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 121",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000094",
+      "device_id": "69bca19c495848939e14f893",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 94",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000148",
+      "device_id": "69bca1d2495848939e19a0de",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 148",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000086",
+      "device_id": "69bca21f495848939e1fdbee",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 86",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000079",
+      "device_id": "69bca25a495848939e24a26c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 79",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000073",
+      "device_id": "69bca289495848939e2a5fd8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 73",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000102",
+      "device_id": "69bca2e0495848939e3425b2",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 102",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000163",
+      "device_id": "69bca351495848939e3fd991",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 163",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000185",
+      "device_id": "69bca3c1495848939e4ad348",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000181",
+      "device_id": "69bca40c495848939e52df4c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "青稞测试181",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000137",
+      "device_id": "69bca46f495848939e5dae04",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 137",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000089",
+      "device_id": "69bca4b1495848939e63dcda",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 89",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000155",
+      "device_id": "69bca4c8495848939e66b516",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 155",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000122",
+      "device_id": "69bca54c495848939e72ed20",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 122",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000177",
+      "device_id": "69bca5ce495848939e7d6aa7",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 177",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000140",
+      "device_id": "69bca5fe495848939e813eaa",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 140",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000145",
+      "device_id": "69bca676495848939e8adf08",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 145",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000165",
+      "device_id": "69bca6b9495848939e9079d3",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 165",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000129",
+      "device_id": "69bca6ec495848939e9520e8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 129",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000147",
+      "device_id": "69bca788495848939ea315d8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 147",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000189",
+      "device_id": "69bca7a5495848939ea59f90",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 189",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000158",
+      "device_id": "69bca7d6495848939ea9ebe7",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 158",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000084",
+      "device_id": "69bca809495848939eadead4",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 84",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000187",
+      "device_id": "69bca866495848939eb569ec",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 187",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000078",
+      "device_id": "69bca89f495848939eba222e",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 78",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000127",
+      "device_id": "69bca8e6495848939ebffc45",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 127",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000115",
+      "device_id": "69bca934495848939ec672f3",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 115",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000090",
+      "device_id": "69bca963495848939eca4b9e",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 90",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000175",
+      "device_id": "69bca9b0495848939ed0b470",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 175",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000172",
+      "device_id": "69bca9fe495848939ed6e813",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 172",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000157",
+      "device_id": "69bcaa23495848939ed9e1a6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 157",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000125",
+      "device_id": "69bcaaac495848939ee63076",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 125",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000146",
+      "device_id": "69bcab16495848939eef9d37",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 146",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000144",
+      "device_id": "69bcab36495848939ef22c9b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 144",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000141",
+      "device_id": "69bcab53495848939ef48f28",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 141",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000149",
+      "device_id": "69bcabec495848939e0086f5",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 149",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000074",
+      "device_id": "69bcac0c495848939e0340cb",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 74",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000166",
+      "device_id": "69bcac46495848939e07e774",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 166",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000123",
+      "device_id": "69bcac88495848939e0d44a4",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 123",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000171",
+      "device_id": "69bcacba495848939e112f8e",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 171",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000091",
+      "device_id": "69bcad0f495848939e17ffa0",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 91",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000107",
+      "device_id": "69bcad2a495848939e1a07db",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 107",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000170",
+      "device_id": "69bcada4495848939e23ee14",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 170",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000186",
+      "device_id": "69bcadf5495848939e2a92d9",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器147",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000188",
+      "device_id": "69bcae1e495848939e2dcfd4",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 188",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000154",
+      "device_id": "69bcae5e495848939e33190e",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 154",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000136",
+      "device_id": "69bcaeff495848939e3fc09d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 136",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000180",
+      "device_id": "69bcaf4d495848939e45ee24",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 180",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000179",
+      "device_id": "69bcaf9b495848939e4c394b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 179",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000162",
+      "device_id": "69bcafd8495848939e512e98",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 162",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000178",
+      "device_id": "69bcb00f495848939e55b649",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 178",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000143",
+      "device_id": "69bcb0ca495848939e644f4d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 143",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000088",
+      "device_id": "69bcb115495848939e6a57ca",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 88",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000182",
+      "device_id": "69bcb153495848939e6f5784",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 182",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000168",
+      "device_id": "69bcb17d495848939e72d677",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 168",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000134",
+      "device_id": "69bcb1d8495848939e79eb9c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000120",
+      "device_id": "69bcb20f495848939e7e586a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 120",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000104",
+      "device_id": "69bcb23d495848939e820929",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 104",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000128",
+      "device_id": "69bcb263495848939e852dba",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 128",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000080",
+      "device_id": "69bcb29b495848939e89828b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 80",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000113",
+      "device_id": "69bcb323495848939e9474c7",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 113",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000110",
+      "device_id": "69bcb346495848939e9727fd",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 110",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000077",
+      "device_id": "69bcb37e495848939e9bb25f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 77",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000081",
+      "device_id": "69bcb42f495848939ea94c3f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 81",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000160",
+      "device_id": "69bcb44e495848939eabf273",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 160",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000103",
+      "device_id": "69bcb493495848939eb13fe0",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 103",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000101",
+      "device_id": "69bcb4bd495848939eb4d275",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 101",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000176",
+      "device_id": "69bcbb79495848939e3e5445",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 176",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000138",
+      "device_id": "69bcbb9c495848939e413022",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 138",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000375",
+      "device_id": "69c094e5495848939e30881c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000393",
+      "device_id": "69c09627495848939e49d873",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000281",
+      "device_id": "69c1ed7f495848939ee7311a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "嗒嗒小鱼-防逆流-281",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000051",
+      "device_id": "69c22dbe495848939e143718",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 51",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000049",
+      "device_id": "69c22e8a495848939e249dde",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器正泰测试0520",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000048",
+      "device_id": "69c22f62495848939e35b3bb",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000047",
+      "device_id": "69c22fe9495848939e4097e9",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000050",
+      "device_id": "69c23167495848939e5f6d79",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "正泰山东泰安测试",
+      "online": false
     },
     {
       "sn": "GC2001000000190",
       "device_id": "69c26d33495848939e5b611e",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
+      "label": "anti-reverse-ct",
+      "nickname": "Smart CT Gateway",
+      "online": true
     },
     {
-      "sn": "GC2001000000233",
-      "device_id": "69f02abe495848939e5ebb4b",
+      "sn": "GC2001000000378",
+      "device_id": "69c375ea495848939eeeebc1",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
+      "nickname": "防逆流控制器",
+      "online": false
     },
     {
-      "sn": "GC2001000000252",
-      "device_id": "69c4e61a495848939ee23928",
+      "sn": "GC2001000000467",
+      "device_id": "69c39db5495848939e491128",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
+      "nickname": "防逆流控制器",
+      "online": false
     },
     {
-      "sn": "GC2001000000301",
-      "device_id": "69fa987d495848939e686a9b",
+      "sn": "GC2001000000470",
+      "device_id": "69c39ea4495848939e5d6d98",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
+      "nickname": "防逆流控制器",
+      "online": false
     },
     {
-      "sn": "GC2001000000303",
-      "device_id": "6a4caab5495848939e7e1478",
+      "sn": "GC2001000000354",
+      "device_id": "69c3aa98495848939e5cf003",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
+      "nickname": "防逆流控制器 354",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000491",
+      "device_id": "69c3aca1495848939e881baa",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 491",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000461",
+      "device_id": "69c3b17d495848939eee1dd9",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 461",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000350",
+      "device_id": "69c3b423495848939e27f48a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 350",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000240",
+      "device_id": "69c49ebb495848939e1b9238",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000330",
+      "device_id": "69c49ed3495848939e1d74d2",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000201",
+      "device_id": "69c49ee9495848939e1f5ebb",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GTEST1000000028",
+      "device_id": "69c4a930495848939ef3a3ab",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "青稞测试028",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000498",
+      "device_id": "69c4e403495848939eb48ade",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "平安大姐-防逆流-498",
+      "online": false
     },
     {
       "sn": "GC2001000000457",
       "device_id": "69c4e417495848939eb67a46",
       "product_id": "689adc659f04ec32f7642fbb",
       "collection": "device_log_689adc659f04ec32f7642fbb",
-      "label": "anti-reverse-ct"
+      "label": "anti-reverse-ct",
+      "nickname": "友拉友-防逆流-457",
+      "online": true
+    },
+    {
+      "sn": "GC2001000000245",
+      "device_id": "69c4e601495848939ee028f3",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000252",
+      "device_id": "69c4e61a495848939ee23928",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct",
+      "nickname": "友拉友- 防逆流-252",
+      "online": true
+    },
+    {
+      "sn": "GC2001000000106",
+      "device_id": "69c65b2a495848939e1650fe",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器升级",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000092",
+      "device_id": "69c66240495848939ea70cb6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct",
+      "nickname": "防逆流控制器",
+      "online": true
+    },
+    {
+      "sn": "GC2001000000231",
+      "device_id": "69c78fd5495848939ed2483d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 231",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000487",
+      "device_id": "69ca2cb8495848939e6c3a2e",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 487",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000213",
+      "device_id": "69cb2bcc495848939e0a507d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000289",
+      "device_id": "69cb2c2f495848939e126aaf",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000211",
+      "device_id": "69cb2d09495848939e24213b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000243",
+      "device_id": "69cb2d4e495848939e2992b6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000244",
+      "device_id": "69cb2de2495848939e352ff2",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000318",
+      "device_id": "69cb2e58495848939e3ea540",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器-318",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000313",
+      "device_id": "69cb2ec1495848939e4752f4",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000315",
+      "device_id": "69cb2f72495848939e55ccbb",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 315",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000472",
+      "device_id": "69cb300f495848939e628df2",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000225",
+      "device_id": "69cb3068495848939e69a87a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000214",
+      "device_id": "69cb30dd495848939e7311d5",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000500",
+      "device_id": "69cb3149495848939e7c0432",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000251",
+      "device_id": "69cb31a2495848939e8353e8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000227",
+      "device_id": "69cb3204495848939e8ba838",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000215",
+      "device_id": "69cb326c495848939e946e3d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000218",
+      "device_id": "69cb32b7495848939e9a79ea",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000236",
+      "device_id": "69cb3320495848939ea32b77",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000197",
+      "device_id": "69cb33a5495848939eadd868",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000389",
+      "device_id": "69cb33f5495848939eb462f7",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000229",
+      "device_id": "69cb3458495848939ebc6be3",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000254",
+      "device_id": "69cb3499495848939ec1812b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000459",
+      "device_id": "69cb34fc495848939ec99fb6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000390",
+      "device_id": "69cb356b495848939ed2d635",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000463",
+      "device_id": "69cb35d8495848939edca07e",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000466",
+      "device_id": "69cb361f495848939ee2d759",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000468",
+      "device_id": "69cb3687495848939eeafbf0",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000206",
+      "device_id": "69cb3769495848939efd4de0",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000458",
+      "device_id": "69cb37d2495848939e05c6c0",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000311",
+      "device_id": "69cb382f495848939e0cf072",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 311",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000280",
+      "device_id": "69cb387b495848939e1324ec",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000242",
+      "device_id": "69cb394b495848939e25742a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000380",
+      "device_id": "69cb39f1495848939e33c4fe",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000385",
+      "device_id": "69cb3a12495848939e3644c8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000258",
+      "device_id": "69cb3a98495848939e41240a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000232",
+      "device_id": "69cb3af1495848939e48a303",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000312",
+      "device_id": "69cb3c0f495848939e5fd242",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000298",
+      "device_id": "69cb3c95495848939e6aa44b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000316",
+      "device_id": "69cb3cc1495848939e6e30bc",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000328",
+      "device_id": "69cb3d1d495848939e757088",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000276",
+      "device_id": "69cb3dac495848939e8156f6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000226",
+      "device_id": "69cb3ddf495848939e856250",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000272",
+      "device_id": "69cb3e8b495848939e92e766",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000309",
+      "device_id": "69cb3ee8495848939e9a65e2",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000263",
+      "device_id": "69cb3f50495848939ea2e8c9",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000288",
+      "device_id": "69cb42a8495848939ee5746c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000477",
+      "device_id": "69cb593d495848939eb98398",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000237",
+      "device_id": "69cb59a4495848939ec2112c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000249",
+      "device_id": "69cb5f28495848939e32e6bc",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000282",
+      "device_id": "69cb5f7c495848939e3a1e9b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000223",
+      "device_id": "69cb5fe4495848939e43e75c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000202",
+      "device_id": "69cb603d495848939e4c111a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000297",
+      "device_id": "69cb6082495848939e520938",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000388",
+      "device_id": "69cb6105495848939e5d2041",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000501",
+      "device_id": "69cb613b495848939e6190dd",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000228",
+      "device_id": "69cb625c495848939e792287",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000319",
+      "device_id": "69cb643c495848939ea3263f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器-319",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000384",
+      "device_id": "69cb6495495848939eaa85ec",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000266",
+      "device_id": "69cb64f1495848939eb1e45e",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000483",
+      "device_id": "69cb655b495848939ebab6b8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000381",
+      "device_id": "69cb6599495848939ebfbc44",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000374",
+      "device_id": "69cb65f3495848939ec7173d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000492",
+      "device_id": "69cb671c495848939edeea9a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000382",
+      "device_id": "69cb67ac495848939eea5693",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000383",
+      "device_id": "69cb6820495848939ef3c141",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000438",
+      "device_id": "69cb686a495848939ef9bba5",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000392",
+      "device_id": "69cb69fe495848939e19ea39",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000434",
+      "device_id": "69cb6a61495848939e216e8f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000204",
+      "device_id": "69cb6ab6495848939e285694",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000224",
+      "device_id": "69cb6aec495848939e2cdd70",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000219",
+      "device_id": "69cb6b9a495848939e3ac74a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000269",
+      "device_id": "69cb6c09495848939e43934b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000264",
+      "device_id": "69cb6c50495848939e495dd5",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000310",
+      "device_id": "69cb6cc2495848939e528d0d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000493",
+      "device_id": "69cb6d2e495848939e5b38f2",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000480",
+      "device_id": "69cb6d92495848939e63b122",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000476",
+      "device_id": "69cb6de8495848939e6b7e8f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000235",
+      "device_id": "69cb6e3d495848939e732e75",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000210",
+      "device_id": "69cb6fe6495848939e9567a6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000196",
+      "device_id": "69cb7077495848939ea0e3f4",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000317",
+      "device_id": "69cb70ea495848939ead7801",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 317",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000267",
+      "device_id": "69cb713f495848939eb560d6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000209",
+      "device_id": "69cb71b3495848939ebfd768",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000302",
+      "device_id": "69cb71da495848939ec3441c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000391",
+      "device_id": "69cb727d495848939ed0896a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000386",
+      "device_id": "69cb72d8495848939ed7e93a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000379",
+      "device_id": "69cb732b495848939ede864a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000376",
+      "device_id": "69cb73b3495848939ee95428",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000377",
+      "device_id": "69cb73f9495848939eeed649",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000278",
+      "device_id": "69cb755a495848939e0b3df3",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000387",
+      "device_id": "69cb760c495848939e19bbc0",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000273",
+      "device_id": "69cb76bd495848939e2869b2",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000296",
+      "device_id": "69cb76f5495848939e2cfd3a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000247",
+      "device_id": "69cb7748495848939e337e8b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000277",
+      "device_id": "69cb780a495848939e42c657",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000455",
+      "device_id": "69cb78e2495848939e53cbd2",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000255",
+      "device_id": "69cb7950495848939e5ca925",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000448",
+      "device_id": "69cb79c9495848939e664239",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GTEST1000000088",
+      "device_id": "69d86eb0495848939e658912",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000105",
+      "device_id": "69dc8e6a495848939e29a375",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000112",
+      "device_id": "69dc8ef2495848939e36ce65",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000076",
+      "device_id": "69dc9017495848939e4ef03a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 76",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000142",
+      "device_id": "69dc9031495848939e50efe0",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000151",
+      "device_id": "69dc9297495848939e830dc8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000150",
+      "device_id": "69dc92b7495848939e858c65",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000095",
+      "device_id": "69dc945e495848939ea79463",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000156",
+      "device_id": "69dc9470495848939ea8f3c8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GTEST1000000011",
+      "device_id": "69dde479495848939efba625",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000193",
+      "device_id": "69ef1298495848939e92bbab",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000195",
+      "device_id": "69ef12a9495848939e9447b6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000292",
+      "device_id": "69ef12b8495848939e959d9a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000299",
+      "device_id": "69ef1457495848939eb8be7f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000286",
+      "device_id": "69ef1466495848939eb9f238",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000260",
+      "device_id": "69ef147b495848939ebbf574",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000265",
+      "device_id": "69ef161e495848939ee03272",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000200",
+      "device_id": "69ef1653495848939ee494d3",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000253",
+      "device_id": "69ef1839495848939e0e61be",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000270",
+      "device_id": "69ef1849495848939e0febb8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000222",
+      "device_id": "69ef1a33495848939e3ca0c3",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000220",
+      "device_id": "69ef1a4f495848939e3f1856",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000271",
+      "device_id": "69ef1c09495848939e6673a7",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000257",
+      "device_id": "69ef1c23495848939e68a0f0",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000248",
+      "device_id": "69ef1c31495848939e69c647",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000284",
+      "device_id": "69ef2237495848939ef18f2d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000194",
+      "device_id": "69ef2249495848939ef31170",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000262",
+      "device_id": "69ef2596495848939e3f4c8c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000216",
+      "device_id": "69ef2a45495848939ea8307b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000199",
+      "device_id": "69ef2a74495848939eac15b6",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000275",
+      "device_id": "69f01143495848939e33d336",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000293",
+      "device_id": "69f012ac495848939e5254c9",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000287",
+      "device_id": "69f012f2495848939e585905",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000230",
+      "device_id": "69f0155c495848939e8de36c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000203",
+      "device_id": "69f01759495848939eb9281d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000238",
+      "device_id": "69f01a27495848939ef56a51",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000285",
+      "device_id": "69f01ac5495848939e02ce6a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000205",
+      "device_id": "69f01ba3495848939e157f5b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000290",
+      "device_id": "69f01c8e495848939e29b3d4",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000279",
+      "device_id": "69f01d9f495848939e40f6ca",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000234",
+      "device_id": "69f01dc3495848939e43ead4",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000268",
+      "device_id": "69f01e96495848939e55881c",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000261",
+      "device_id": "69f01edf495848939e5b9721",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000217",
+      "device_id": "69f01f4b495848939e64d223",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000191",
+      "device_id": "69f02024495848939e77590d",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000295",
+      "device_id": "69f02146495848939e900cb5",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000259",
+      "device_id": "69f02153495848939e917a47",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000207",
+      "device_id": "69f0228e495848939eac84bc",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000208",
+      "device_id": "69f023ea495848939eca7ce4",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000239",
+      "device_id": "69f0248a495848939ed7f4dd",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000256",
+      "device_id": "69f02565495848939eeb16f1",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000192",
+      "device_id": "69f02575495848939eec6aca",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000250",
+      "device_id": "69f025b1495848939ef1a3fb",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000274",
+      "device_id": "69f0278e495848939e1af414",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000294",
+      "device_id": "69f0279c495848939e1c0ee1",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000241",
+      "device_id": "69f02961495848939e41c6e0",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000291",
+      "device_id": "69f0298d495848939e45aafc",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000233",
+      "device_id": "69f02abe495848939e5ebb4b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct",
+      "nickname": "壶镇门卫防逆流控制器",
+      "online": true
+    },
+    {
+      "sn": "GC2001000000301",
+      "device_id": "69fa987d495848939e686a9b",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GTEST2000000066",
+      "device_id": "69fb2445495848939e1fbc48",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000402",
+      "device_id": "6a03d1b0495848939edbf1e8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000300",
+      "device_id": "6a2659e2495848939e01e3bb",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 300",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000303",
+      "device_id": "6a4caab5495848939e7e1478",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "label": "anti-reverse-ct",
+      "nickname": "防逆流控制器",
+      "online": true
+    },
+    {
+      "sn": "GC2001000000055",
+      "device_id": "6a5721d0495848939efbc5d7",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000304",
+      "device_id": "6a5f27cd495848939ea31f8a",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 304",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000305",
+      "device_id": "6a5f2934495848939ecd4b35",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 305",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000306",
+      "device_id": "6a5f2a43495848939eeb8f1f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000307",
+      "device_id": "6a5f2b88495848939e10edf7",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000308",
+      "device_id": "6a5f2d3a495848939e41af87",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000314",
+      "device_id": "6a5f300c495848939e936431",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 314",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000320",
+      "device_id": "6a6aac37495848939e7fe5d7",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器-320",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000321",
+      "device_id": "6a6aacd2495848939e91ebfa",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 321",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000323",
+      "device_id": "6a6aae0c495848939eb71b5f",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 323",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000324",
+      "device_id": "6a6aae61495848939ec14961",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 324",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000325",
+      "device_id": "6a6aaf90495848939ee5a385",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 325",
+      "online": false
+    },
+    {
+      "sn": "GC2001000000326",
+      "device_id": "6a6ab0d0495848939e0b19a8",
+      "product_id": "689adc659f04ec32f7642fbb",
+      "collection": "device_log_689adc659f04ec32f7642fbb",
+      "nickname": "防逆流控制器 326",
+      "online": false
     }
   ]
 }
