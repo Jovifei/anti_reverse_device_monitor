@@ -1355,6 +1355,11 @@ button:disabled {
   box-shadow: inset 3px 0 0 var(--red);
 }
 
+.device-row.stale-offline-row {
+  box-shadow: inset 3px 0 0 #c9961f;
+  background: #fffaf1;
+}
+
 .device-row.head {
   color: var(--muted);
   font-size: 11px;
@@ -3762,6 +3767,17 @@ body.metric-dialog-open .metric-card:hover {
 .fleet-priority-card.sustained-reverse.is-active {
   border-color: #edb1ad;
   background: #fff4f3;
+}
+
+/* Stale-offline = offline 7+ days, monitoring paused. Quiet amber tone,
+   distinct from the actionable "warning/offline" card (brighter var(--amber)). */
+.fleet-priority-card.stale-offline::before {
+  background: #9a6700;
+}
+
+.fleet-priority-card.stale-offline.is-active {
+  border-color: #efd19b;
+  background: #fffaf1;
 }
 
 .fleet-status-tabs {

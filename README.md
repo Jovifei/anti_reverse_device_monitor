@@ -86,6 +86,30 @@ start-monitor.cmd
 
 > 早期手工维护的 12 台（`config/device-sn-map.xlsx` + `npm run devices:apply-map`）仍有效，作为人工补漏/覆盖工具保留。
 
+## 每日同步 & Cron（设备注册表日同步）
+
+`POST /api/cron/sync-iot` 受 `Authorization: Bearer <CRON_SECRET>` 保护（缺失 `CRON_SECRET` → 503；Token 错误 → 401），内部直接驱动 `npm run devices:sync-iot`。`GET /api/cron/sync-iot` **免鉴权**、返回 `{ ok: true }`，仅供存活探针（**设计如此，勿改**）。`CRON_SECRET` 写入容器/本地环境，见 `.env.local.example`。
+
+### Windows（Task Scheduler，每日 00:00）
+
+`sync-iot-daily.cmd` → `scripts/sync-iot-daily.ps1`（内部执行 `npm run devices:sync-iot`）已就绪。以管理员身份在 PowerShell 注册任务：
+
+```bat
+schtasks /Create /TN "AntiReverse_IoT_DailySync" /TR "D:\work\anti_reverse_device_monitor\sync-iot-daily.cmd" /SC DAILY /ST 00:00 /RL HIGHEST
+```
+
+### Docker / Linux（curl 触发）
+
+```bash
+curl -X POST http://host/api/cron/sync-iot -H "Authorization: Bearer $CRON_SECRET"
+```
+
+存活检查（免鉴权）：
+
+```bash
+curl -s http://host/api/cron/sync-iot   # → {"ok":true}
+```
+
 ## 日常运行（推荐）
 
 1. 配置 `.env.local`（自 `.env.local.example`），填 Mongo，并设 `SOURCE_DB_ENABLED=true`、`SOURCE_DB_TYPE=mongodb`
