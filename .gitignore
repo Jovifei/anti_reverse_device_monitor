@@ -82,6 +82,10 @@ build_run*.log
 _tc_verify.txt
 _tsc_*.txt
 _vitest_out.txt
+_vitest_newly.txt
+
+# Local debug artifacts (never commit; generated during troubleshooting)
+logs/
 
 # Local secrets / credential files (NEVER commit real credentials)
 name.txt
