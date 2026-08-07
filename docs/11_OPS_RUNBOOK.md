@@ -32,6 +32,30 @@ flowchart TB
 
 浏览器入口：`http://localhost:3000/devices`
 
+## 1.1 每日 0:00 自动同步 IoT 注册表（Windows 计划任务）
+
+`start-monitor.ps1` 是一键启动器（含迁移 / SN 注册表 / source:sync / worker / Next），**不是**每日定时任务。
+真正的「每日 0:00 刷新 `config/devices.json`（造梦者 ~372 台）」由专门的脚本承担：
+
+- 入口：`sync-iot-daily.cmd` → `scripts/sync-iot-daily.ps1`
+- 动作：仅跑 `npm run devices:sync-iot`，不启动 Web / Worker，适合无头定时任务
+- 日志：`logs/sync-iot-daily-YYYY-MM-DD.log`（同一天追加，含 npm 输出）
+
+用计划任务注册（每天 0:00，当前用户、无论是否登录都运行）：
+
+```bash
+schtasks /Create /TN "AntiReverse_IoT_DailySync" /TR "D:\work\anti_reverse_device_monitor\sync-iot-daily.cmd" /SC DAILY /ST 00:00 /RL HIGHEST
+```
+
+验证 / 手动跑一次：
+
+```bash
+powershell -File scripts/sync-iot-daily.ps1
+# 或双击 sync-iot-daily.cmd
+```
+
+> 说明：docker 正式部署走 `POST /api/cron/sync-iot`（带 `CRON_SECRET`），不走这个 cmd。
+
 ## 2. 手动命令（等价拆分）
 
 ```bash

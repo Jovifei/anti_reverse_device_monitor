@@ -2,7 +2,8 @@
 $ErrorActionPreference = 'Stop'
 try { chcp 65001 > $null } catch {}
 $OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
-Set-Location $PSScriptRoot
+$repo = if ($PSScriptRoot) { $PSScriptRoot } else { $PWD.Path }
+Set-Location $repo
 
 Write-Host '========================================'
 Write-Host ' Anti-reverse monitor launcher'
@@ -54,6 +55,15 @@ if (Test-Path 'config\device-sn-map.xlsx') {
 }
 
 Write-Host ''
+Write-Host '[2b] Syncing IoT device registry (造梦者 → config/devices.json)...'
+npm run devices:sync-iot
+if ($LASTEXITCODE -ne 0) {
+  Write-Host '[WARN] devices:sync-iot failed (non-fatal); registry may be stale.' -ForegroundColor Yellow
+} else {
+  Write-Host '[OK] IoT device registry refreshed.'
+}
+
+Write-Host ''
 Write-Host '[3/5] Syncing registry devices from Mongo to local SQLite...'
 npm run source:sync
 if ($LASTEXITCODE -ne 0) {
@@ -75,7 +85,7 @@ if ($existingWorker) {
 }
 
 Write-Host '[5/5] Starting / reusing Next.js and opening browser...'
-& "$PSScriptRoot\scripts\open-monitor.ps1"
+& "$repo\scripts\open-monitor.ps1"
 if ($LASTEXITCODE -ne 0) {
   Write-Host '[WARN] Auto-open browser failed. Open http://localhost:3000/devices manually.' -ForegroundColor Yellow
 }
