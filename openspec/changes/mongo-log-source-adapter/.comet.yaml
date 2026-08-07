@@ -8,7 +8,7 @@ subagent_dispatch: null
 tdd_mode: tdd
 review_mode: standard
 isolation: current
-verify_mode: null
+verify_mode: full
 auto_transition: true
 base_ref: 90bcc39853f483486572c7ad85d0205019a796eb
 design_doc: docs/superpowers/specs/2026-07-31-mongo-log-source-adapter-design.md
@@ -21,7 +21,7 @@ created_at: 2026-07-31
 verified_at: null
 archive_confirmation: null
 archived: false
-bound_branch: main
+bound_branch: feature/20260807/iot-registry-daily-sync
 direct_override: null
 handoff_context: openspec/changes/mongo-log-source-adapter/.comet/handoff/design-context.json
 handoff_hash: e108b5bf245ccc868e5f14d728651773eec7a8e671ca501a98a3147b7cdf59a4

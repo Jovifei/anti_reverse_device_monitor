@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { Route } from 'next'
 import { SoftRefreshButton } from '@/src/components/soft-refresh-button'
 import { OnlineInverterCount } from '@/src/components/online-inverter-count'
 import { WifiSignalView } from '@/src/components/wifi-signal-view'
@@ -18,13 +19,13 @@ const FILTERS = [
   { value: 'stale-offline', label: '7 日以上离线' }
 ] as const
 
-function fleetListHref(status: (typeof FILTERS)[number]['value'], q: string) {
+function fleetListHref(status: (typeof FILTERS)[number]['value'], q: string): Route {
   const params = new URLSearchParams()
   if (status !== 'all') params.set('status', status)
   const trimmed = q.trim()
   if (trimmed) params.set('q', trimmed)
   const query = params.toString()
-  return query ? `/devices?${query}` : '/devices'
+  return (query ? `/devices?${query}` : '/devices') as unknown as Route
 }
 
 function sustainedReverseClause(device: {

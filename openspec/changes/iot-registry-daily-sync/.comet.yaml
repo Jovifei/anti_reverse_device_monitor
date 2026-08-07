@@ -8,7 +8,7 @@ subagent_dispatch: confirmed
 tdd_mode: tdd
 review_mode: standard
 isolation: branch
-verify_mode: null
+verify_mode: full
 auto_transition: true
 base_ref: 3f7224c9ac94437a8e3a7fe133dd16b9d75c512a
 design_doc: docs/superpowers/specs/2026-08-07-iot-registry-daily-sync-design.md
@@ -21,7 +21,7 @@ created_at: 2026-08-07
 verified_at: null
 archive_confirmation: null
 archived: false
-bound_branch: main
+bound_branch: feature/20260807/iot-registry-daily-sync
 direct_override: null
 handoff_context: openspec/changes/iot-registry-daily-sync/.comet/handoff/design-context.json
 handoff_hash: 20b66d16535cc74f0ab3fd9ff23207f8f2402d71d0c102771dcce768790757ed

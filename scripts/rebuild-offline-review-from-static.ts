@@ -4,6 +4,7 @@ import { loadEchartsMinJs } from '@/src/export/offline/echarts-asset'
 import { extractEmbeddedOfflineViewModel } from '@/src/export/offline/embedded-view-model'
 import { safeFileToken } from '@/src/export/offline/html-utils'
 import { renderOfflineHtmlDocument } from '@/src/export/offline/render-html'
+import { ctInverterGenerationStatusLabel, resolveCtInverterGenerationStatus } from '@/src/domain/monitoring'
 import type { OfflineDeviceViewModel, OfflineInverterViewModel, OfflineOverviewViewModel } from '@/src/export/offline/types'
 import { writeZipArchive } from '@/src/export/offline/zip-archive'
 
@@ -98,6 +99,16 @@ function buildOverview(devices: OfflineDeviceViewModel[]): OfflineOverviewViewMo
       todayEnergy: device.todayEnergy,
       onlineInverterCount: device.inverters.filter((item) => item.statusVariant === 'online').length,
       inverterCount: device.inverters.filter((item) => item.statusVariant !== 'unpaired').length || device.inverters.length || 8,
+      inverterGenerationLabel: ctInverterGenerationStatusLabel(
+        resolveCtInverterGenerationStatus({
+          onlineInverterCount: device.inverters.filter((item) => item.statusVariant === 'online').length,
+          generationPower: device.inverters.some((item) => item.generating === '是')
+            ? 100
+            : device.inverters.some((item) => item.statusVariant === 'online')
+              ? 0
+              : null
+        })
+      ),
       runtimeState: device.ctState,
       limitState: device.limitState,
       sub1gState: device.sub1gState,

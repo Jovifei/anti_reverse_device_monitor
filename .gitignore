@@ -72,3 +72,13 @@ log/
 ui-preview.html
 ui-preview-real-logs.html
 scripts/generate-log-preview.cjs
+
+# Build cache backups (created when next build retries into alternative dirs)
+.next.bak/
+.next.prev/
+.next_d*/
+.next_done/
+build_run*.log
+_tc_verify.txt
+_tsc_*.txt
+_vitest_out.txt
