@@ -26,6 +26,24 @@ describe('device list query validation', () => {
     })
   })
 
+  it('defaults status to active (近7天活跃设备) when absent', () => {
+    expect(parseDeviceListQuery({})).toMatchObject({
+      status: 'active',
+      page: 1,
+      pageSize: 20
+    })
+    expect(parseDeviceListQuery({ q: 'GC200' })).toMatchObject({
+      q: 'GC200',
+      status: 'active'
+    })
+  })
+
+  it('accepts explicit active status filter', () => {
+    expect(parseDeviceListQuery({ status: 'active' })).toMatchObject({
+      status: 'active'
+    })
+  })
+
   it('accepts inv-offline status filter', () => {
     expect(parseDeviceListQuery({ status: 'inv-offline' })).toMatchObject({
       status: 'inv-offline',
@@ -44,5 +62,21 @@ describe('device list query validation', () => {
     expect(parseDeviceListQuery({ status: 'inv-fault' })).toMatchObject({
       status: 'inv-fault'
     })
+  })
+
+  it('accepts newly-online status filter (近7日新上线/增量在线)', () => {
+    expect(parseDeviceListQuery({ status: 'newly-online' })).toMatchObject({
+      status: 'newly-online',
+      page: 1,
+      pageSize: 20
+    })
+    expect(parseDeviceListQuery({ q: '', status: 'newly-online' })).toMatchObject({
+      q: undefined,
+      status: 'newly-online'
+    })
+  })
+
+  it('rejects unknown status values', () => {
+    expect(() => parseDeviceListQuery({ status: 'newly-offline' })).toThrow()
   })
 })

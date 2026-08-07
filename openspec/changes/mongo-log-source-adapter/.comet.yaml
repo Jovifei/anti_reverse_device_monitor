@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: build
+phase: archive
 context_compression: off
 build_mode: executing-plans
 build_pause: null
@@ -13,14 +13,14 @@ auto_transition: true
 base_ref: 90bcc39853f483486572c7ad85d0205019a796eb
 design_doc: docs/superpowers/specs/2026-07-31-mongo-log-source-adapter-design.md
 plan: docs/superpowers/plans/2026-07-31-mongo-log-source-adapter.md
-verify_result: pending
+verify_result: pass
 verify_failures: 0
-verification_report: null
+verification_report: openspec/changes/mongo-log-source-adapter/verification-report.md
 branch_status: pending
 created_at: 2026-07-31
-verified_at: null
-archive_confirmation: null
-archived: false
+verified_at: 2026-08-07
+archive_confirmation: confirmed
+archived: true
 bound_branch: feature/20260807/iot-registry-daily-sync
 direct_override: null
 handoff_context: openspec/changes/mongo-log-source-adapter/.comet/handoff/design-context.json

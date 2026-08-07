@@ -8,24 +8,41 @@ import { fleetLastKnownClass, fleetLastKnownTitle } from '@/src/domain/fleet-las
 import { formatDuration, formatTime, wifiSignalBars } from '@/src/domain/monitoring'
 import { DeviceService } from '@/src/services/device-service'
 
+// `active` 是列表默认视图（近 7 天活跃），因此 URL 中省略该参数；其余状态（含 `all`）都显式写入。
+const DEFAULT_STATUS = 'active'
+
 const FILTERS = [
-  { value: 'all', label: '全部活跃设备' },
+  { value: 'active', label: '近7天活跃设备' },
+  { value: 'newly-online', label: '近7日新上线' },
   { value: 'online', label: '仅在线 CT' },
   { value: 'offline', label: '仅离线 CT' },
   { value: 'reverse', label: '仅逆流告警' },
   { value: 'sustained-reverse', label: '近7天长时逆流' },
   { value: 'inv-offline', label: '存在离线微逆' },
   { value: 'inv-fault', label: '近7天微逆故障' },
-  { value: 'stale-offline', label: '7 日以上离线' }
+  { value: 'stale-offline', label: '7 日以上离线' },
+  { value: 'all', label: '全部设备' }
 ] as const
 
 function fleetListHref(status: (typeof FILTERS)[number]['value'], q: string): Route {
   const params = new URLSearchParams()
-  if (status !== 'all') params.set('status', status)
+  if (status !== DEFAULT_STATUS) params.set('status', status)
   const trimmed = q.trim()
   if (trimmed) params.set('q', trimmed)
   const query = params.toString()
   return (query ? `/devices?${query}` : '/devices') as unknown as Route
+}
+
+const PAGE_SIZE_OPTIONS = [20, 50, 100, 200] as const
+
+function paginationHref(status: string, q: string, page: number, pageSize: number): Route {
+  const params = new URLSearchParams()
+  if (status !== DEFAULT_STATUS) params.set('status', status)
+  const trimmed = q.trim()
+  if (trimmed) params.set('q', trimmed)
+  params.set('page', String(page))
+  params.set('pageSize', String(pageSize))
+  return `/devices?${params.toString()}` as unknown as Route
 }
 
 function sustainedReverseClause(device: {
@@ -95,7 +112,7 @@ export default async function DeviceListPage({
     q: resolvedSearchParams.q?.trim() ? resolvedSearchParams.q.trim() : undefined
   })
   const q = resolvedSearchParams.q?.trim() || ''
-  const status = FILTERS.find((item) => item.value === resolvedSearchParams.status)?.value ?? 'all'
+  const status = FILTERS.find((item) => item.value === resolvedSearchParams.status)?.value ?? DEFAULT_STATUS
   const devices = [...result.items].sort((left, right) => {
     const priority = (device: typeof left) =>
       device.reverseState === 'active'
@@ -111,6 +128,7 @@ export default async function DeviceListPage({
                 : 5
     return priority(left) - priority(right) || left.deviceSn.localeCompare(right.deviceSn)
   })
+  const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize))
 
   return <main className="device-overview fleet-overview">
     <header className="page-header fleet-overview-header">
@@ -120,7 +138,7 @@ export default async function DeviceListPage({
         <form className="sn-search" action="/devices" method="get">
           <label htmlFor="overview-sn">CT SN 搜索</label>
           <input id="overview-sn" name="q" defaultValue={q} placeholder="完整 SN 或末尾编号" />
-          {status !== 'all' ? <input type="hidden" name="status" value={status} /> : null}
+          {status !== DEFAULT_STATUS ? <input type="hidden" name="status" value={status} /> : null}
           <button type="submit">查询设备</button>
         </form>
       </div>
@@ -213,6 +231,20 @@ export default async function DeviceListPage({
         <p>{result.summary.staleOfflineCount ? `${result.summary.staleOfflineCount} 台离线超过 7 天，已停止提醒` : '没有超过 7 天仍需保留的离线 CT'} · 点击筛选</p>
       </Link>
       <Link
+        href={fleetListHref('newly-online', q)}
+        className={`fleet-priority-card newly-online ${result.summary.newlyOnlineCount ? 'is-active' : ''} ${status === 'newly-online' ? 'is-selected' : ''}`}
+        aria-current={status === 'newly-online' ? 'page' : undefined}
+      >
+        <span>近7日新上线</span>
+        <strong>{result.summary.newlyOnlineCount}</strong>
+        <p>
+          {result.summary.newlyOnlineCount
+            ? `${result.summary.newlyOnlineCount} 台设备注册表未标记在线、但 Mongo 近 7 天有上报`
+            : '近 7 天没有新上线的增量设备'}
+          {' '}· 点击筛选
+        </p>
+      </Link>
+      <Link
         href={fleetListHref('stale-offline', q)}
         className={`fleet-priority-card stale-offline ${result.summary.staleOfflineCount ? 'is-active' : ''} ${status === 'stale-offline' ? 'is-selected' : ''}`}
         aria-current={status === 'stale-offline' ? 'page' : undefined}
@@ -274,7 +306,57 @@ export default async function DeviceListPage({
             </tr>
           })}</tbody>
         </table>
-      </div> : <div className="empty-chart">没有符合条件的活跃设备。</div>}
+      </div> : <div className="empty-chart">{q ? `没有匹配「${q}」的设备。` : '当前筛选条件下没有设备。'}</div>}
+      {result.total > 0 ? (
+        <div className="fleet-pagination">
+          <span className="fleet-pagination-info">
+            共 {result.total} 台 · 第 {result.page}/{totalPages} 页 · 每页 {result.pageSize} 条
+          </span>
+          <nav className="fleet-pagination-nav" aria-label="分页导航">
+            {result.page > 1 ? (
+              <Link
+                href={paginationHref(status, q, result.page - 1, result.pageSize)}
+                className="fleet-pagination-link"
+              >
+                上一页
+              </Link>
+            ) : (
+              <span className="fleet-pagination-link is-disabled" aria-disabled="true">
+                上一页
+              </span>
+            )}
+            {result.page < totalPages ? (
+              <Link
+                href={paginationHref(status, q, result.page + 1, result.pageSize)}
+                className="fleet-pagination-link"
+              >
+                下一页
+              </Link>
+            ) : (
+              <span className="fleet-pagination-link is-disabled" aria-disabled="true">
+                下一页
+              </span>
+            )}
+          </nav>
+          <div className="fleet-pagination-size" role="group" aria-label="每页条数">
+            {PAGE_SIZE_OPTIONS.map((size) =>
+              result.pageSize === size ? (
+                <span key={size} className="fleet-pagination-size-btn is-active" aria-current="page">
+                  {size}
+                </span>
+              ) : (
+                <Link
+                  key={size}
+                  href={paginationHref(status, q, 1, size)}
+                  className="fleet-pagination-size-btn"
+                >
+                  {size}
+                </Link>
+              )
+            )}
+          </div>
+        </div>
+      ) : null}
     </section>
   </main>
 }

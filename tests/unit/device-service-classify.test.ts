@@ -85,7 +85,7 @@ describe('DeviceService.listDevices 7 日分类集成', () => {
   })
 
   it('每个 item 都带 classifyStatus', async () => {
-    const result = await service.listDevices({})
+    const result = await service.listDevices({ status: 'all' })
     expect(result.items.length).toBe(mockRegistry.devices.length)
     for (const item of result.items) {
       expect(['active', 'stale-offline']).toContain(item.classifyStatus)
@@ -93,7 +93,7 @@ describe('DeviceService.listDevices 7 日分类集成', () => {
   })
 
   it('staleOfflineCount 统计正确（IoT offline 且无 Mongo 数据 → stale-offline）', async () => {
-    const result = await service.listDevices({})
+    const result = await service.listDevices({ status: 'all' })
     const expectedStale = mockRegistry.devices.filter((d) => d.online !== true).length
     expect(result.summary.staleOfflineCount).toBe(expectedStale)
     const onlineItem = result.items.find((i) => i.deviceSn === 'SN_ONLINE')
@@ -106,5 +106,30 @@ describe('DeviceService.listDevices 7 日分类集成', () => {
     const result = await service.listDevices({ status: 'stale-offline' })
     expect(result.items.every((i) => i.classifyStatus === 'stale-offline')).toBe(true)
     expect(result.total).toBe(mockRegistry.devices.filter((d) => d.online !== true).length)
+  })
+
+  it('默认（不传 status）只返回近 7 天活跃设备，status=all 才返回全量', async () => {
+    const expectedActive = mockRegistry.devices.filter((d) => d.online === true).length
+
+    const defaultResult = await service.listDevices({})
+    expect(defaultResult.items.every((i) => i.classifyStatus === 'active')).toBe(true)
+    expect(defaultResult.total).toBe(expectedActive)
+    expect(defaultResult.items.map((i) => i.deviceSn)).toEqual(['SN_ONLINE'])
+    expect(defaultResult.items.some((i) => i.deviceSn === 'SN_STALE')).toBe(false)
+
+    const allResult = await service.listDevices({ status: 'all' })
+    expect(allResult.total).toBe(mockRegistry.devices.length)
+    expect(allResult.items.some((i) => i.classifyStatus === 'stale-offline')).toBe(true)
+
+    // 列表过滤不应影响 summary 统计口径。
+    expect(defaultResult.summary.registryTotal).toBe(allResult.summary.registryTotal)
+    expect(defaultResult.summary.staleOfflineCount).toBe(allResult.summary.staleOfflineCount)
+  })
+
+  it('显式 status=active 与默认视图等价', async () => {
+    const explicitResult = await service.listDevices({ status: 'active' })
+    const defaultResult = await service.listDevices({})
+    expect(explicitResult.total).toBe(defaultResult.total)
+    expect(explicitResult.items.map((i) => i.deviceSn)).toEqual(defaultResult.items.map((i) => i.deviceSn))
   })
 })

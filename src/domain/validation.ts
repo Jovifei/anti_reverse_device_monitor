@@ -12,7 +12,23 @@ export const deviceListSchema = z.object({
     const trimmed = value.trim()
     return trimmed.length > 0 ? trimmed : undefined
   }, z.string().min(1).max(64).optional()),
-  status: z.enum(['all', 'online', 'offline', 'reverse', 'inv-offline', 'sustained-reverse', 'inv-fault', 'stale-offline']).default('all')
+  // `active` = 近 7 天内有在线活跃过的设备（默认视图）；
+  // `newly-online` = 近 7 日新上线（增量在线）设备，即 Mongo 近 7 天有上报、但 IoT 注册表未标记 online=true 者；
+  // `all` = 注册表全量设备。
+  status: z
+    .enum([
+      'active',
+      'newly-online',
+      'online',
+      'offline',
+      'reverse',
+      'inv-offline',
+      'sustained-reverse',
+      'inv-fault',
+      'stale-offline',
+      'all'
+    ])
+    .default('active')
 })
 
 export const telemetryQuerySchema = z.object({
