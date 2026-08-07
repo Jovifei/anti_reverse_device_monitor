@@ -23,17 +23,48 @@ export const iotDeviceSchema = z.object({
   moduleName: z.string().optional()
 })
 
-/** `getDevices` 分页响应的信封结构。 */
+/** `getDevices` 分页响应的信封结构。
+ *
+ * 真实造梦者 IoT 平台（iot.iald.cn）返回的是 Spring Data 分页结构：
+ * `data.content`（设备数组）、`data.totalElements`（总数）、`data.totalPages` 等。
+ * 旧代码只认 `data.list` / `data.total`，导致 `safeParse` 虽通过但取不到列表、
+ * 第一页即静默返回空。这里同时兼容两种结构。
+ */
 export const iotListResponseSchema = z.object({
   code: z.number(),
   msg: z.string().optional(),
   data: z
     .object({
       total: z.number().optional(),
-      list: z.array(z.unknown()).optional()
+      list: z.array(z.unknown()).optional(),
+      // 真实接口（Spring Data page）字段
+      content: z.array(z.unknown()).optional(),
+      totalElements: z.number().optional(),
+      numberOfElements: z.number().optional(),
+      totalPages: z.number().optional(),
+      first: z.boolean().optional(),
+      last: z.boolean().optional(),
+      empty: z.boolean().optional(),
+      pageable: z.unknown().optional(),
+      sort: z.unknown().optional(),
+      number: z.number().optional(),
+      size: z.number().optional()
     })
     .optional()
 })
+
+/** 从分页响应里安全地取出设备数组（兼容 content / list 两种字段）。 */
+export function iotListContent(data: IotListResponse['data']): unknown[] {
+  if (!data) return []
+  const content = data.content ?? data.list
+  return Array.isArray(content) ? content : []
+}
+
+/** 从分页响应里安全地取出设备总数（兼容 totalElements / total 两种字段）。 */
+export function iotListTotal(data: IotListResponse['data']): number {
+  if (!data) return 0
+  return data.totalElements ?? data.total ?? 0
+}
 
 /** 设备详情（`getDevice`）返回的单设备信封（data 直接是设备对象，可能为空）。 */
 export const iotDeviceResponseSchema = z.object({
