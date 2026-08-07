@@ -204,12 +204,14 @@ export async function listAllDevices(
       continue
     }
 
-    const total = response.data?.total ?? 0
-    if (totalPages === Infinity && total > 0) {
-      totalPages = Math.max(1, Math.ceil(total / size))
+    const total = response.data?.totalElements ?? response.data?.total ?? 0
+    if (totalPages === Infinity) {
+      const apiPages = response.data?.totalPages
+      if (apiPages && apiPages > 0) totalPages = apiPages
+      else if (total > 0) totalPages = Math.max(1, Math.ceil(total / size))
     }
 
-    const rawList = response.data?.list ?? []
+    const rawList = response.data?.content ?? response.data?.list ?? []
     let validInPage = 0
     for (const item of rawList) {
       const parsed = iotDeviceSchema.safeParse(item)

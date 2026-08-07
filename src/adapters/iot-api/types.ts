@@ -29,6 +29,15 @@ export const iotListResponseSchema = z.object({
   msg: z.string().optional(),
   data: z
     .object({
+      // 真实接口（Spring Page）字段
+      content: z.array(z.unknown()).optional(),
+      totalElements: z.number().optional(),
+      totalPages: z.number().optional(),
+      number: z.number().optional(),
+      size: z.number().optional(),
+      first: z.boolean().optional(),
+      last: z.boolean().optional(),
+      // 兼容早期接口文档示例中的命名（旧单测仍用这套）
       total: z.number().optional(),
       list: z.array(z.unknown()).optional()
     })

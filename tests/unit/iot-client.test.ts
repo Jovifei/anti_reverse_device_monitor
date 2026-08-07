@@ -134,4 +134,52 @@ describe('iot-client (mocked axios)', () => {
     expect(device).toBeNull()
     expect(mockGet).toHaveBeenCalledTimes(1)
   })
+
+  it('listAllDevices 解析真实 Spring Page 结构（content / totalElements / totalPages）', async () => {
+    // 真实接口形状：data.content 是设备数组，data.totalElements 是总数，data.totalPages 是总页数。
+    // size=100 → 4 页：100 / 100 / 100 / 72 = 372 台。
+    const idsPage = (start: number, count: number, pageIndex: number) =>
+      Array.from({ length: count }, (_, i) => makeDevice(`dev-${start + i}`, pageIndex))
+
+    mockPost
+      .mockResolvedValueOnce({
+        data: { code: 0, msg: 'ok', data: { first: true, number: 0, size: 100, totalElements: 372, totalPages: 4, last: false, content: idsPage(0, 100, 0) } }
+      })
+      .mockResolvedValueOnce({
+        data: { code: 0, msg: 'ok', data: { first: false, number: 1, size: 100, totalElements: 372, totalPages: 4, last: false, content: idsPage(100, 100, 1) } }
+      })
+      .mockResolvedValueOnce({
+        data: { code: 0, msg: 'ok', data: { first: false, number: 2, size: 100, totalElements: 372, totalPages: 4, last: false, content: idsPage(200, 100, 2) } }
+      })
+      .mockResolvedValueOnce({
+        data: { code: 0, msg: 'ok', data: { first: false, number: 3, size: 100, totalElements: 372, totalPages: 4, last: true, content: idsPage(300, 72, 3) } }
+      })
+
+    const devices = await listAllDevices({ productId: 'p1', size: 100 }, CONFIG)
+
+    expect(devices).toHaveLength(372)
+    // 依据 totalPages=4 仅请求 4 页
+    expect(mockPost).toHaveBeenCalledTimes(4)
+    // 末页最后一条
+    expect(devices[371].id).toBe('dev-371')
+  })
+
+  it('listAllDevices 将 content 中设备的 nickname / online 正确带入 IotDevice', async () => {
+    const rawDevice = {
+      id: '6055f97d9e80',
+      sn: '6055f97d9e80',
+      nickname: '智能CT网关',
+      online: false
+    }
+    mockPost.mockResolvedValueOnce({
+      data: { code: 0, msg: 'ok', data: { first: true, number: 0, size: 100, totalElements: 1, totalPages: 1, last: true, content: [rawDevice] } }
+    })
+
+    const devices = await listAllDevices({ productId: 'p1', size: 100 }, CONFIG)
+
+    expect(devices).toHaveLength(1)
+    expect(devices[0].nickname).toBe('智能CT网关')
+    expect(devices[0].online).toBe(false)
+    expect(mockPost).toHaveBeenCalledTimes(1)
+  })
 })
