@@ -72,3 +72,5 @@ log/
 ui-preview.html
 ui-preview-real-logs.html
 scripts/generate-log-preview.cjs
+# Runtime source-sync log (background task appends; never commit).
+source-sync.log
