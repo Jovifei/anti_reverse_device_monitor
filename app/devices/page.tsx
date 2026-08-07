@@ -14,7 +14,8 @@ const FILTERS = [
   { value: 'reverse', label: '仅逆流告警' },
   { value: 'sustained-reverse', label: '近7天长时逆流' },
   { value: 'inv-offline', label: '存在离线微逆' },
-  { value: 'inv-fault', label: '近7天微逆故障' }
+  { value: 'inv-fault', label: '近7天微逆故障' },
+  { value: 'stale-offline', label: '7 日以上离线' }
 ] as const
 
 function fleetListHref(status: (typeof FILTERS)[number]['value'], q: string) {
@@ -210,6 +211,20 @@ export default async function DeviceListPage({
         <strong>{result.summary.onlineCtCount} / {result.summary.activeTotal}</strong>
         <p>{result.summary.staleOfflineCount ? `${result.summary.staleOfflineCount} 台离线超过 7 天，已停止提醒` : '没有超过 7 天仍需保留的离线 CT'} · 点击筛选</p>
       </Link>
+      <Link
+        href={fleetListHref('stale-offline', q)}
+        className={`fleet-priority-card stale-offline ${result.summary.staleOfflineCount ? 'is-active' : ''} ${status === 'stale-offline' ? 'is-selected' : ''}`}
+        aria-current={status === 'stale-offline' ? 'page' : undefined}
+      >
+        <span>7 日以上离线</span>
+        <strong>{result.summary.staleOfflineCount}</strong>
+        <p>
+          {result.summary.staleOfflineCount
+            ? `${result.summary.staleOfflineCount} 台 IoT 设备 7 日以上无上报数据`
+            : '没有 7 日以上离线的 IoT 设备'}
+          {' '}· 点击筛选
+        </p>
+      </Link>
     </section>
 
     <section className="fleet-list-panel" aria-labelledby="fleet-list-title">
@@ -233,7 +248,8 @@ export default async function DeviceListPage({
               device.hasRecentInverterFault && 'inv-fault-row',
               device.offlineAlert && 'offline-row',
               !device.isOnline && 'ct-offline-row',
-              device.hasOfflineInverter && 'inv-offline-row'
+              device.hasOfflineInverter && 'inv-offline-row',
+              device.classifyStatus === 'stale-offline' && 'stale-offline-row'
             )} key={device.id}>
               <th scope="row"><Link className="fleet-table-sn" href={`/devices/${encodeURIComponent(device.deviceSn)}`}>{primary}</Link><span className="fleet-table-subtext">{secondary ? `${secondary} · ${connectionText}` : connectionText}</span></th>
               <td><span className={`badge ${device.isOnline ? 'online' : 'offline'}`}>{device.isOnline ? 'CT 在线' : 'CT 离线'}</span></td>
@@ -252,7 +268,7 @@ export default async function DeviceListPage({
               </td>
               <td className={lastKnown} title={lastKnownTitle}>{device.sub1gState}</td>
               <td className={lastKnown} title={lastKnownTitle}><WifiSignalView value={device.wifiSignal} bars={wifiSignalBars(wifiRaw)} /></td>
-              <td><time>{formatTime(device.lastReportedAt)}</time></td>
+              <td><time title={device.classifyStatus === 'stale-offline' && !device.lastReportedAt ? '无近期上报数据' : undefined}>{formatTime(device.lastReportedAt)}</time></td>
               <td><Link className="fleet-table-action" href={`/devices/${encodeURIComponent(device.deviceSn)}`}>查看详情</Link></td>
             </tr>
           })}</tbody>

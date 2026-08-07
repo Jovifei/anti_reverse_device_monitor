@@ -20,6 +20,10 @@ export interface FleetDeviceItem {
   hasRecentInverterFault: boolean
   offlineMinutes: number | null
   offlineAlert: boolean
+  /** 7 日分类：近 7 日有上报数据 OR IoT 平台在线 → active；否则 stale-offline。 */
+  classifyStatus: 'active' | 'stale-offline'
+  /** 来自 IoT 注册表（config/devices.json）的在线状态，仅用于 7 日分类。 */
+  online?: boolean
   todayEnergy: string
   /** Aggregate micro-inverter generation: generating | idle (online, not generating) | offline */
   inverterGenerationStatus: 'generating' | 'idle' | 'offline'
