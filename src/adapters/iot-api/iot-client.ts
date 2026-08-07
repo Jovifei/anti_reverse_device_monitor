@@ -15,6 +15,8 @@ import {
   iotDeviceSchema,
   iotDeviceResponseSchema,
   iotListResponseSchema,
+  iotListContent,
+  iotListTotal,
   type IotDevice,
   type IotListResponse
 } from './types'
@@ -204,12 +206,12 @@ export async function listAllDevices(
       continue
     }
 
-    const total = response.data?.total ?? 0
+    const total = iotListTotal(response.data)
     if (totalPages === Infinity && total > 0) {
       totalPages = Math.max(1, Math.ceil(total / size))
     }
 
-    const rawList = response.data?.list ?? []
+    const rawList = iotListContent(response.data)
     let validInPage = 0
     for (const item of rawList) {
       const parsed = iotDeviceSchema.safeParse(item)
