@@ -1,0 +1,11 @@
+Set-Location : 无法处理参数，因为参数“path”的值为空。请将参数“path”的值更改为非空值。
+所在位置 D:\work\anti_reverse_device_monitor\scripts\sync-iot-daily.ps1:12 字符: 1
++ Set-Location $repo
++ ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Set-Location]，PSArgumentNu 
+   llException
+    + FullyQualifiedErrorId : ArgumentNull,Microsoft.PowerShell.Commands.SetLo 
+   cationCommand
+ 
+
+WRAP_LASTEXIT=0

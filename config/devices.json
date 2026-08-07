@@ -2846,7 +2846,7 @@
       "collection": "device_log_689adc659f04ec32f7642fbb",
       "label": "anti-reverse-ct",
       "nickname": "防逆流控制器",
-      "online": true
+      "online": false
     },
     {
       "sn": "GTEST2000000066",

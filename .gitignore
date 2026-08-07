@@ -82,3 +82,8 @@ build_run*.log
 _tc_verify.txt
 _tsc_*.txt
 _vitest_out.txt
+
+# Local secrets / credential files (NEVER commit real credentials)
+name.txt
+*.secret
+*credentials*.txt

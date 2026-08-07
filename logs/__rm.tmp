@@ -1,0 +1,1 @@
+﻿REMOVE_ERR: [safe-delete][SAFE_DELETE_FAIL_CLOSED] {"target":"D:\\work\\anti_reverse_device_monitor\\logs\\_marker.tmp","reason":"trash-failed","detail":"使用“3”个参数调用“DeleteFile”时发生异常:“无法找到指定文件。”"}

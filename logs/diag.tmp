@@ -1,0 +1,7 @@
+﻿PSVersion=5.1.22621.3880
+PSScriptRoot_guess=D:\work\anti_reverse_device_monitor\scripts
+repo=D:\work\anti_reverse_device_monitor
+SetLocation_OK pwd=D:\work\anti_reverse_device_monitor
+NewItem_OK D:\work\anti_reverse_device_monitor\logs
+npm_found=True path=C:\Users\zhuxi\.workbuddy\binaries\node\versions\22.22.2\npm.ps1
+envlocal_exists=True

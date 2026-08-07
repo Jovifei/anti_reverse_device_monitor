@@ -45,6 +45,8 @@ export interface DeviceListResponse {
   total: number
   summary: {
     activeTotal: number
+    /** 近 7 日新上线（增量在线）：Mongo 活跃、但 IoT 注册表未标记 online=true（或注册表无记录）的设备数。 */
+    newlyOnlineCount: number
     onlineCtCount: number
     offlineCtCount: number
     criticalReverseFlowCount: number
@@ -304,6 +306,10 @@ export class DeviceService {
       registryDevices = []
     }
     const registryTotal = registryDevices.length
+    // 注册表「已知在线」SN 集合：用于识别近 7 日新上线（Mongo 有上报但注册表未标记在线）的增量设备。
+    const registryOnlineSn = new Set(
+      registryDevices.filter((device) => device.online === true).map((device) => resolveDeviceSn(device))
+    )
     const mergedItems: FleetDeviceItem[] = registryDevices.map((entry, index) => {
       const sn = resolveDeviceSn(entry)
       const active = activeBySn.get(sn)
@@ -328,6 +334,7 @@ export class DeviceService {
 
     const summary = {
       activeTotal: activeItems.length,
+      newlyOnlineCount: activeItems.filter((item) => !registryOnlineSn.has(item.deviceSn)).length,
       onlineCtCount: activeItems.filter((item) => item.isOnline).length,
       offlineCtCount: activeItems.filter((item) => !item.isOnline).length,
       criticalReverseFlowCount: activeItems.filter((item) => item.reverseFlow).length,
@@ -348,6 +355,9 @@ export class DeviceService {
       if (parsed.status === 'sustained-reverse') return item.hasSustainedReverse
       if (parsed.status === 'inv-fault') return item.hasRecentInverterFault
       if (parsed.status === 'stale-offline') return item.classifyStatus === 'stale-offline'
+      if (parsed.status === 'active') return item.classifyStatus === 'active'
+      // 近 7 日新上线：Mongo 近 7 天有上报（classifyStatus=active），但注册表未标记 online=true。
+      if (parsed.status === 'newly-online') return item.classifyStatus === 'active' && item.online !== true
       return true
     })
     const total = matchingItems.length

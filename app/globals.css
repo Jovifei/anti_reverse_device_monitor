@@ -3730,6 +3730,20 @@ body.metric-dialog-open .metric-card:hover {
   background: var(--green);
 }
 
+/* Newly-online = 注册表未标记在线、但 Mongo 近 7 天有上报的增量设备。用青色区分“新增”语义。 */
+.fleet-priority-card.newly-online::before {
+  background: #94a3b8;
+}
+
+.fleet-priority-card.newly-online.is-active::before {
+  background: #0e7490;
+}
+
+.fleet-priority-card.newly-online.is-active {
+  border-color: #9fd0dd;
+  background: #f2fbfd;
+}
+
 .fleet-priority-card.inv-offline::before {
   background: #94a3b8;
 }
@@ -4057,6 +4071,84 @@ body.metric-dialog-open .metric-card:hover {
 .fleet-table-action {
   color: var(--blue);
   font-weight: 800;
+}
+
+.fleet-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding: 12px 4px 2px;
+  border-top: 1px solid #e1e8f1;
+}
+
+.fleet-pagination-info {
+  color: #52677f;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.fleet-pagination-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.fleet-pagination-link {
+  padding: 6px 16px;
+  border: 1px solid #c5d4e6;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e3a5f;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.fleet-pagination-link:hover {
+  background: #eef4fb;
+  border-color: #1e3a5f;
+}
+
+.fleet-pagination-link.is-disabled {
+  color: #b0bcc9;
+  background: #f5f8fc;
+  border-color: #e1e8f1;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.fleet-pagination-size {
+  display: flex;
+  gap: 4px;
+}
+
+.fleet-pagination-size-btn {
+  padding: 4px 10px;
+  border: 1px solid #c5d4e6;
+  border-radius: 6px;
+  background: #fff;
+  color: #52677f;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.fleet-pagination-size-btn:hover {
+  background: #eef4fb;
+  border-color: #1e3a5f;
+}
+
+.fleet-pagination-size-btn.is-active {
+  background: #1e3a5f;
+  border-color: #1e3a5f;
+  color: #fff;
+  cursor: default;
+  pointer-events: none;
 }
 
 .visually-hidden {
