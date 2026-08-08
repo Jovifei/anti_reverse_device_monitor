@@ -79,6 +79,7 @@ export const RECENT_REPORTABLE_FAULT_HINT = '（7日内存在故障）'
  */
 export function hadRecentReportableInverterFault(
   changes: Array<{
+    eventType?: string
     toFaults?: string[]
     fromFaults?: string[]
     toMask?: number
