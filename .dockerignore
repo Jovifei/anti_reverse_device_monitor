@@ -11,6 +11,8 @@ node_modules
 .env.local
 .env.docker
 data
+log
+ui-preview-real-logs.html
 artifacts
 coverage
 test-results

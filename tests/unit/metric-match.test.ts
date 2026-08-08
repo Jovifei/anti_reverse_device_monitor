@@ -15,10 +15,10 @@ describe('metricMatches / findLatestMetric for ct runtime state', () => {
 
   it('prefers real ct_state over other *state metrics when resolving 正常运行', () => {
     const rows = [
-      { metricKey: 'limit_state', valueNumber: 1, valueText: null as string | null },
-      { metricKey: 'sub1g_state', valueNumber: 1, valueText: null },
-      { metricKey: 'ct_state', valueNumber: 4, valueText: null },
-      { metricKey: 'state', valueNumber: 4, valueText: null }
+      { metricKey: 'limit_state', valueNumber: 1, valueText: null as string | null, reportedAt: new Date('2024-01-01T00:00:00Z') },
+      { metricKey: 'sub1g_state', valueNumber: 1, valueText: null, reportedAt: new Date('2024-01-01T00:00:00Z') },
+      { metricKey: 'ct_state', valueNumber: 4, valueText: null, reportedAt: new Date('2024-01-01T00:00:00Z') },
+      { metricKey: 'state', valueNumber: 4, valueText: null, reportedAt: new Date('2024-01-01T00:00:00Z') }
     ]
     const latest = findLatestMetric(rows, ['ct_state', 'state'])
     expect(latest?.metricKey).toBe('ct_state')
@@ -27,8 +27,8 @@ describe('metricMatches / findLatestMetric for ct runtime state', () => {
 
   it('falls back to exact state when ct_state is absent', () => {
     const rows = [
-      { metricKey: 'limit_state', valueNumber: 1, valueText: null as string | null },
-      { metricKey: 'state', valueNumber: 4, valueText: null }
+      { metricKey: 'limit_state', valueNumber: 1, valueText: null as string | null, reportedAt: new Date('2024-01-01T00:00:00Z') },
+      { metricKey: 'state', valueNumber: 4, valueText: null, reportedAt: new Date('2024-01-01T00:00:00Z') }
     ]
     const latest = findLatestMetric(rows, ['ct_state', 'state'])
     expect(latest?.metricKey).toBe('state')
