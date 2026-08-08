@@ -24,6 +24,7 @@
     "devices:sync-registry": "tsx scripts/sync-device-registry.ts",
     "devices:apply-map": "tsx scripts/apply-device-sn-map.ts",
     "devices:sync-iot": "node --env-file=.env.local --max-old-space-size=2048 ./node_modules/tsx/dist/cli.mjs scripts/sync-iot-device-registry.ts",
+    "devices:analyze-recency": "node --env-file=.env.local --max-old-space-size=2048 ./node_modules/tsx/dist/cli.mjs scripts/analyze-iot-recency.ts",
     "source:resync-all": "node --max-old-space-size=4096 ./node_modules/tsx/dist/cli.mjs scripts/resync-all-registry-devices.ts",
     "inspect:mongodb": "tsx scripts/inspect-mongodb-source.ts",
     "demo:seed": "tsx scripts/seed-demo.ts",

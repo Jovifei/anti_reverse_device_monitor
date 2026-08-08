@@ -24,6 +24,11 @@ DELIVERY_MANIFEST.json
 # Regenerate with: npm run export:html:demo / npm run ui:capture
 artifacts/
 
+# Generated IoT 7-day recency analysis reports (Markdown + per-bucket JSON).
+# Regenerate with: npm run devices:analyze-recency
+# Contains company device SN/Device ID list — never commit.
+reports/
+
 # Claude Code local config
 .claude/
 
