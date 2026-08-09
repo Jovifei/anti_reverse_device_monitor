@@ -132,6 +132,7 @@ npm run dev
 | [项目总览](docs/01_PROJECT_OVERVIEW.md) | 背景与业务问题 |
 | [当前完成情况](docs/05_CURRENT_STATUS_AND_DELIVERABLES.md) | 交付与限制 |
 | [Mongo 只读说明](docs/MONGODB_READONLY_SOURCE.md) | 联调与 Docker 命令 |
+| [部署与配置指南](docs/DEPLOYMENT_GUIDE.md) | Windows、Mongo、IoT、Docker、Cron、验证与排障 |
 | [技术路线学习](docs/10-STUD-学习/01-STUD-技术路线总览.md) | 实现原理 |
 
 ## 验证命令

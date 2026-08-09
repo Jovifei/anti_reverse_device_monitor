@@ -44,7 +44,7 @@ flowchart TB
 用计划任务注册（每天 0:00，当前用户、无论是否登录都运行）：
 
 ```bash
-schtasks /Create /TN "AntiReverse_IoT_DailySync" /TR "D:\work\anti_reverse_device_monitor\sync-iot-daily.cmd" /SC DAILY /ST 00:00 /RL HIGHEST
+schtasks /Create /TN "AntiReverse_IoT_DailySync" /TR "<repo>\sync-iot-daily.cmd" /SC DAILY /ST 00:00 /RL HIGHEST
 ```
 
 验证 / 手动跑一次：
