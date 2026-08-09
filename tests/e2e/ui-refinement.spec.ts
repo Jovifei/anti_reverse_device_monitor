@@ -17,7 +17,7 @@ test.describe('CT and inverter monitoring refinements', () => {
     await page.goto('/devices')
     await expect(page.locator('.fleet-priority-card.critical strong')).toHaveText('1')
     await expect(page.locator('.fleet-priority-card.warning strong')).toHaveText('1')
-    await expect(page.locator('.fleet-priority-card')).toHaveCount(7)
+    await expect(page.locator('.fleet-priority-card')).toHaveCount(8)
     await expect(page.locator('.fleet-risk-table tbody tr.reverse-row')).toContainText('严重逆流')
     await expect(page.locator('.fleet-risk-table tbody tr.offline-row')).toContainText('离线')
     await expect(page.locator('.fleet-risk-table thead')).toContainText('今日发电量')
@@ -79,16 +79,17 @@ test.describe('CT and inverter monitoring refinements', () => {
     expect(dimensions.tableScrollWidth).toBeGreaterThan(dimensions.tableViewportWidth)
   })
 
-  test('orders operator priorities in three rows and keeps pagination controls on the left', async ({ page }) => {
+  test('orders operator priorities in two rows of four and keeps pagination controls on the left', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1000 })
     await page.goto('/devices')
 
     const cards = page.locator('.fleet-priority-card')
-    await expect(cards).toHaveCount(7)
+    await expect(cards).toHaveCount(8)
     await expect(cards.locator('span')).toHaveText([
       '正在逆流',
       '近7天有逆流',
       '近7天微逆故障',
+      '近7日活跃设备',
       'CT 控制器离线',
       '存在离线微逆',
       '近7日新上线',
@@ -96,10 +97,9 @@ test.describe('CT and inverter monitoring refinements', () => {
     ])
 
     const cardY = await cards.evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().y)))
-    expect(new Set(cardY.slice(0, 3)).size).toBe(1)
-    expect(new Set(cardY.slice(3, 5)).size).toBe(1)
-    expect(new Set(cardY.slice(5, 7)).size).toBe(1)
-    expect(new Set(cardY).size).toBe(3)
+    expect(new Set(cardY.slice(0, 4)).size).toBe(1)
+    expect(new Set(cardY.slice(4, 8)).size).toBe(1)
+    expect(new Set(cardY).size).toBe(2)
 
     const pageSize = page.getByRole('group', { name: '每页显示设备数' })
     await expect(pageSize).toContainText('每页显示：')

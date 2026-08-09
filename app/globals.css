@@ -3720,7 +3720,7 @@ body.metric-dialog-open .metric-card:hover {
 
 .fleet-priority-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -3738,11 +3738,11 @@ body.metric-dialog-open .metric-card:hover {
   color: inherit;
   text-decoration: none;
   transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
-  grid-column: span 2;
+  grid-column: span 1;
 }
 
 .fleet-priority-card-wide {
-  grid-column: span 3;
+  grid-column: span 1;
 }
 
 .fleet-priority-card:hover {
@@ -4286,7 +4286,7 @@ body.metric-dialog-open .metric-card:hover {
 
 @media (max-width: 1400px) {
   .fleet-priority-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

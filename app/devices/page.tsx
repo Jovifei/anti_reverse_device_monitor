@@ -186,6 +186,20 @@ export default async function DeviceListPage({
         </p>
       </Link>
       <Link
+        href={fleetListHref('active', q)}
+        className={`fleet-priority-card online ${result.summary.activeTotal ? 'is-active' : ''} ${status === 'active' ? 'is-selected' : ''}`}
+        aria-current={status === 'active' ? 'page' : undefined}
+      >
+        <span>近7日活跃设备</span>
+        <strong>{result.summary.activeTotal}</strong>
+        <p>
+          {result.summary.activeTotal
+            ? `${result.summary.activeTotal} 台设备近 7 日有上报或仍被平台标记在线`
+            : '近 7 日没有活跃设备'}
+          {' '}· 点击筛选
+        </p>
+      </Link>
+      <Link
         href={fleetListHref('offline', q)}
         className={`fleet-priority-card fleet-priority-card-wide warning ${result.summary.offlineCtCount ? 'is-active' : ''} ${status === 'offline' ? 'is-selected' : ''}`}
         aria-current={status === 'offline' ? 'page' : undefined}
