@@ -9,6 +9,7 @@
 | [项目总览](01_PROJECT_OVERVIEW.md) | 背景、业务问题、产品形态 |
 | [操作手册](11_OPS_RUNBOOK.md) | 本地启动、同步、Docker、卡死恢复 |
 | [部署与配置指南](DEPLOYMENT_GUIDE.md) | 环境变量、Windows、Docker、Cron、验证与排障 |
+| [Docker 本机部署教程](DOCKER_DEPLOYMENT_TUTORIAL.md) | Docker 原理、分步骤启动、验证、数据卷与排障 |
 | [当前完成情况](05_CURRENT_STATUS_AND_DELIVERABLES.md) | 已交付能力与已知限制 |
 | [Mongo 只读源](MONGODB_READONLY_SOURCE.md) | Mongo 联调与 Docker 部署命令 |
 | [系统架构](03_SYSTEM_ARCHITECTURE.md) | 模块与数据流 |

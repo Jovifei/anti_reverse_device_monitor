@@ -44,10 +44,17 @@ async function appliedNames(prisma) {
 }
 
 async function hasOldTelemetryUnique(prisma) {
-  const rows = await prisma.$queryRawUnsafe(
-    "SELECT name FROM sqlite_master WHERE type='index' AND name='Telemetry_deviceId_inverterId_metricKey_reportedAt_key'"
-  )
-  return rows.length > 0
+  const indexes = await prisma.$queryRawUnsafe('PRAGMA index_list("Telemetry")')
+  for (const index of indexes) {
+    if (Number(index.unique) !== 1) continue
+    const name = String(index.name).replaceAll('"', '""')
+    const columns = await prisma.$queryRawUnsafe(`PRAGMA index_info("${name}")`)
+    const columnNames = columns
+      .sort((left, right) => Number(left.seq) - Number(right.seq))
+      .map((column) => String(column.name))
+    if (columnNames.join('\u0000') === 'deviceId\u0000inverterId\u0000metricKey\u0000reportedAt') return true
+  }
+  return false
 }
 
 async function main() {

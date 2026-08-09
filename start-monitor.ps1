@@ -21,6 +21,20 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   Read-Host 'Press Enter to exit'
   exit 1
 }
+if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+  Write-Host '[ERROR] npm not found. Install Node.js 22 LTS first.' -ForegroundColor Red
+  Read-Host 'Press Enter to exit'
+  exit 1
+}
+if (-not (Test-Path 'node_modules')) {
+  Write-Host '[0/5] node_modules missing; installing locked dependencies with npm ci...'
+  npm ci
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host '[ERROR] npm ci failed.' -ForegroundColor Red
+    Read-Host 'Press Enter to exit'
+    exit 1
+  }
+}
 
 Write-Host '[1/5] Applying local DB migrations...'
 node --env-file=.env.local scripts/ensure-db-migrations.mjs
@@ -58,10 +72,11 @@ Write-Host ''
 Write-Host '[2b] Syncing IoT device registry (造梦者 → config/devices.json)...'
 npm run devices:sync-iot
 if ($LASTEXITCODE -ne 0) {
-  Write-Host '[WARN] devices:sync-iot failed (non-fatal); registry may be stale.' -ForegroundColor Yellow
-} else {
-  Write-Host '[OK] IoT device registry refreshed.'
+  Write-Host '[ERROR] devices:sync-iot failed; Mongo sync was not started to avoid using a stale registry.' -ForegroundColor Red
+  Read-Host 'Press Enter to exit'
+  exit 1
 }
+Write-Host '[OK] IoT device registry refreshed; source sync will use its device_id values.' -ForegroundColor Green
 
 Write-Host ''
 Write-Host '[3/5] Syncing registry devices from Mongo to local SQLite...'

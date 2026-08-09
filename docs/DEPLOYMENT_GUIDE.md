@@ -23,15 +23,17 @@ npm install
 APP_TIMEZONE=Asia/Shanghai
 SOURCE_DB_ENABLED=true
 SOURCE_DB_TYPE=mongodb
-MONGODB_URI=<只读 Mongo URI>
-MONGODB_DATABASE=<日志数据库名>
+MONGODB_URI=mongodb://zeicomongo:<PASSWORD>@proxy.zeico.cn:3718/zeico_cloud?authSource=zeico_cloud
+MONGODB_DATABASE=zeico_cloud
+MONGODB_PRODUCT_ID=689adc659f04ec32f7642fbb
+MONGODB_COLLECTION=device_log_689adc659f04ec32f7642fbb
 MONGODB_DIRECT_CONNECTION=true
 MONGODB_AUTH_MECHANISM=SCRAM-SHA-1
 DREAM_MAKER_IOT_BASE_URL=https://iot.dream-maker.com
 DREAM_MAKER_IOT_TOKEN=<IoT Bearer Token>
 ```
 
-如果密码包含 `$`、`&` 或 `@`，不要在 PowerShell 命令行中直接拼接 URI；把完整值写入 `.env.local`，并按 Mongo URI 规则对用户名/密码进行 URL 编码。不要把真实值粘贴到 README、Issue 或 Git 提交中。
+上面的主机、数据库、产品和集合已经按当前项目配置填好；只有密码和 IoT Token 仍需在本机填写。如果密码包含 `$`、`&` 或 `@`，不要在 PowerShell 命令行中直接拼接 URI；把完整值写入 `.env.local`，并按 Mongo URI 规则对用户名/密码进行 URL 编码。不要把真实值粘贴到 README、Issue 或 Git 提交中。
 
 | 变量 | 用途 |
 |---|---|
@@ -51,10 +53,12 @@ npm run devices:sync-iot
 npm run db:ensure-migrations
 npm run source:sync
 npm run source:worker   # 保持此窗口运行
-npm run dev -- --hostname 127.0.0.1 --port 3102
+npm run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-浏览器打开 `http://127.0.0.1:3102/devices`。也可以直接运行 `start-monitor.cmd`，它会依次执行迁移、注册表同步、Mongo 增量同步、Worker 和 Web 启动。
+浏览器打开 `http://127.0.0.1:3000/devices`。也可以直接运行 `start-monitor.cmd`，它会依次执行迁移、注册表同步、Mongo 增量同步、Worker 和 Web 启动。
+
+Git Bash / Linux / macOS 可执行 `bash ./start-monitor.sh`，执行顺序与 `start-monitor.cmd` 相同。
 
 ## 4. 日常同步与 Windows 计划任务
 
@@ -72,11 +76,11 @@ schtasks /Create /TN "AntiReverse_IoT_DailySync" /TR "<repo>\sync-iot-daily.cmd"
 
 ```powershell
 Copy-Item .env.docker.example .env.docker
-docker compose up --build -d app
-docker compose --profile sync up -d sync
-docker compose ps
-docker compose logs --tail=100 app
-docker compose logs --tail=100 sync
+docker compose --env-file .env.docker up --build -d app
+docker compose --env-file .env.docker --profile sync up -d sync
+docker compose --env-file .env.docker --profile sync ps
+docker compose --env-file .env.docker logs --tail=100 app
+docker compose --env-file .env.docker logs --tail=100 sync
 ```
 
 - `app` 提供 Web，默认映射到 `http://127.0.0.1:3000`。

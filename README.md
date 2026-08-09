@@ -150,11 +150,19 @@ npm run verify-data
 ```bash
 copy .env.docker.example .env.docker
 # 编辑密钥与 SOURCE_DB_ENABLED=true
-docker compose up --build -d
-docker compose --profile sync up -d sync
+docker compose --env-file .env.docker up --build -d app
+docker compose --env-file .env.docker --profile sync up -d sync
 ```
 
-详见 [操作手册 §6](docs/11_OPS_RUNBOOK.md#6-docker-部署正式)。
+详见 [Docker 本机部署教程](docs/DOCKER_DEPLOYMENT_TUTORIAL.md)、[操作手册 §6](docs/11_OPS_RUNBOOK.md#6-docker-部署正式)。
+
+本地 Node 一键启动（自动同步 IoT 注册表、按 `device_id` 同步 Mongo、启动 Worker 和 Web）：
+
+```powershell
+./start-monitor.cmd
+```
+
+Git Bash / Linux / macOS：`bash ./start-monitor.sh`。详见 [Docker 本机部署教程](docs/DOCKER_DEPLOYMENT_TUTORIAL.md#本地-node-一键启动不使用-docker)。
 
 ## 二期说明
 

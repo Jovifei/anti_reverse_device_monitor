@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 import { prisma } from '@/src/lib/prisma'
 import { hasCriticalFault } from '@/src/domain/faults'
 
@@ -120,17 +120,37 @@ export class TelemetryRepository {
           if (sameSourceTelemetry(bySource, telemetryData)) result.duplicatesSkipped += 1
           else result.conflicts.push({ sourceRecordId: row.sourceRecordId, reason: 'source_record_conflict' })
           continue
+        }
+
+        // SQLite's INSERT OR IGNORE keeps replay/race handling inside the
+        // database. This avoids Prisma emitting a P2002 error for a benign
+        // duplicate and also remains safe if an older database still has the
+        // removed natural-key index until migrations finish.
+        const inserted = await tx.$executeRaw(
+          Prisma.sql`INSERT OR IGNORE INTO "Telemetry"
+            ("deviceId", "inverterId", "siid", "piid", "metricKey", "reportedAt", "receivedAt", "valueNumber", "valueText", "sourceRecordId", "sourceName")
+            VALUES (${telemetryData.deviceId}, ${telemetryData.inverterId}, ${telemetryData.siid}, ${telemetryData.piid}, ${telemetryData.metricKey}, ${telemetryData.reportedAt}, ${telemetryData.receivedAt}, ${telemetryData.valueNumber}, ${telemetryData.valueText}, ${telemetryData.sourceRecordId}, ${telemetryData.sourceName})`
+        )
+        if (Number(inserted) === 1) {
+          result.created += 1
+          createdCurrent = true
         } else {
-          try {
-            await tx.telemetry.create({ data: telemetryData })
-            result.created += 1
-            createdCurrent = true
-          } catch (error) {
-            if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') throw error
-            const raced = await tx.telemetry.findUnique({ where: { sourceRecordId: row.sourceRecordId } })
-            if (!raced) throw error
+          const raced = await tx.telemetry.findUnique({ where: { sourceRecordId: row.sourceRecordId } })
+          if (raced) {
             if (sameSourceTelemetry(raced, telemetryData)) result.duplicatesSkipped += 1
             else result.conflicts.push({ sourceRecordId: row.sourceRecordId, reason: 'source_record_conflict' })
+          } else {
+            const naturalConflict = await tx.telemetry.findFirst({
+              where: {
+                deviceId: telemetryData.deviceId,
+                inverterId: telemetryData.inverterId,
+                metricKey: telemetryData.metricKey,
+                reportedAt: telemetryData.reportedAt
+              },
+              select: { id: true }
+            })
+            if (naturalConflict) result.duplicatesSkipped += 1
+            else throw new Error(`Telemetry insert was ignored without a matching existing row: ${row.sourceRecordId}`)
           }
         }
 

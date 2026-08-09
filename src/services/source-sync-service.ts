@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
 import { CompanySourceAdapterStub } from '@/src/adapters/source-db/company-source-adapter.stub'
 import { getSourceRuntimeConfig } from '@/src/adapters/source-db/config'
@@ -278,10 +278,6 @@ export class SourceSyncService {
               }
               logProgress(`written ${totals.imported} rows (page ${pageIndex})`)
             } catch (error) {
-              if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-                totals.duplicatesSkipped += chunk.length
-                continue
-              }
               totals.failed += chunk.length
               const safe = redactSourceError(error)
               await this.db.syncError.create({

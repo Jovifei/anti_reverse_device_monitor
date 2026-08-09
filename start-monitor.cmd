@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
-title Anti-reverse monitor launcher
-echo Starting launcher...
+title Anti-reverse monitor - IoT and Mongo launcher
+echo Starting IoT registry + Mongo telemetry launcher...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0start-monitor.ps1"
 set EXITCODE=%ERRORLEVEL%
 if not "%EXITCODE%"=="0" (
