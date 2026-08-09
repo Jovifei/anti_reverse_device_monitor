@@ -505,6 +505,30 @@ export class TelemetryRepository {
     })
   }
 
+  /** Earliest locally synchronized telemetry inside one shared fleet window. */
+  async listFirstReportedAtForDevices({
+    deviceIds,
+    startAt,
+    endAt
+  }: {
+    deviceIds: number[]
+    startAt: Date
+    endAt: Date
+  }) {
+    if (!deviceIds.length) return []
+    const rows = await this.db.telemetry.groupBy({
+      by: ['deviceId'],
+      where: {
+        deviceId: { in: deviceIds },
+        reportedAt: { gte: startAt, lte: endAt }
+      },
+      _min: { reportedAt: true }
+    })
+    return rows.flatMap((row) =>
+      row._min.reportedAt ? [{ deviceId: row.deviceId, firstReportedAt: row._min.reportedAt }] : []
+    )
+  }
+
   async getLatestReportedAt({
     deviceSn,
     inverterIndex

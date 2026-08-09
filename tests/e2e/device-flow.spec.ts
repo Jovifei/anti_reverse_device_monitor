@@ -10,10 +10,14 @@ test('overview keeps online, offline, and reverse-flow CT scenarios', async ({ p
 
 test('inverter detail presents units, switches, duration, and decoded faults', async ({ page }) => {
   await page.goto('/devices/DEMO-CT-ONLINE-001/inverters/1')
-  await expect(page.getByText('当前状态持续：', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText(/^当前状态持续：/).first()).toBeVisible()
   await expect(page.getByText('防逆流开关').locator('..')).toContainText('开启')
   await expect(page.getByText('发电开关').locator('..')).toContainText('开启')
   await expect(page.getByText('功率限制').locator('..')).toContainText('100 W')
+  await expect(page.locator('.inv-recent-faults')).toBeVisible()
+  await expect(page.locator('.inv-recent-faults-scroll')).toBeVisible()
+  await expect(page.locator('.inv-recent-faults .is-soft')).toHaveCount(0)
+  await expect(page.locator('.inv-recent-faults')).toHaveCSS('position', 'absolute')
   await expect(page.getByText('PV1 输入欠压', { exact: true })).not.toBeVisible()
   await expect(page.locator('body')).not.toContainText('undefined')
   await expect(page.locator('body')).not.toContainText('null')

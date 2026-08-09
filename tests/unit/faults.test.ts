@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   decodeFaultMask,
+  deriveFaultIncidents,
   faultDisplayNames,
   faultNameClassName,
   formatCurrentFaultLabel,
@@ -27,6 +28,29 @@ describe('fault decoding', () => {
 })
 
 describe('hasReportableInverterFault', () => {
+  it('derives fault occurrence duration from transitions', () => {
+    const incidents = deriveFaultIncidents([
+      { at: '2026-08-08T01:00:00.000Z', fromFaults: [], toFaults: ['过热'] },
+      { at: '2026-08-08T03:30:00.000Z', fromFaults: ['过热'], toFaults: [] },
+      { at: '2026-08-08T05:00:00.000Z', fromFaults: [], toFaults: ['电网1级过压'] }
+    ], '2026-08-08T00:00:00.000Z', '2026-08-08T07:00:00.000Z')
+
+    expect(incidents).toEqual([
+      {
+        name: '电网1级过压',
+        startedAt: '2026-08-08T05:00:00.000Z',
+        endedAt: null,
+        durationMinutes: 120
+      },
+      {
+        name: '过热',
+        startedAt: '2026-08-08T01:00:00.000Z',
+        endedAt: '2026-08-08T03:30:00.000Z',
+        durationMinutes: 150
+      }
+    ])
+  })
+
   it('ignores PV1/PV2 undervoltage and PV voltage abnormal alone', () => {
     expect(hasReportableInverterFault(0x00400c00)).toBe(false)
     expect(hasReportableInverterFault(1 << 10)).toBe(false)

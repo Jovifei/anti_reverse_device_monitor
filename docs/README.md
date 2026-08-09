@@ -26,3 +26,9 @@
 ## 根目录入口
 
 日常操作也见仓库根 [`README.md`](../README.md)。
+
+## 2026-08-09 release notes
+
+- Fleet ordering is applied before pagination and keeps registry order inside each risk group.
+- The inverter detail header now exposes a scrollable seven-day fault summary with occurrence/end time and duration.
+- MongoDB remains read-only; secrets and local runtime artifacts stay outside Git.

@@ -15,7 +15,8 @@ export default defineConfig({
     timeout: 60_000,
     env: {
       APP_DATABASE_URL: 'file:../data/e2e-ui-acceptance.db',
-      APP_TIMEZONE: 'Asia/Shanghai'
+      APP_TIMEZONE: 'Asia/Shanghai',
+      DEVICES_REGISTRY_PATH: 'config/devices.e2e.json'
     }
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }]

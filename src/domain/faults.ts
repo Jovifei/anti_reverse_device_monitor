@@ -5,6 +5,13 @@ export interface DecodedFault {
   name: string
 }
 
+export interface FaultIncident {
+  name: string
+  startedAt: string
+  endedAt: string | null
+  durationMinutes: number
+}
+
 /** Fleet “近7天微逆故障” ignores PV undervoltage / PV voltage abnormal only. */
 export const FLEET_IGNORED_INVERTER_FAULT_BITS = new Set([10, 11, 22])
 
@@ -100,4 +107,48 @@ export function hadRecentReportableInverterFault(
 export function formatCurrentFaultLabel(name: string, recentReportableHint: boolean): string {
   if (!recentReportableHint || isReportableInverterFaultName(name)) return name
   return `${name}${RECENT_REPORTABLE_FAULT_HINT}`
+}
+
+/** Convert fault-mask transitions into readable seven-day fault intervals. */
+export function deriveFaultIncidents(
+  changes: Array<{ at: string; fromFaults: string[]; toFaults: string[] }>,
+  windowStart: string,
+  windowEnd: string
+): FaultIncident[] {
+  const start = new Date(windowStart)
+  const end = new Date(windowEnd)
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return []
+
+  const active = new Map<string, Date>()
+  const incidents: FaultIncident[] = []
+  const ordered = [...changes].sort((left, right) => left.at.localeCompare(right.at))
+  const append = (name: string, startedAt: Date, endedAt: Date | null) => {
+    const finish = endedAt ?? end
+    incidents.push({
+      name,
+      startedAt: startedAt.toISOString(),
+      endedAt: endedAt?.toISOString() ?? null,
+      durationMinutes: Math.max(0, Math.round((finish.getTime() - startedAt.getTime()) / 60000))
+    })
+  }
+
+  for (const change of ordered) {
+    const at = new Date(change.at)
+    if (!Number.isFinite(at.getTime())) continue
+    for (const name of change.fromFaults) {
+      if (!active.has(name)) active.set(name, start)
+    }
+    const next = new Set(change.toFaults)
+    for (const [name, startedAt] of active) {
+      if (next.has(name)) continue
+      append(name, startedAt, at)
+      active.delete(name)
+    }
+    for (const name of next) {
+      if (!active.has(name)) active.set(name, at)
+    }
+  }
+
+  for (const [name, startedAt] of active) append(name, startedAt, null)
+  return incidents.sort((left, right) => right.startedAt.localeCompare(left.startedAt))
 }

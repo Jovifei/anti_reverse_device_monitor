@@ -141,9 +141,9 @@ button:disabled {
 }
 
 .page-header {
+  position: relative;
   display: flex;
   gap: 20px;
-  justify-content: space-between;
   align-items: flex-end;
   margin: 2px 0 18px;
   padding: 18px 0 20px;
@@ -164,6 +164,77 @@ button:disabled {
   width: 5px;
   border-radius: 5px;
   background: linear-gradient(var(--blue), #70a7ff);
+}
+
+.inv-recent-faults {
+  position: absolute;
+  top: 18px;
+  right: 0;
+  z-index: 2;
+  width: min(360px, calc(100% - 700px));
+  min-width: 260px;
+  padding: 11px 13px;
+  border: 1px solid #d8e2ef;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff 0%, #f7faff 100%);
+  box-shadow: 0 8px 20px rgba(52, 84, 128, .07);
+}
+
+.inv-recent-faults-heading,
+.inv-recent-fault-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inv-recent-faults-heading h2 {
+  margin: 0;
+  color: var(--blue-deep);
+  font-size: 14px;
+}
+
+.inv-recent-faults-heading > span {
+  color: var(--muted);
+  font: 700 12px/1 var(--font-data);
+}
+
+.inv-recent-faults-scroll {
+  max-height: 122px;
+  margin-top: 8px;
+  overflow-y: auto;
+  padding-right: 3px;
+  scrollbar-gutter: stable;
+}
+
+.inv-recent-fault {
+  padding: 6px 0;
+  border-top: 1px solid #e6edf5;
+}
+
+.inv-recent-fault:first-child {
+  border-top: 0;
+}
+
+.inv-recent-fault .fault-name {
+  margin: 0;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inv-recent-fault-title strong {
+  color: #9b2d2d;
+  font: 700 12px/1.2 var(--font-data);
+  white-space: nowrap;
+}
+
+.inv-recent-fault p,
+.inv-recent-fault-empty {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .nav-back {
@@ -1429,6 +1500,14 @@ button:disabled {
   .page-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .inv-recent-faults {
+    position: static;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
   }
 
   .sn-search {
@@ -3290,6 +3369,11 @@ button:disabled {
 }
 
 .soft-refresh-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 16px;
   white-space: nowrap;
 }
 
@@ -3636,7 +3720,7 @@ body.metric-dialog-open .metric-card:hover {
 
 .fleet-priority-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -3654,6 +3738,11 @@ body.metric-dialog-open .metric-card:hover {
   color: inherit;
   text-decoration: none;
   transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+  grid-column: span 2;
+}
+
+.fleet-priority-card-wide {
+  grid-column: span 3;
 }
 
 .fleet-priority-card:hover {
@@ -3774,11 +3863,24 @@ body.metric-dialog-open .metric-card:hover {
   background: #94a3b8;
 }
 
+.fleet-priority-card.recent-reverse::before {
+  background: #94a3b8;
+}
+
 .fleet-priority-card.sustained-reverse.is-active::before {
   background: #c92828;
 }
 
+.fleet-priority-card.recent-reverse.is-active::before {
+  background: #c92828;
+}
+
 .fleet-priority-card.sustained-reverse.is-active {
+  border-color: #edb1ad;
+  background: #fff4f3;
+}
+
+.fleet-priority-card.recent-reverse.is-active {
   border-color: #edb1ad;
   background: #fff4f3;
 }
@@ -3853,10 +3955,13 @@ body.metric-dialog-open .metric-card:hover {
 }
 
 .fleet-table-scroll {
+  max-height: min(70vh, 720px);
   overflow: auto;
   border: 1px solid #d6e1ee;
   border-radius: 13px;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .fleet-table-scroll:focus-visible {
@@ -4084,6 +4189,13 @@ body.metric-dialog-open .metric-card:hover {
   border-top: 1px solid #e1e8f1;
 }
 
+.fleet-pagination-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+}
+
 .fleet-pagination-info {
   color: #52677f;
   font-size: 12px;
@@ -4093,6 +4205,7 @@ body.metric-dialog-open .metric-card:hover {
 
 .fleet-pagination-nav {
   display: flex;
+  margin-left: auto;
   gap: 8px;
 }
 
@@ -4123,7 +4236,16 @@ body.metric-dialog-open .metric-card:hover {
 
 .fleet-pagination-size {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 4px;
+}
+
+.fleet-pagination-size-label {
+  margin-right: 4px;
+  color: #52677f;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .fleet-pagination-size-btn {
@@ -4164,13 +4286,18 @@ body.metric-dialog-open .metric-card:hover {
 
 @media (max-width: 1400px) {
   .fleet-priority-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 1100px) {
   .fleet-priority-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fleet-priority-card,
+  .fleet-priority-card-wide {
+    grid-column: span 1;
   }
 }
 

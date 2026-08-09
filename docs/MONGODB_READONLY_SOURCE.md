@@ -10,18 +10,7 @@
 
 ## 固定品类（防逆流 CT）
 
-默认 product_id：`689adc659f04ec32f7642fbb`  
-默认集合：`device_log_689adc659f04ec32f7642fbb`  
-（可用 `MONGODB_PRODUCT_ID` / `MONGODB_COLLECTION` 覆盖。）
-
-联调设备（服务端注册表示例，页面只显示 SN）：
-
-| SN | device_id（仅后台） |
-|----|---------------------|
-| GC2001000000252 | 69c4e61a495848939ee23928 |
-| GC2001000000457 | 69c4e417495848939eb67a46 |
-
-完整 SN↔device_id 映射已入库：`config/devices.json`（与 `config/devices.example.json`、`config/device-sn-map.xlsx` 同源 12 台）。页面仍只按 SN 交互，不展示 `device_id`。
+默认 product_id / collection 通过 `.env.local` 配置；本文不记录真实产品 ID、集合名、SN 或 `device_id` 映射。页面仍只按 SN 交互，不展示 `device_id`。
 
 本地缺 `devices.json` 时会回退读取 `devices.example.json`；一键脚本也会自动从 example 播种。
 
@@ -39,13 +28,12 @@ SOURCE_DB_TYPE=mongodb
 
 ```bash
 npm run inspect:mongodb
-npm run source:sync -- --dry-run --device-id 69c4e61a495848939ee23928
-npm run source:sync -- --dry-run --device-id 69c4e417495848939eb67a46
+npm run source:sync -- --dry-run --device-id <approved_device_id>
 npm run source:sync
 npm run dev
 ```
 
-浏览器打开 `/devices`，用 **SN**（如 `GC2001000000252`）进入详情。
+浏览器打开 `/devices`，用已授权的 **SN** 进入详情。
 
 ## Docker（正式）
 

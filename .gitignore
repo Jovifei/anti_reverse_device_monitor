@@ -45,6 +45,7 @@ backups/
 test-results/
 playwright-report/
 .next-validation/
+.next-release-validation/
 .next-ui-capture-*/
 .tsconfig-ui-capture-*.json
 docs/dependency-audit.raw.json
@@ -96,3 +97,7 @@ logs/
 name.txt
 *.secret
 *credentials*.txt
+.workbuddy/
+source-sync.log
+PROJECT_HANDOVER_CURRENT_STATUS.md
+.next-dev/

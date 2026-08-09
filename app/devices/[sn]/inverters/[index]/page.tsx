@@ -6,7 +6,7 @@ import { MetricHistoryDialog } from '@/src/components/metric-history-dialog'
 import { OfflineWindowLabel } from '@/src/components/offline-window-label'
 import { SoftRefreshButton } from '@/src/components/soft-refresh-button'
 import { TelemetryChart, type ClientChartSeries } from '@/src/components/telemetry-chart'
-import { faultDisplayNames, faultNameClassName, formatCurrentFaultLabel, hadRecentReportableInverterFault, isReportableInverterFaultName } from '@/src/domain/faults'
+import { deriveFaultIncidents, faultDisplayNames, faultNameClassName, formatCurrentFaultLabel, hadRecentReportableInverterFault, isReportableInverterFaultName } from '@/src/domain/faults'
 import {
   INVERTER_KPI_ALIASES,
   displayEnergyKwh,
@@ -65,6 +65,8 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
   const transitionGroups = groupByLocalDate(summary.connectivity.transitions, (item) => item.at)
   const offlineGroups = groupByLocalDate(summary.connectivity.offlineWindows, (item) => item.startAt)
   const faultGroups = groupByLocalDate(summary.faultChanges, (item) => item.at)
+  const recentFaultIncidents = deriveFaultIncidents(summary.faultChanges, charts.windowStart, charts.windowEnd)
+    .filter((incident) => isReportableInverterFaultName(incident.name))
   const recentReportableFault = hadRecentReportableInverterFault(summary.faultChanges)
   const currentHasReportableFault = (faultNames ?? []).some((name) => isReportableInverterFaultName(name))
   const showRecentFaultHint = recentReportableFault && !currentHasReportableFault
@@ -80,6 +82,23 @@ export default async function InverterPage({ params }: { params: Promise<{ sn: s
         <h1>微型逆变器 {summary.inverterIndex}：{phaseLabel}{summary.inverterSn ? ` · ${summary.inverterSn}` : ''}</h1>
         <p className="muted">软件 {summary.softwareVersion ?? EMPTY} · Sub1G {summary.sub1gVersion ?? EMPTY}</p>
       </div>
+      <aside className="inv-recent-faults" aria-label="近7日需关注故障">
+        <div className="inv-recent-faults-heading">
+          <h2>近7日需关注故障</h2>
+          <span>{recentFaultIncidents.length} 起</span>
+        </div>
+        <div className="inv-recent-faults-scroll">
+          {recentFaultIncidents.length ? recentFaultIncidents.map((incident) => (
+            <article className="inv-recent-fault" key={`${incident.name}-${incident.startedAt}`}>
+              <div className="inv-recent-fault-title">
+                <span className={faultNameClassName(incident.name)}>{incident.name}</span>
+                <strong>{formatDuration(incident.durationMinutes)}</strong>
+              </div>
+              <p>{formatClockTime(incident.startedAt)} → {incident.endedAt ? formatClockTime(incident.endedAt) : '持续中'}</p>
+            </article>
+          )) : <p className="muted inv-recent-fault-empty">近7日无故障记录</p>}
+        </div>
+      </aside>
       <div className="header-actions">
         <SoftRefreshButton />
         <DeviceSnSearch initialSn={summary.deviceSn} />

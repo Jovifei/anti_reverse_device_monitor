@@ -29,24 +29,7 @@ start-monitor.cmd
 
 ### 设备注册表与 CT 列表（SN ↔ device_id）
 
-> 仓库内 `config/devices.json` 当前已由造梦者 IoT 平台同步生成 **372 台**设备。下方 12 台为早期手工维护样例（仍保留作参考）。
-
-| SN | device_id |
-|----|-----------|
-| GC2001000000038 | 6969cbb8205d9219dcefda3f |
-| GC2001000000044 | 696b1d4c205d9219dc89e5ec |
-| GC2001000000045 | 696b2018205d9219dcc7ca43 |
-| GC2001000000072 | 69ae5c36495848939e4fc7f2 |
-| GC2001000000092 | 69c66240495848939ea70cb6 |
-| GC2001000000161 | 69af80aa495848939e9f6498 |
-| GC2001000000190 | 69c26d33495848939e5b611e |
-| GC2001000000233 | 69f02abe495848939e5ebb4b |
-| GC2001000000252 | 69c4e61a495848939ee23928 |
-| GC2001000000301 | 69fa987d495848939e686a9b |
-| GC2001000000303 | 6a4caab5495848939e7e1478 |
-| GC2001000000457 | 69c4e417495848939eb67a46 |
-
-权威文件：`config/devices.json`。页面只展示 SN，不展示 `device_id`。
+仓库内 `config/devices.json` 由 IoT 平台同步生成设备注册表。为避免把客户设备标识扩散到文档，README 不再列出真实 SN 或 `device_id` 映射；页面只展示 SN，后台才使用 `device_id` 查询 Mongo。
 
 #### IoT 平台自动同步（推荐）
 
@@ -95,7 +78,7 @@ start-monitor.cmd
 `sync-iot-daily.cmd` → `scripts/sync-iot-daily.ps1`（内部执行 `npm run devices:sync-iot`）已就绪。以管理员身份在 PowerShell 注册任务：
 
 ```bat
-schtasks /Create /TN "AntiReverse_IoT_DailySync" /TR "D:\work\anti_reverse_device_monitor\sync-iot-daily.cmd" /SC DAILY /ST 00:00 /RL HIGHEST
+schtasks /Create /TN "AntiReverse_IoT_DailySync" /TR "E:\project\anti_reverse_device_monitor_delivery_v1\sync-iot-daily.cmd" /SC DAILY /ST 00:00 /RL HIGHEST
 ```
 
 ### Docker / Linux（curl 触发）
@@ -175,3 +158,10 @@ docker compose --profile sync up -d sync
 ## 二期说明
 
 真实 Mongo 只读联调已在本地可用（取决于你的 `.env.local`）。字段映射与 Adapter 合同见 `docs/PHASE2_*` 与 `docs/MONGODB_READONLY_SOURCE.md`。
+
+## Current Release Notes
+
+- Fleet pages are ordered before pagination by operational risk: active reverse flow, recent reverse flow, recent inverter faults, CT offline, inverter offline, newly online, then long-offline devices. Ties retain registry order.
+- The micro-inverter detail header includes a scrollable seven-day fault panel with fault name, occurrence/end time, and duration.
+- MongoDB access is read-only. Keep `.env.local`, Bearer tokens, MongoDB URIs, runtime logs, and local databases out of Git.
+- Configure only variable names in deployment documentation: `MONGODB_URI`, `SOURCE_DB_ENABLED=true`, and `SOURCE_DB_TYPE=mongodb`. Store real values in an ignored `.env.local` or deployment secret manager.

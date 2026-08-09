@@ -5,7 +5,7 @@ import { loadLocalEnvironment } from '@/src/adapters/source-db/config'
 
 const sourceReportPath = path.join(process.cwd(), 'docs', 'MONGODB_SOURCE_INSPECTION_REPORT.md')
 const permissionReportPath = path.join(process.cwd(), 'docs', 'MONGODB_PERMISSION_MATRIX.md')
-const timeoutMs = 8_000
+const timeoutMs = 30_000
 const countLimit = 100_000
 const maxSampleRows = 3
 const maxReportSamples = 5
@@ -205,7 +205,8 @@ async function main() {
     if (authentication.status === 'FAIL') {
       writeFile(permissionReportPath, renderPermissionReport(config, matrix, accessStatus, selectedCollection))
       writeFile(sourceReportPath, renderSourceReport(accessStatus, config, summaries))
-      console.log(JSON.stringify({ status: accessStatus, connection: 'authentication-failed' }))
+      const isAuthenticationFailure = authentication.code === '18' || /auth/i.test(authentication.errorType ?? '')
+      console.log(JSON.stringify({ status: accessStatus, connection: isAuthenticationFailure ? 'authentication-failed' : 'connection-failed', errorType: authentication.errorType ?? null }))
       process.exitCode = 1
       return
     }

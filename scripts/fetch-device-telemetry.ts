@@ -15,6 +15,7 @@
 import { MongoClient } from 'mongodb'
 import { writeFileSync, mkdirSync, existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { classifyTelemetryActivity } from '@/src/domain/iot-telemetry-activity'
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 const NOW = Date.now()
@@ -24,11 +25,12 @@ type Enriched = DeviceSeed & {
   lastReportedAt: string | null // ISO or null
   daysSinceReport: number | null
   bucket: 'recent_7d' | 'stale_7d_plus' | 'never_reported'
+  active: boolean
+  activitySource: ReturnType<typeof classifyTelemetryActivity>['source']
 }
 
-function loadSeeds(): DeviceSeed[] {
+function loadSeeds(dir: string): DeviceSeed[] {
   // 优先用最新一次 IoT 实拉快照
-  const dir = 'reports'
   if (!existsSync(dir)) return []
   const files = readdirSync(dir)
     .filter((f: string) => /^iot-real-devices-.*\.json$/.test(f))
@@ -51,14 +53,15 @@ function buildUri(): string {
 }
 
 async function main(): Promise<void> {
-  const seeds = loadSeeds()
+  const outDir = process.env.IOT_REAL_OUT_DIR?.trim() || 'reports'
+  const seeds = loadSeeds(outDir)
   if (seeds.length === 0) {
-    console.error('未找到 IoT 实拉快照 (reports/iot-real-devices-*.json)，请先运行 npm run devices:fetch-real')
+    console.error(`未找到 IoT 实拉快照 (${outDir}/iot-real-devices-*.json)，请先运行 npm run devices:fetch-real`)
     process.exit(1)
   }
-  const database = process.env.MONGODB_DATABASE?.trim() ?? 'zeico_cloud'
-  const collection = process.env.MONGODB_COLLECTION?.trim() || `device_log_${process.env.MONGODB_PRODUCT_ID?.trim()}`
-  const outDir = process.env.IOT_REAL_OUT_DIR || 'reports'
+  const database = process.env.MONGODB_DATABASE?.trim() || 'zeico_cloud'
+  const productId = process.env.MONGODB_PRODUCT_ID?.trim() || '689adc659f04ec32f7642fbb'
+  const collection = process.env.MONGODB_COLLECTION?.trim() || `device_log_${productId}`
 
   const uri = buildUri()
   const client = new MongoClient(uri, {
@@ -87,17 +90,16 @@ async function main(): Promise<void> {
 
     const enriched: Enriched[] = seeds.map((s) => {
       const rec = byId.get(s.deviceId)
-      if (!rec || rec.lastTime == null) {
-        return { ...s, lastReportedAt: null, daysSinceReport: null, bucket: 'never_reported' }
-      }
-      const lastMs = rec.lastTime * 1000
-      const days = (NOW - lastMs) / 86400000
-      const bucket: Enriched['bucket'] = days > 7 ? 'stale_7d_plus' : 'recent_7d'
+      const lastMs = rec?.lastTime == null ? null : rec.lastTime * 1000
+      const days = lastMs == null ? null : (NOW - lastMs) / 86400000
+      const activity = classifyTelemetryActivity({ online: s.online, lastTime: rec?.lastTime ?? null, nowMs: NOW })
       return {
         ...s,
-        lastReportedAt: new Date(lastMs).toISOString(),
-        daysSinceReport: Math.round(days * 10) / 10,
-        bucket,
+        lastReportedAt: lastMs == null ? null : new Date(lastMs).toISOString(),
+        daysSinceReport: days == null ? null : Math.round(days * 10) / 10,
+        bucket: activity.bucket,
+        active: activity.active,
+        activitySource: activity.source
       }
     })
 
@@ -117,7 +119,15 @@ async function main(): Promise<void> {
           fetchedAt: new Date().toISOString(),
           collection,
           sevenDaysMs: SEVEN_DAYS_MS,
-          summary: { total: enriched.length, recent7d: recent.length, stale7dPlus: stale.length, neverReported: never.length },
+          summary: {
+            total: enriched.length,
+            active7d: enriched.filter((entry) => entry.active).length,
+            iotOnlineOnly: enriched.filter((entry) => entry.activitySource === 'iot-online').length,
+            mongoRecent7d: enriched.filter((entry) => entry.activitySource === 'mongo-recent' || entry.activitySource === 'iot-online+mongo-recent').length,
+            recent7d: recent.length,
+            stale7dPlus: stale.length,
+            neverReported: never.length
+          },
           recent7d: recent,
           stale7dPlus: stale,
           neverReported: never,
@@ -128,7 +138,7 @@ async function main(): Promise<void> {
       'utf8',
     )
     writeFileSync(mdPath, renderMarkdown(enriched, recent, stale, never, collection), 'utf8')
-    console.error(`\n✅ 完成：近7日有上报 ${recent.length} 台；7日+无上报(含从未) ${staleAll.length} 台`)
+    console.error(`\n✅ 完成：近7日活跃（Mongo 上报或 IoT online）${recent.length} 台；7日+无上报且 IoT 离线 ${staleAll.length} 台`)
     console.error(`   JSON: ${jsonPath}`)
     console.error(`   MD:   ${mdPath}`)
   } finally {
@@ -145,23 +155,23 @@ function renderMarkdown(
 ): string {
   const ts = new Date().toISOString()
   const line = (e: Enriched) =>
-    `- \`${e.sn}\`  |  DeviceID: \`${e.deviceId}\`  |  ${e.nickname || '—'}  | IoT: ${e.online ? '在线✅' : '离线⚪'}  | 末次上报: ${e.lastReportedAt ? e.lastReportedAt + ` (${e.daysSinceReport}d前)` : '**从未上报**'}`
+    `- \`${e.sn}\`  |  DeviceID: \`${e.deviceId}\`  |  ${e.nickname || '—'}  | IoT: ${e.online ? '在线✅' : '离线⚪'}  | 活跃来源: ${e.activitySource}  | 末次上报: ${e.lastReportedAt ? e.lastReportedAt + ` (${e.daysSinceReport}d前)` : '**从未上报**'}`
   return [
     '# 真实设备 7 日活跃分析（Mongo 遥测 + IoT 实时）',
     '',
     `> 生成时间：${ts}  `,
     `> 遥测集合：\`${collection}\`（只读聚合，未写/改 Mongo）  `,
-    '> 口径：以遥测字段 `time`（Unix 秒，最后上报时间）为准；近 7 日 = 末次上报 ≤ 7 天前。',
+    '> 口径：Mongo 末次上报在 7 日窗口内，或 IoT 当前 online=true，任一成立即计为活跃。',
     '',
     '## 汇总',
     '',
     `- 注册设备总数：**${all.length}**`,
-    `- **近 7 日内有上报**（刚上线、需关注）：**${recent.length}** 台`,
-    `- **近 7 日以上无上报**（疑似出厂测试注册、售出后未上线）：**${stale.length + never.length}** 台`,
+    `- **近 7 日活跃**（Mongo 上报或 IoT online）：**${recent.length}** 台`,
+    `- **近 7 日以上无上报且 IoT 离线**（疑似出厂测试注册、售出后未上线）：**${stale.length + never.length}** 台`,
     `  - 其中末次上报 > 7 天：${stale.length} 台`,
     `  - 其中**从未上报**：${never.length} 台`,
     '',
-    '## 🟢 近 7 日内有上报（' + recent.length + ' 台，需关注）',
+    '## 🟢 近 7 日活跃（' + recent.length + ' 台，需关注）',
     '',
     recent.length ? recent.map(line).join('\n') : '（无）',
     '',

@@ -32,6 +32,7 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next-validation/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "prisma/*.ts"

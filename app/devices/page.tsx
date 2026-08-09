@@ -4,6 +4,7 @@ import { SoftRefreshButton } from '@/src/components/soft-refresh-button'
 import { OnlineInverterCount } from '@/src/components/online-inverter-count'
 import { WifiSignalView } from '@/src/components/wifi-signal-view'
 import { deviceSnPrimaryLabel, deviceSnSecondaryLabel } from '@/src/domain/device-identity'
+import { compareFleetDevices } from '@/src/domain/fleet-device'
 import { fleetLastKnownClass, fleetLastKnownTitle } from '@/src/domain/fleet-last-known'
 import { formatDuration, formatTime, wifiSignalBars } from '@/src/domain/monitoring'
 import { DeviceService } from '@/src/services/device-service'
@@ -17,7 +18,7 @@ const FILTERS = [
   { value: 'online', label: '仅在线 CT' },
   { value: 'offline', label: '仅离线 CT' },
   { value: 'reverse', label: '仅逆流告警' },
-  { value: 'sustained-reverse', label: '近7天长时逆流' },
+  { value: 'recent-reverse', label: '近7天有逆流' },
   { value: 'inv-offline', label: '存在离线微逆' },
   { value: 'inv-fault', label: '近7天微逆故障' },
   { value: 'stale-offline', label: '7 日以上离线' },
@@ -113,21 +114,7 @@ export default async function DeviceListPage({
   })
   const q = resolvedSearchParams.q?.trim() || ''
   const status = FILTERS.find((item) => item.value === resolvedSearchParams.status)?.value ?? DEFAULT_STATUS
-  const devices = [...result.items].sort((left, right) => {
-    const priority = (device: typeof left) =>
-      device.reverseState === 'active'
-        ? 0
-        : device.hasSustainedReverse
-          ? 1
-          : device.hasRecentInverterFault
-            ? 2
-            : device.offlineAlert
-              ? 3
-              : device.isOnline
-                ? 4
-                : 5
-    return priority(left) - priority(right) || left.deviceSn.localeCompare(right.deviceSn)
-  })
+  const devices = [...result.items].sort(compareFleetDevices)
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize))
 
   return <main className="device-overview fleet-overview">
@@ -171,39 +158,16 @@ export default async function DeviceListPage({
         <p>{result.summary.criticalReverseFlowCount ? '在线 CT 的当前逆流，需优先处理' : '当前没有在线 CT 逆流'} · 点击筛选</p>
       </Link>
       <Link
-        href={fleetListHref('sustained-reverse', q)}
-        className={`fleet-priority-card sustained-reverse ${result.summary.sustainedReverseCtCount ? 'is-active' : ''} ${status === 'sustained-reverse' ? 'is-selected' : ''}`}
-        aria-current={status === 'sustained-reverse' ? 'page' : undefined}
+        href={fleetListHref('recent-reverse', q)}
+        className={`fleet-priority-card recent-reverse ${result.summary.recentReverseCtCount ? 'is-active' : ''} ${status === 'recent-reverse' ? 'is-selected' : ''}`}
+        aria-current={status === 'recent-reverse' ? 'page' : undefined}
       >
-        <span>近7天长时逆流</span>
-        <strong>{result.summary.sustainedReverseCtCount}</strong>
+        <span>近7天有逆流</span>
+        <strong>{result.summary.recentReverseCtCount}</strong>
         <p>
-          {result.summary.sustainedReverseCtCount
-            ? `${result.summary.sustainedReverseCtCount} 台 CT 近 7 天出现过持续 ≥40 分钟逆流`
-            : '近 7 天没有持续 ≥40 分钟的逆流'}
-          {' '}· 点击筛选
-        </p>
-      </Link>
-      <Link
-        href={fleetListHref('offline', q)}
-        className={`fleet-priority-card warning ${result.summary.actionableOfflineCount ? 'is-active' : ''} ${status === 'offline' ? 'is-selected' : ''}`}
-        aria-current={status === 'offline' ? 'page' : undefined}
-      >
-        <span>待处理离线</span>
-        <strong>{result.summary.actionableOfflineCount}</strong>
-        <p>离线不足 7 天，可能需要恢复通信或确认设备状态 · 点击筛选</p>
-      </Link>
-      <Link
-        href={fleetListHref('inv-offline', q)}
-        className={`fleet-priority-card inv-offline ${result.summary.ctsWithOfflineInverters ? 'is-active' : ''} ${status === 'inv-offline' ? 'is-selected' : ''}`}
-        aria-current={status === 'inv-offline' ? 'page' : undefined}
-      >
-        <span>存在离线微逆</span>
-        <strong>{result.summary.ctsWithOfflineInverters}</strong>
-        <p>
-          {result.summary.ctsWithOfflineInverters
-            ? `${result.summary.ctsWithOfflineInverters} 台 CT · 共 ${result.summary.offlineInverterUnitCount} 路配对微逆离线`
-            : '当前没有配对微逆离线'}
+          {result.summary.recentReverseCtCount
+            ? `${result.summary.recentReverseCtCount} 台 CT 近 7 天出现过负功率逆流`
+            : '近 7 天没有检测到逆流'}
           {' '}· 点击筛选
         </p>
       </Link>
@@ -222,31 +186,45 @@ export default async function DeviceListPage({
         </p>
       </Link>
       <Link
-        href={fleetListHref('online', q)}
-        className={`fleet-priority-card online ${status === 'online' ? 'is-selected' : ''}`}
-        aria-current={status === 'online' ? 'page' : undefined}
+        href={fleetListHref('offline', q)}
+        className={`fleet-priority-card fleet-priority-card-wide warning ${result.summary.offlineCtCount ? 'is-active' : ''} ${status === 'offline' ? 'is-selected' : ''}`}
+        aria-current={status === 'offline' ? 'page' : undefined}
       >
-        <span>在线 / 活跃 CT</span>
-        <strong>{result.summary.onlineCtCount} / {result.summary.activeTotal}</strong>
-        <p>{result.summary.staleOfflineCount ? `${result.summary.staleOfflineCount} 台离线超过 7 天，已停止提醒` : '没有超过 7 天仍需保留的离线 CT'} · 点击筛选</p>
+        <span>CT 控制器离线</span>
+        <strong>{result.summary.offlineCtCount}</strong>
+        <p>近 7 天活跃设备中当前未上报的 GC2001 控制器 · 点击筛选</p>
+      </Link>
+      <Link
+        href={fleetListHref('inv-offline', q)}
+        className={`fleet-priority-card fleet-priority-card-wide inv-offline ${result.summary.ctsWithOfflineInverters ? 'is-active' : ''} ${status === 'inv-offline' ? 'is-selected' : ''}`}
+        aria-current={status === 'inv-offline' ? 'page' : undefined}
+      >
+        <span>存在离线微逆</span>
+        <strong>{result.summary.ctsWithOfflineInverters}</strong>
+        <p>
+          {result.summary.ctsWithOfflineInverters
+            ? `${result.summary.ctsWithOfflineInverters} 台 CT · 共 ${result.summary.offlineInverterUnitCount} 路配对微逆离线`
+            : '当前没有配对微逆离线'}
+          {' '}· 点击筛选
+        </p>
       </Link>
       <Link
         href={fleetListHref('newly-online', q)}
-        className={`fleet-priority-card newly-online ${result.summary.newlyOnlineCount ? 'is-active' : ''} ${status === 'newly-online' ? 'is-selected' : ''}`}
+        className={`fleet-priority-card fleet-priority-card-wide newly-online ${result.summary.newlyOnlineCount ? 'is-active' : ''} ${status === 'newly-online' ? 'is-selected' : ''}`}
         aria-current={status === 'newly-online' ? 'page' : undefined}
       >
         <span>近7日新上线</span>
         <strong>{result.summary.newlyOnlineCount}</strong>
         <p>
           {result.summary.newlyOnlineCount
-            ? `${result.summary.newlyOnlineCount} 台设备注册表未标记在线、但 Mongo 近 7 天有上报`
-            : '近 7 天没有新上线的增量设备'}
+            ? `${result.summary.newlyOnlineCount} 台设备仅在最近 3 天出现上报，之前 4 天无数据`
+            : '没有仅在最近 3 天首次或重新出现的设备'}
           {' '}· 点击筛选
         </p>
       </Link>
       <Link
         href={fleetListHref('stale-offline', q)}
-        className={`fleet-priority-card stale-offline ${result.summary.staleOfflineCount ? 'is-active' : ''} ${status === 'stale-offline' ? 'is-selected' : ''}`}
+        className={`fleet-priority-card fleet-priority-card-wide stale-offline ${result.summary.staleOfflineCount ? 'is-active' : ''} ${status === 'stale-offline' ? 'is-selected' : ''}`}
         aria-current={status === 'stale-offline' ? 'page' : undefined}
       >
         <span>7 日以上离线</span>
@@ -262,7 +240,7 @@ export default async function DeviceListPage({
 
     <section className="fleet-list-panel" aria-labelledby="fleet-list-title">
       <div className="panel-heading"><div><p className="eyebrow">Risk ordered</p><h2 id="fleet-list-title">CT 风险与运行概览</h2><p className="muted">运行状态与 WiFi 用色块/格数突出；微逆发电状态区分发电 / 在线未发电 / 离线。</p></div><span className="readonly-badge">共匹配 {result.total} 台</span></div>
-      {devices.length ? <div className="fleet-table-scroll" tabIndex={0} aria-label="CT 风险与运行概览表格，可横向滚动查看全部指标">
+      {devices.length ? <div className="fleet-table-scroll" tabIndex={0} aria-label="CT 风险与运行概览表格，可上下滚动浏览设备、横向滚动查看全部指标">
         <table className="fleet-risk-table">
           <caption>CT 风险与运行概览</caption>
           <thead><tr><th scope="col">CT SN</th><th scope="col">通信状态</th><th scope="col">运行状态</th><th scope="col">限流状态</th><th scope="col">当前逆流状态</th><th scope="col">今日发电量</th><th scope="col">微逆发电状态</th><th scope="col">在线微逆个数</th><th scope="col">Sub1G</th><th scope="col">WiFi 信号</th><th scope="col">最后上报</th><th scope="col">详情</th></tr></thead>
@@ -309,9 +287,29 @@ export default async function DeviceListPage({
       </div> : <div className="empty-chart">{q ? `没有匹配「${q}」的设备。` : '当前筛选条件下没有设备。'}</div>}
       {result.total > 0 ? (
         <div className="fleet-pagination">
-          <span className="fleet-pagination-info">
-            共 {result.total} 台 · 第 {result.page}/{totalPages} 页 · 每页 {result.pageSize} 条
-          </span>
+          <div className="fleet-pagination-left">
+            <div className="fleet-pagination-size" role="group" aria-label="每页显示设备数">
+              <span className="fleet-pagination-size-label">每页显示：</span>
+              {PAGE_SIZE_OPTIONS.map((size) =>
+                result.pageSize === size ? (
+                  <span key={size} className="fleet-pagination-size-btn is-active" aria-current="page">
+                    {size} 台
+                  </span>
+                ) : (
+                  <Link
+                    key={size}
+                    href={paginationHref(status, q, 1, size)}
+                    className="fleet-pagination-size-btn"
+                  >
+                    {size} 台
+                  </Link>
+                )
+              )}
+            </div>
+            <span className="fleet-pagination-info">
+              共 {result.total} 台 · 第 {result.page}/{totalPages} 页
+            </span>
+          </div>
           <nav className="fleet-pagination-nav" aria-label="分页导航">
             {result.page > 1 ? (
               <Link
@@ -338,23 +336,6 @@ export default async function DeviceListPage({
               </span>
             )}
           </nav>
-          <div className="fleet-pagination-size" role="group" aria-label="每页条数">
-            {PAGE_SIZE_OPTIONS.map((size) =>
-              result.pageSize === size ? (
-                <span key={size} className="fleet-pagination-size-btn is-active" aria-current="page">
-                  {size}
-                </span>
-              ) : (
-                <Link
-                  key={size}
-                  href={paginationHref(status, q, 1, size)}
-                  className="fleet-pagination-size-btn"
-                >
-                  {size}
-                </Link>
-              )
-            )}
-          </div>
         </div>
       ) : null}
     </section>

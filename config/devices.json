@@ -1443,7 +1443,7 @@
       "collection": "device_log_689adc659f04ec32f7642fbb",
       "label": "anti-reverse-ct",
       "nickname": "Smart CT Gateway",
-      "online": true
+      "online": false
     },
     {
       "sn": "GC2001000000378",

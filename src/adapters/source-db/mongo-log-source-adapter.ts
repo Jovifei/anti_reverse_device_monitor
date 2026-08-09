@@ -1,4 +1,4 @@
-import { MongoClient, type Collection, type Db, type Document } from 'mongodb'
+import { MongoClient, ObjectId, type Collection, type Db, type Document, type Filter } from 'mongodb'
 import { loadLocalEnvironment } from '@/src/adapters/source-db/config'
 import {
   collectionForEntry,
@@ -84,6 +84,43 @@ function buildUri(config: MongoLogSourceConfig): string {
 
 function toUnixSeconds(date: Date): number {
   return Math.floor(date.getTime() / 1000)
+}
+
+/** Records are ordered by reportedAt desc, then sourceRecordId asc. */
+export function isAfterSourceCursor(
+  row: Pick<SourceTelemetryRecord, 'reportedAt' | 'sourceRecordId'>,
+  cursor: SourceCursor
+): boolean {
+  const cursorTime = Date.parse(cursor.reportedAt)
+  if (row.reportedAt.getTime() < cursorTime) return true
+  if (row.reportedAt.getTime() > cursorTime) return false
+  return row.sourceRecordId.localeCompare(cursor.sourceRecordId) > 0
+}
+
+function deviceLogFilter(params: {
+  deviceIds: string[]
+  fromSec: number
+  toSec: number
+  cursor?: SourceCursor
+}): Filter<Document> {
+  const base = { device_id: { $in: params.deviceIds } }
+  if (!params.cursor) {
+    return { ...base, time: { $gte: params.fromSec, $lte: params.toSec } }
+  }
+
+  const cursorSec = Math.floor(Date.parse(params.cursor.reportedAt) / 1000)
+  const cursorDocId = params.cursor.sourceRecordId.split(':', 1)[0]
+  if (!Number.isFinite(cursorSec) || !ObjectId.isValid(cursorDocId)) {
+    return { ...base, time: { $gte: params.fromSec, $lte: params.toSec } }
+  }
+
+  return {
+    ...base,
+    $or: [
+      { time: { $gte: params.fromSec, $lt: cursorSec } },
+      { time: cursorSec, _id: { $gte: new ObjectId(cursorDocId) } }
+    ]
+  }
 }
 
 function iotEventLogCollectionName(entry: DeviceRegistryEntry, fallbackProductId?: string): string | null {
@@ -298,40 +335,36 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
 
     const fromSec = toUnixSeconds(params.from)
     const toSec = toUnixSeconds(params.to)
-    // Fair per-device fetch: a shared `$in` + limit lets chatty devices starve quieter ones
-    // (charts look like straight lines; inverter online_state never arrives).
-    const perDeviceDocLimit = Math.min(500, Math.max(30, Math.ceil(Math.min(params.limit, 500) / params.deviceIds.length)))
     const records: SourceTelemetryRecord[] = []
     let anyDocs = false
 
-    for (const deviceId of params.deviceIds) {
+    // One collection-level read avoids a full collection scan for every device.
+    // Keep the pipeline-free query compatible with older Mongo-compatible proxies;
+    // pagination continues with the existing reportedAt/sourceRecordId cursor.
+    const docs = await params.collection
+      .find(
+        deviceLogFilter({ deviceIds: params.deviceIds, fromSec, toSec, cursor: params.cursor }),
+        {
+          projection: { device_id: 1, time: 1, data: 1, _id: 1 },
+          sort: { time: -1, _id: 1 },
+          limit: params.limit,
+          maxTimeMS: this.config.queryTimeoutMs
+        }
+      )
+      .toArray()
+    anyDocs = docs.length > 0
+    for (const doc of docs) {
+      const deviceId = typeof doc.device_id === 'string' ? doc.device_id : ''
       const deviceSn = params.snByDeviceId.get(deviceId)
       if (!deviceSn) continue
-      // Read-only find; never insert/update/delete/createIndex.
-      const docs = await params.collection
-        .find(
-          { device_id: deviceId, time: { $gte: fromSec, $lte: toSec } },
-          {
-            projection: { device_id: 1, time: 1, data: 1 },
-            sort: { time: -1 },
-            limit: perDeviceDocLimit,
-            maxTimeMS: this.config.queryTimeoutMs
-          }
-        )
-        .toArray()
-      if (docs.length > 0) anyDocs = true
-      for (const doc of docs) {
-        const expanded = expandDeviceLogDocument({
-          document: doc as DeviceLogDocument,
-          deviceSn,
-          mapping: params.mapping
-        })
-        for (const row of expanded) {
-          if (params.cursor && row.reportedAt.toISOString() === params.cursor.reportedAt && row.sourceRecordId >= params.cursor.sourceRecordId) {
-            continue
-          }
-          records.push(row)
-        }
+      const expanded = expandDeviceLogDocument({
+        document: doc as DeviceLogDocument,
+        deviceSn,
+        mapping: params.mapping
+      })
+      for (const row of expanded) {
+        if (params.cursor && !isAfterSourceCursor(row, params.cursor)) continue
+        records.push(row)
       }
     }
 
@@ -344,7 +377,7 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
       trimmed.length > 0
         ? { reportedAt: trimmed[trimmed.length - 1].reportedAt.toISOString(), sourceRecordId: trimmed[trimmed.length - 1].sourceRecordId }
         : undefined
-    return { records: trimmed, nextCursor, hasMore: anyDocs && records.length > trimmed.length }
+    return { records: trimmed, nextCursor, hasMore: anyDocs && (docs.length >= params.limit || records.length > trimmed.length) }
   }
 
   /** Event-only WiFi RSSI (`P_0_0`) from iot_event_log_<productId>. */
@@ -387,9 +420,7 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
           mapping: params.mapping
         })
         if (!row) continue
-        if (params.cursor && row.reportedAt.toISOString() === params.cursor.reportedAt && row.sourceRecordId >= params.cursor.sourceRecordId) {
-          continue
-        }
+        if (params.cursor && !isAfterSourceCursor(row, params.cursor)) continue
         records.push(row)
       }
     }

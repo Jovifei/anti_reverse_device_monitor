@@ -58,6 +58,10 @@ async function main() {
     throw new Error(`source sync is not stable or idempotent: ${JSON.stringify({ firstSync, secondSync, sourceRows })}`)
   }
   if (sourceRows[1]?.valueNumber !== 43) throw new Error(`same-time source ordering did not preserve the latest source record: ${JSON.stringify(sourceRows)}`)
+  const dryRunBefore = await prisma.syncBatch.count({ where: { sourceName: 'integration-dry-run' } })
+  const dryRunResult = await new SourceSyncService(source, prisma).sync({ sourceName: 'integration-dry-run', from: new Date('2026-07-21T00:00:00.000Z'), to: new Date('2026-07-22T00:00:00.000Z'), batchSize: 1, dryRun: true })
+  const dryRunAfter = await prisma.syncBatch.count({ where: { sourceName: 'integration-dry-run' } })
+  if (dryRunResult.status !== 'dry-run' || dryRunAfter !== dryRunBefore) throw new Error('dry-run created a local sync batch')
   const conflictSource = new MockSourceAdapter([{ sourceRecordId: 'conflict-record', deviceSn: device.deviceSn, siid: '2', piid: '9', inverterIndex: null, reportedAt: sourceAt, receivedAt: sourceAt, value: 7, metricKey: 'load_power' }])
   await new SourceSyncService(conflictSource, prisma).sync({ sourceName: 'integration-conflict', from: new Date('2026-07-21T00:00:00.000Z'), to: new Date('2026-07-22T00:00:00.000Z'), ignoreCheckpoint: true })
   const conflictReplay = new MockSourceAdapter([{ sourceRecordId: 'conflict-record', deviceSn: device.deviceSn, siid: '2', piid: '9', inverterIndex: null, reportedAt: sourceAt, receivedAt: sourceAt, value: 8, metricKey: 'load_power' }])

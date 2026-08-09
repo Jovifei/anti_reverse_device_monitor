@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "devices": [
+    {
+      "sn": "DEMO-CT-ONLINE-001",
+      "device_id": "e2e-online",
+      "online": true
+    },
+    {
+      "sn": "DEMO-CT-OFFLINE-002",
+      "device_id": "e2e-offline",
+      "online": false
+    },
+    {
+      "sn": "DEMO-CT-REVERSE-003",
+      "device_id": "e2e-reverse",
+      "online": true
+    }
+  ]
+}

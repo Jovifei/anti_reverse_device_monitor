@@ -58,6 +58,12 @@ describe('device list query validation', () => {
     })
   })
 
+  it('accepts recent-reverse status filter', () => {
+    expect(parseDeviceListQuery({ status: 'recent-reverse' })).toMatchObject({
+      status: 'recent-reverse'
+    })
+  })
+
   it('accepts inv-fault status filter', () => {
     expect(parseDeviceListQuery({ status: 'inv-fault' })).toMatchObject({
       status: 'inv-fault'

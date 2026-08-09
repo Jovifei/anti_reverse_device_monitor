@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { loadDeviceRegistry, resolveDeviceSn } from '@/src/adapters/source-db/device-registry'
 import { decodeFaultMask, hasCriticalFault, hasReportableInverterFault } from '@/src/domain/faults'
+import { compareFleetDevices } from '@/src/domain/fleet-device'
 import { parseDeviceListQuery, parseSn, parseTelemetryQuery } from '@/src/domain/validation'
 import { parseSnLookup } from '@/src/domain/validation'
 import {
@@ -45,7 +46,7 @@ export interface DeviceListResponse {
   total: number
   summary: {
     activeTotal: number
-    /** 近 7 日新上线（增量在线）：Mongo 活跃、但 IoT 注册表未标记 online=true（或注册表无记录）的设备数。 */
+    /** 近 3 日首次/重新出现，且此前 4 日没有本地同步遥测。 */
     newlyOnlineCount: number
     onlineCtCount: number
     offlineCtCount: number
@@ -55,6 +56,7 @@ export interface DeviceListResponse {
     registryTotal: number
     ctsWithOfflineInverters: number
     offlineInverterUnitCount: number
+    recentReverseCtCount: number
     sustainedReverseCtCount: number
     recentInverterFaultCtCount: number
   }
@@ -110,6 +112,7 @@ export interface DeviceHistorySummary {
 
 const OFFLINE_THRESHOLD_MINUTES = 15
 const ACTIVE_WINDOW_DAYS = 7
+const NEWLY_ONLINE_RECENT_DAYS = 3
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 const OFFLINE_NOTICE_WINDOW_MINUTES = ACTIVE_WINDOW_DAYS * 24 * 60
 const INVERTER_TODAY_ENERGY_METRIC: MetricDefinition = { key: 'inverter-today-energy', label: '今日发电量', unit: 'kWh', color: '#8b5e34', aliases: ['today_energy', 'inverter_today_energy'] }
@@ -131,8 +134,8 @@ function toMinutesSince(date: Date) {
  * 任一为真即视为「近 7 日上线」(active)；否则「7 日以上离线」(stale-offline)。
  * 边界：lastReportedAt 距今正好 7 天（≤ SEVEN_DAYS_MS）计入 active。
  */
-export function classifyDeviceStatus(input: { lastReportedAt: Date | null; online?: boolean }): 'active' | 'stale-offline' {
-  const hasRecentReport = input.lastReportedAt != null && Date.now() - input.lastReportedAt.getTime() <= SEVEN_DAYS_MS
+export function classifyDeviceStatus(input: { lastReportedAt: Date | null; online?: boolean }, asOf = new Date()): 'active' | 'stale-offline' {
+  const hasRecentReport = input.lastReportedAt != null && asOf.getTime() - input.lastReportedAt.getTime() <= SEVEN_DAYS_MS
   const iotOnline = input.online === true
   return hasRecentReport || iotOnline ? 'active' : 'stale-offline'
 }
@@ -153,12 +156,14 @@ function buildStubFleetItem(deviceSn: string, id: number): FleetDeviceItem {
     reverseFlow: false,
     reverseFlowPhases: [],
     reverseState: 'unknown',
+    hasRecentReverse: false,
     hasSustainedReverse: false,
     sustainedReverseMaxMinutes: null,
     sustainedReversePhases: [],
     hasRecentInverterFault: false,
     offlineMinutes: null,
     offlineAlert: false,
+    isNewlyOnline: false,
     todayEnergy: '—',
     inverterGenerationStatus: 'offline',
     inverterGenerationLabel: '—',
@@ -192,6 +197,8 @@ export class DeviceService {
     const onlineCutoff = new Date(now.getTime() - OFFLINE_THRESHOLD_MINUTES * 60_000)
     const sustainedWindowStart = new Date(now)
     sustainedWindowStart.setDate(sustainedWindowStart.getDate() - SUSTAINED_REVERSE_LOOKBACK_DAYS)
+    const newlyOnlineCutoff = new Date(now)
+    newlyOnlineCutoff.setDate(newlyOnlineCutoff.getDate() - NEWLY_ONLINE_RECENT_DAYS)
     const records = await this.repo.findDashboardRecords()
     const baseActiveItems = records
       .filter((item) => item.platformOnline || (item.lastReportedAt !== null && item.lastReportedAt >= activeCutoff))
@@ -283,14 +290,25 @@ export class DeviceService {
       if (hasReportableInverterFault(row.valueNumber)) devicesWithReportableFault.add(row.deviceId)
     }
 
+    const firstReports = await this.telemetryRepository.listFirstReportedAtForDevices({
+      deviceIds: baseActiveItems.map((item) => item.id),
+      startAt: activeCutoff,
+      endAt: now
+    })
+    const firstReportByDeviceId = new Map(firstReports.map((row) => [row.deviceId, row.firstReportedAt]))
+
     const activeItems = baseActiveItems.map((item) => {
-      const sustained = summarizeDeviceSustainedReverse(rowsByDeviceId.get(item.id) ?? [], now, SUSTAINED_REVERSE_MINUTES)
+      const devicePhaseRows = rowsByDeviceId.get(item.id) ?? []
+      const sustained = summarizeDeviceSustainedReverse(devicePhaseRows, now, SUSTAINED_REVERSE_MINUTES)
+      const firstReportedAt = firstReportByDeviceId.get(item.id)
       return {
         ...item,
+        hasRecentReverse: devicePhaseRows.some((row) => row.valueNumber !== null && row.valueNumber < 0),
         hasSustainedReverse: sustained.hasSustainedReverse,
         sustainedReverseMaxMinutes: sustained.maxDurationMinutes,
         sustainedReversePhases: sustained.phases,
-        hasRecentInverterFault: devicesWithReportableFault.has(item.id)
+        hasRecentInverterFault: devicesWithReportableFault.has(item.id),
+        isNewlyOnline: Boolean(firstReportedAt && firstReportedAt >= newlyOnlineCutoff)
       }
     })
 
@@ -306,10 +324,6 @@ export class DeviceService {
       registryDevices = []
     }
     const registryTotal = registryDevices.length
-    // 注册表「已知在线」SN 集合：用于识别近 7 日新上线（Mongo 有上报但注册表未标记在线）的增量设备。
-    const registryOnlineSn = new Set(
-      registryDevices.filter((device) => device.online === true).map((device) => resolveDeviceSn(device))
-    )
     const mergedItems: FleetDeviceItem[] = registryDevices.map((entry, index) => {
       const sn = resolveDeviceSn(entry)
       const active = activeBySn.get(sn)
@@ -317,51 +331,56 @@ export class DeviceService {
       const base = active ?? buildStubFleetItem(sn, -1 - index)
       return {
         ...base,
+        isOnline: Boolean(entry.online) || base.isOnline,
         online: entry.online,
-        classifyStatus: classifyDeviceStatus({ lastReportedAt, online: entry.online })
+        classifyStatus: classifyDeviceStatus({ lastReportedAt, online: entry.online }, now)
       }
     })
-    // 兜底：注册表缺失时至少保留 Mongo 活跃设备，避免页面空白。
-    if (mergedItems.length === 0) {
-      for (const item of activeBySn.values()) {
-        mergedItems.push({
-          ...item,
-          online: item.platformOnline || undefined,
-          classifyStatus: classifyDeviceStatus({ lastReportedAt: item.lastReportedAt, online: item.platformOnline || undefined })
-        })
-      }
+    // 真正的并集：注册表没有的 Mongo 活跃设备也必须出现在列表和分页中。
+    const registrySns = new Set(registryDevices.map((entry) => resolveDeviceSn(entry)))
+    for (const item of activeBySn.values()) {
+      if (registrySns.has(item.deviceSn)) continue
+      mergedItems.push({
+        ...item,
+        online: undefined,
+        classifyStatus: classifyDeviceStatus({ lastReportedAt: item.lastReportedAt, online: item.platformOnline || undefined }, now)
+      })
     }
 
+    const activeSnapshot = mergedItems.filter((item) => item.classifyStatus === 'active')
+
     const summary = {
-      activeTotal: activeItems.length,
-      newlyOnlineCount: activeItems.filter((item) => !registryOnlineSn.has(item.deviceSn)).length,
-      onlineCtCount: activeItems.filter((item) => item.isOnline).length,
-      offlineCtCount: activeItems.filter((item) => !item.isOnline).length,
-      criticalReverseFlowCount: activeItems.filter((item) => item.reverseFlow).length,
-      actionableOfflineCount: activeItems.filter((item) => item.offlineAlert).length,
+      activeTotal: activeSnapshot.length,
+      newlyOnlineCount: activeSnapshot.filter((item) => item.isNewlyOnline).length,
+      onlineCtCount: activeSnapshot.filter((item) => item.isOnline).length,
+      offlineCtCount: activeSnapshot.filter((item) => !item.isOnline).length,
+      criticalReverseFlowCount: activeSnapshot.filter((item) => item.reverseFlow).length,
+      actionableOfflineCount: activeSnapshot.filter((item) => item.offlineAlert).length,
       staleOfflineCount: mergedItems.filter((item) => item.classifyStatus === 'stale-offline').length,
       registryTotal,
-      ctsWithOfflineInverters: activeItems.filter((item) => item.hasOfflineInverter).length,
-      offlineInverterUnitCount: activeItems.reduce((sum, item) => sum + item.offlineInverterIndexes.length, 0),
-      sustainedReverseCtCount: activeItems.filter((item) => item.hasSustainedReverse).length,
-      recentInverterFaultCtCount: activeItems.filter((item) => item.hasRecentInverterFault).length
+      ctsWithOfflineInverters: activeSnapshot.filter((item) => item.hasOfflineInverter).length,
+      offlineInverterUnitCount: activeSnapshot.reduce((sum, item) => sum + item.offlineInverterIndexes.length, 0),
+      recentReverseCtCount: activeSnapshot.filter((item) => item.hasRecentReverse).length,
+      sustainedReverseCtCount: activeSnapshot.filter((item) => item.hasSustainedReverse).length,
+      recentInverterFaultCtCount: activeSnapshot.filter((item) => item.hasRecentInverterFault).length
     }
     const matchingItems = mergedItems.filter((item) => {
       if (parsed.q && !item.deviceSn.toLowerCase().includes(parsed.q.toLowerCase())) return false
       if (parsed.status === 'online') return item.isOnline
-      if (parsed.status === 'offline') return !item.isOnline
+      if (parsed.status === 'offline') return item.classifyStatus === 'active' && !item.isOnline
       if (parsed.status === 'reverse') return item.reverseFlow
+      if (parsed.status === 'recent-reverse') return item.hasRecentReverse
       if (parsed.status === 'inv-offline') return item.hasOfflineInverter
       if (parsed.status === 'sustained-reverse') return item.hasSustainedReverse
       if (parsed.status === 'inv-fault') return item.hasRecentInverterFault
       if (parsed.status === 'stale-offline') return item.classifyStatus === 'stale-offline'
       if (parsed.status === 'active') return item.classifyStatus === 'active'
-      // 近 7 日新上线：Mongo 近 7 天有上报（classifyStatus=active），但注册表未标记 online=true。
-      if (parsed.status === 'newly-online') return item.classifyStatus === 'active' && item.online !== true
+      if (parsed.status === 'newly-online') return item.classifyStatus === 'active' && item.isNewlyOnline
       return true
     })
-    const total = matchingItems.length
-    const items = matchingItems.slice((parsed.page - 1) * parsed.pageSize, parsed.page * parsed.pageSize)
+    const orderedItems = matchingItems.sort(compareFleetDevices)
+    const total = orderedItems.length
+    const items = orderedItems.slice((parsed.page - 1) * parsed.pageSize, parsed.page * parsed.pageSize)
 
     return {
       items,

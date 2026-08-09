@@ -96,8 +96,10 @@ describe('DeviceService.listDevices 7 日分类集成', () => {
     const result = await service.listDevices({ status: 'all' })
     const expectedStale = mockRegistry.devices.filter((d) => d.online !== true).length
     expect(result.summary.staleOfflineCount).toBe(expectedStale)
+    expect(result.summary.onlineCtCount).toBe(1)
     const onlineItem = result.items.find((i) => i.deviceSn === 'SN_ONLINE')
     expect(onlineItem?.classifyStatus).toBe('active')
+    expect(onlineItem?.isOnline).toBe(true)
     const staleItem = result.items.find((i) => i.deviceSn === 'SN_STALE')
     expect(staleItem?.classifyStatus).toBe('stale-offline')
   })

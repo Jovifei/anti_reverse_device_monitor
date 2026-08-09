@@ -99,14 +99,16 @@ export class SourceSyncService {
       `window ${from.toISOString()} → ${to.toISOString()} (${options.ignoreCheckpoint ? 'lookback/device-scoped' : savedCursor ? 'incremental/checkpoint' : 'lookback/checkpoint'})`
     )
 
-    const batch = await this.db.syncBatch.create({
-      data: {
-        sourceName,
-        status: 'running',
-        startedAt: new Date(),
-        cursorBefore: savedCursor ? JSON.stringify(savedCursor) : null
-      }
-    })
+    const batch = options.dryRun
+      ? null
+      : await this.db.syncBatch.create({
+          data: {
+            sourceName,
+            status: 'running',
+            startedAt: new Date(),
+            cursorBefore: savedCursor ? JSON.stringify(savedCursor) : null
+          }
+        })
     const totals = {
       imported: 0,
       duplicatesSkipped: 0,
@@ -265,7 +267,7 @@ export class SourceSyncService {
                 for (const conflict of writeResult.conflicts) {
                   await this.db.syncError.create({
                     data: {
-                      syncBatchId: batch.id,
+                      syncBatchId: batch!.id,
                       sourceRecordId: conflict.sourceRecordId,
                       errorCode: conflict.reason,
                       message: 'Source record identity was reused with different telemetry content.'
@@ -284,7 +286,7 @@ export class SourceSyncService {
               const safe = redactSourceError(error)
               await this.db.syncError.create({
                 data: {
-                  syncBatchId: batch.id,
+                  syncBatchId: batch!.id,
                   sourceRecordId: chunk[0]?.sourceRecordId ?? 'chunk',
                   errorCode: safe.code,
                   message: safe.message
@@ -319,15 +321,17 @@ export class SourceSyncService {
         })
       }
 
-      await this.db.syncBatch.update({
-        where: { id: batch.id },
-        data: {
-          status: options.dryRun ? 'dry-run' : 'completed',
-          completedAt: new Date(),
-          cursorAfter: newestCursor ? JSON.stringify(newestCursor) : null,
-          ...totals
-        }
-      })
+      if (batch) {
+        await this.db.syncBatch.update({
+          where: { id: batch.id },
+          data: {
+            status: 'completed',
+            completedAt: new Date(),
+            cursorAfter: newestCursor ? JSON.stringify(newestCursor) : null,
+            ...totals
+          }
+        })
+      }
 
       logProgress(`done status=${options.dryRun ? 'dry-run' : 'completed'} imported=${totals.imported}`)
       return {
@@ -351,10 +355,12 @@ export class SourceSyncService {
           update: { status: 'failed', lastError: safe.message }
         })
       }
-      await this.db.syncBatch.update({
-        where: { id: batch.id },
-        data: { status: 'failed', completedAt: new Date(), ...totals, lastError: safe.message }
-      })
+      if (batch) {
+        await this.db.syncBatch.update({
+          where: { id: batch.id },
+          data: { status: 'failed', completedAt: new Date(), ...totals, lastError: safe.message }
+        })
+      }
       return { status: 'failed', sourceName, ...totals, checkpoint: newestCursor, error: safe }
     } finally {
       await this.adapter.close?.()
