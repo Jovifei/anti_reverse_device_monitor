@@ -1,6 +1,7 @@
 /**
  * Apply pending Prisma SQL migrations to a pre-existing SQLite DB that was
- * created with `db push` (no _prisma_migrations history). Safe to re-run.
+ * created with `db push` (no _prisma_migrations history). Existing schemas
+ * are baselined only after their migration-specific structure is verified.
  */
 import { createHash, randomUUID } from 'node:crypto'
 import { readFile, readdir } from 'node:fs/promises'
@@ -43,16 +44,68 @@ async function appliedNames(prisma) {
   return new Set(rows.map((row) => row.migration_name))
 }
 
-async function hasOldTelemetryUnique(prisma) {
-  const indexes = await prisma.$queryRawUnsafe('PRAGMA index_list("Telemetry")')
+function quoteIdentifier(identifier) {
+  return `"${identifier.replaceAll('"', '""')}"`
+}
+
+async function hasTables(prisma, tableNames) {
+  const rows = await prisma.$queryRawUnsafe("SELECT name FROM sqlite_master WHERE type = 'table'")
+  const present = new Set(rows.map((row) => String(row.name)))
+  return tableNames.every((name) => present.has(name))
+}
+
+async function hasColumns(prisma, tableName, columnNames) {
+  const rows = await prisma.$queryRawUnsafe(`PRAGMA table_info(${quoteIdentifier(tableName)})`)
+  const present = new Set(rows.map((row) => String(row.name)))
+  return columnNames.every((name) => present.has(name))
+}
+
+async function hasIndex(prisma, tableName, expectedColumns, unique) {
+  const indexes = await prisma.$queryRawUnsafe(`PRAGMA index_list(${quoteIdentifier(tableName)})`)
   for (const index of indexes) {
-    if (Number(index.unique) !== 1) continue
-    const name = String(index.name).replaceAll('"', '""')
-    const columns = await prisma.$queryRawUnsafe(`PRAGMA index_info("${name}")`)
+    if (Number(index.unique) !== Number(unique)) continue
+    const columns = await prisma.$queryRawUnsafe(`PRAGMA index_info(${quoteIdentifier(String(index.name))})`)
     const columnNames = columns
       .sort((left, right) => Number(left.seq) - Number(right.seq))
       .map((column) => String(column.name))
-    if (columnNames.join('\u0000') === 'deviceId\u0000inverterId\u0000metricKey\u0000reportedAt') return true
+    if (columnNames.length === expectedColumns.length && columnNames.every((name, index) => name === expectedColumns[index])) return true
+  }
+  return false
+}
+
+async function hasOldTelemetryUnique(prisma) {
+  return hasIndex(prisma, 'Telemetry', ['deviceId', 'inverterId', 'metricKey', 'reportedAt'], true)
+}
+
+async function hasOldDeviceLatestUnique(prisma) {
+  return hasIndex(prisma, 'DeviceLatest', ['deviceId', 'metricKey'], true)
+}
+
+async function matchesInitialSchema(prisma) {
+  return (await hasTables(prisma, ['Device', 'InverterBinding', 'MetricDefinition', 'Telemetry', 'DeviceLatest', 'DeviceEvent', 'FaultEvent', 'ReverseFlowAlert', 'ImportBatch', 'SyncCheckpoint'])) &&
+    (await hasColumns(prisma, 'Device', ['deviceSn', 'updatedAt'])) &&
+    (await hasColumns(prisma, 'InverterBinding', ['deviceId', 'inverterIndex'])) &&
+    (await hasColumns(prisma, 'Telemetry', ['deviceId', 'sourceRecordId'])) &&
+    (await hasColumns(prisma, 'DeviceLatest', ['deviceId', 'metricKey'])) &&
+    (await hasColumns(prisma, 'SyncCheckpoint', ['sourceName', 'sourceCursor']))
+}
+
+async function matchesMigrationSchema(prisma, name) {
+  if (name === '0001_init') return matchesInitialSchema(prisma)
+  if (name === '0002_add_inverter_phase_num') return hasColumns(prisma, 'InverterBinding', ['phaseNum'])
+  if (name === '0003_source_sync_audit') {
+    return (await hasColumns(prisma, 'Telemetry', ['sourceName'])) &&
+      (await hasColumns(prisma, 'SyncCheckpoint', ['lastError', 'lastSuccessAt'])) &&
+      (await hasTables(prisma, ['SyncBatch', 'SyncError'])) &&
+      (await hasIndex(prisma, 'Telemetry', ['sourceName', 'reportedAt'], false))
+  }
+  if (name.includes('preserve_source_record_identity') || name.includes('remove_legacy_telemetry_natural_unique')) {
+    return !(await hasOldTelemetryUnique(prisma)) &&
+      await hasIndex(prisma, 'Telemetry', ['deviceId', 'inverterId', 'metricKey', 'reportedAt', 'sourceRecordId'], false)
+  }
+  if (name.includes('align_device_latest_index')) {
+    return !(await hasOldDeviceLatestUnique(prisma)) &&
+      await hasIndex(prisma, 'DeviceLatest', ['deviceId', 'metricKey'], false)
   }
   return false
 }
@@ -72,9 +125,8 @@ async function main() {
         continue
       }
 
-      // 0004 is required when the old natural unique still exists.
-      if (name.includes('preserve_source_record_identity') && !(await hasOldTelemetryUnique(prisma))) {
-        console.log(`[migrate] mark ${name} (schema already without old unique)`)
+      if (await matchesMigrationSchema(prisma, name)) {
+        console.log(`[migrate] mark ${name} (schema already matches)`)
       } else {
         console.log(`[migrate] apply ${name}`)
         // Split on semicolons carefully enough for our migration files.
