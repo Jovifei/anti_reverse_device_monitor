@@ -24,7 +24,7 @@ export interface FleetDeviceItem {
   offlineAlert: boolean
   /** 7 日分类：近 7 日有上报数据 OR IoT 平台在线 → active；否则 stale-offline。 */
   classifyStatus: 'active' | 'stale-offline'
-  /** 近 3 日有上报、且 7 日窗口更早 4 日无上报。 */
+  /** 近 7 日首次进入本地监控，且当前仍在 7 日活跃窗口内。 */
   isNewlyOnline: boolean
   /** 来自 IoT 注册表（config/devices.json）的当前在线状态。 */
   online?: boolean

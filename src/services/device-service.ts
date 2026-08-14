@@ -46,7 +46,7 @@ export interface DeviceListResponse {
   total: number
   summary: {
     activeTotal: number
-    /** 近 3 日首次/重新出现，且此前 4 日没有本地同步遥测。 */
+    /** 近 7 日首次进入本地监控的活跃设备。 */
     newlyOnlineCount: number
     onlineCtCount: number
     offlineCtCount: number
@@ -112,7 +112,7 @@ export interface DeviceHistorySummary {
 
 const OFFLINE_THRESHOLD_MINUTES = 15
 const ACTIVE_WINDOW_DAYS = 7
-const NEWLY_ONLINE_RECENT_DAYS = 3
+const NEWLY_ONLINE_WINDOW_DAYS = 7
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 const OFFLINE_NOTICE_WINDOW_MINUTES = ACTIVE_WINDOW_DAYS * 24 * 60
 const INVERTER_TODAY_ENERGY_METRIC: MetricDefinition = { key: 'inverter-today-energy', label: '今日发电量', unit: 'kWh', color: '#8b5e34', aliases: ['today_energy', 'inverter_today_energy'] }
@@ -198,7 +198,7 @@ export class DeviceService {
     const sustainedWindowStart = new Date(now)
     sustainedWindowStart.setDate(sustainedWindowStart.getDate() - SUSTAINED_REVERSE_LOOKBACK_DAYS)
     const newlyOnlineCutoff = new Date(now)
-    newlyOnlineCutoff.setDate(newlyOnlineCutoff.getDate() - NEWLY_ONLINE_RECENT_DAYS)
+    newlyOnlineCutoff.setDate(newlyOnlineCutoff.getDate() - NEWLY_ONLINE_WINDOW_DAYS)
     const records = await this.repo.findDashboardRecords()
     const baseActiveItems = records
       .filter((item) => item.platformOnline || (item.lastReportedAt !== null && item.lastReportedAt >= activeCutoff))
@@ -243,6 +243,7 @@ export class DeviceService {
           productModel: item.productModel,
           platformOnline: item.platformOnline,
           lastReportedAt: item.lastReportedAt,
+          isNewlyOnline: item.createdAt >= newlyOnlineCutoff,
           inverterCount: pairedInverters.length,
           onlineInverterCount,
           offlineInverterIndexes,
@@ -290,17 +291,9 @@ export class DeviceService {
       if (hasReportableInverterFault(row.valueNumber)) devicesWithReportableFault.add(row.deviceId)
     }
 
-    const firstReports = await this.telemetryRepository.listFirstReportedAtForDevices({
-      deviceIds: baseActiveItems.map((item) => item.id),
-      startAt: activeCutoff,
-      endAt: now
-    })
-    const firstReportByDeviceId = new Map(firstReports.map((row) => [row.deviceId, row.firstReportedAt]))
-
     const activeItems = baseActiveItems.map((item) => {
       const devicePhaseRows = rowsByDeviceId.get(item.id) ?? []
       const sustained = summarizeDeviceSustainedReverse(devicePhaseRows, now, SUSTAINED_REVERSE_MINUTES)
-      const firstReportedAt = firstReportByDeviceId.get(item.id)
       return {
         ...item,
         hasRecentReverse: devicePhaseRows.some((row) => row.valueNumber !== null && row.valueNumber < 0),
@@ -308,7 +301,7 @@ export class DeviceService {
         sustainedReverseMaxMinutes: sustained.maxDurationMinutes,
         sustainedReversePhases: sustained.phases,
         hasRecentInverterFault: devicesWithReportableFault.has(item.id),
-        isNewlyOnline: Boolean(firstReportedAt && firstReportedAt >= newlyOnlineCutoff)
+        isNewlyOnline: item.isNewlyOnline
       }
     })
 

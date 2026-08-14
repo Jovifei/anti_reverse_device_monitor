@@ -231,8 +231,8 @@ export default async function DeviceListPage({
         <strong>{result.summary.newlyOnlineCount}</strong>
         <p>
           {result.summary.newlyOnlineCount
-            ? `${result.summary.newlyOnlineCount} 台设备仅在最近 3 天出现上报，之前 4 天无数据`
-            : '没有仅在最近 3 天首次或重新出现的设备'}
+            ? `${result.summary.newlyOnlineCount} 台设备在最近 7 天首次进入本地监控`
+            : '最近 7 天没有首次进入本地监控的设备'}
           {' '}· 点击筛选
         </p>
       </Link>

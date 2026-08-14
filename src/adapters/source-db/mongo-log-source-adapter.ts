@@ -43,7 +43,8 @@ export type MongoLogSourceConfig = {
   root?: string
 }
 
-const DEFAULT_TIME_SHARD_MS = 6 * 60 * 60 * 1000
+const DEFAULT_TIME_SHARD_MS = 30 * 24 * 60 * 60 * 1000
+const PER_DEVICE_DOCUMENT_LIMIT = 30
 
 function readEnvConfig(root?: string): MongoLogSourceConfig {
   loadLocalEnvironment(root)
@@ -121,6 +122,41 @@ function deviceLogFilter(params: {
       { time: cursorSec, _id: { $gte: new ObjectId(cursorDocId) } }
     ]
   }
+}
+
+function latestPerDevicePipeline(params: {
+  match: Filter<Document>
+  deviceField: string
+  timeField: string
+  projection: Document
+}): Document[] {
+  return [
+    { $match: params.match },
+    {
+      $project: {
+        ...params.projection,
+        [params.deviceField]: 1,
+        [params.timeField]: 1,
+        _id: 1
+      }
+    },
+    { $sort: { [params.timeField]: -1, _id: 1 } },
+    {
+      $group: {
+        _id: `$${params.deviceField}`,
+        docs: { $push: '$$ROOT' },
+        docCount: { $sum: 1 }
+      }
+    },
+    {
+      $project: {
+        docs: { $slice: ['$docs', PER_DEVICE_DOCUMENT_LIMIT] },
+        deviceCapped: { $gt: ['$docCount', PER_DEVICE_DOCUMENT_LIMIT] }
+      }
+    },
+    { $unwind: '$docs' },
+    { $replaceRoot: { newRoot: { $mergeObjects: ['$docs', { __deviceCapped: '$deviceCapped' }] } } }
+  ]
 }
 
 function iotEventLogCollectionName(entry: DeviceRegistryEntry, fallbackProductId?: string): string | null {
@@ -336,23 +372,18 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
     const fromSec = toUnixSeconds(params.from)
     const toSec = toUnixSeconds(params.to)
     const records: SourceTelemetryRecord[] = []
-    let anyDocs = false
-
-    // One collection-level read avoids a full collection scan for every device.
-    // Keep the pipeline-free query compatible with older Mongo-compatible proxies;
-    // pagination continues with the existing reportedAt/sourceRecordId cursor.
     const docs = await params.collection
-      .find(
-        deviceLogFilter({ deviceIds: params.deviceIds, fromSec, toSec, cursor: params.cursor }),
-        {
-          projection: { device_id: 1, time: 1, data: 1, _id: 1 },
-          sort: { time: -1, _id: 1 },
-          limit: params.limit,
-          maxTimeMS: this.config.queryTimeoutMs
-        }
+      .aggregate(
+        latestPerDevicePipeline({
+          match: deviceLogFilter({ deviceIds: params.deviceIds, fromSec, toSec, cursor: params.cursor }),
+          deviceField: 'device_id',
+          timeField: 'time',
+          projection: { device_id: 1, time: 1, data: 1 }
+        }),
+        { maxTimeMS: this.config.queryTimeoutMs }
       )
       .toArray()
-    anyDocs = docs.length > 0
+    const anyDeviceCapped = docs.some((doc) => doc.__deviceCapped === true)
     for (const doc of docs) {
       const deviceId = typeof doc.device_id === 'string' ? doc.device_id : ''
       const deviceSn = params.snByDeviceId.get(deviceId)
@@ -377,7 +408,7 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
       trimmed.length > 0
         ? { reportedAt: trimmed[trimmed.length - 1].reportedAt.toISOString(), sourceRecordId: trimmed[trimmed.length - 1].sourceRecordId }
         : undefined
-    return { records: trimmed, nextCursor, hasMore: anyDocs && (docs.length >= params.limit || records.length > trimmed.length) }
+    return { records: trimmed, nextCursor, hasMore: anyDeviceCapped || records.length > trimmed.length }
   }
 
   /** Event-only WiFi RSSI (`P_0_0`) from iot_event_log_<productId>. */
@@ -393,36 +424,31 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
   }): Promise<SourceTelemetryBatch> {
     if (params.limit <= 0 || params.deviceIds.length === 0) return { records: [], hasMore: false }
 
-    const perDeviceDocLimit = Math.min(200, Math.max(10, Math.ceil(Math.min(params.limit, 200) / params.deviceIds.length)))
     const records: SourceTelemetryRecord[] = []
-    let anyDocs = false
-
-    for (const deviceId of params.deviceIds) {
-      const docs = await params.collection
-        .find(
-          { deviceId, en: 'P_0_0', t: { $gte: params.from, $lte: params.to } },
-          {
-            projection: { deviceId: 1, sn: 1, et: 1, en: 1, ec: 1, t: 1 },
-            sort: { t: -1 },
-            limit: perDeviceDocLimit,
-            maxTimeMS: this.config.queryTimeoutMs
-          }
-        )
-        .toArray()
-      if (docs.length > 0) anyDocs = true
-      for (const doc of docs) {
-        const id = typeof doc.deviceId === 'string' ? doc.deviceId : ''
-        const deviceSn = params.snByDeviceId.get(id) || (typeof doc.sn === 'string' ? doc.sn : '')
-        if (!deviceSn) continue
-        const row = expandIotEventLogDocument({
-          document: doc as IotEventLogDocument,
-          deviceSn,
-          mapping: params.mapping
-        })
-        if (!row) continue
-        if (params.cursor && !isAfterSourceCursor(row, params.cursor)) continue
-        records.push(row)
-      }
+    const docs = await params.collection
+      .aggregate(
+        latestPerDevicePipeline({
+          match: { deviceId: { $in: params.deviceIds }, en: 'P_0_0', t: { $gte: params.from, $lte: params.to } },
+          deviceField: 'deviceId',
+          timeField: 't',
+          projection: { deviceId: 1, sn: 1, et: 1, en: 1, ec: 1, t: 1 }
+        }),
+        { maxTimeMS: this.config.queryTimeoutMs }
+      )
+      .toArray()
+    const anyDeviceCapped = docs.some((doc) => doc.__deviceCapped === true)
+    for (const doc of docs) {
+      const id = typeof doc.deviceId === 'string' ? doc.deviceId : ''
+      const deviceSn = params.snByDeviceId.get(id) || (typeof doc.sn === 'string' ? doc.sn : '')
+      if (!deviceSn) continue
+      const row = expandIotEventLogDocument({
+        document: doc as IotEventLogDocument,
+        deviceSn,
+        mapping: params.mapping
+      })
+      if (!row) continue
+      if (params.cursor && !isAfterSourceCursor(row, params.cursor)) continue
+      records.push(row)
     }
 
     records.sort(
@@ -434,7 +460,7 @@ export class MongoLogSourceAdapter implements SourceTelemetryAdapter {
       trimmed.length > 0
         ? { reportedAt: trimmed[trimmed.length - 1].reportedAt.toISOString(), sourceRecordId: trimmed[trimmed.length - 1].sourceRecordId }
         : undefined
-    return { records: trimmed, nextCursor, hasMore: anyDocs && records.length > trimmed.length }
+    return { records: trimmed, nextCursor, hasMore: anyDeviceCapped || records.length > trimmed.length }
   }
 }
 

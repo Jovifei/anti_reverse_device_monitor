@@ -16,6 +16,7 @@ export interface DeviceDashboardRecord {
   productModel: string | null
   platformOnline: boolean
   lastReportedAt: Date | null
+  createdAt: Date
   latestRows: Array<{ metricKey: string; valueNumber: number | null; valueText: string | null; reportedAt: Date }>
   inverterBindings: Array<{
     inverterIndex: number

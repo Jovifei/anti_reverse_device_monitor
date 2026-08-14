@@ -11,7 +11,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { read, utils } from 'xlsx'
 import { loadLocalEnvironment } from '@/src/adapters/source-db/config'
-import type { DeviceRegistry, DeviceRegistryEntry } from '@/src/adapters/source-db/device-registry'
+import {
+  loadDeviceRegistry,
+  mergeManualSnMapIntoRegistry,
+  type DeviceRegistry,
+  type DeviceRegistryEntry
+} from '@/src/adapters/source-db/device-registry'
 
 const DEFAULT_PRODUCT_ID = '689adc659f04ec32f7642fbb'
 const DEFAULT_LABEL = 'anti-reverse-ct'
@@ -72,7 +77,14 @@ function main() {
   const outPath = path.resolve(root, process.env.DEVICES_REGISTRY_PATH?.trim() || path.join('config', 'devices.json'))
   const productId = process.env.MONGODB_PRODUCT_ID?.trim() || DEFAULT_PRODUCT_ID
   const collection = process.env.MONGODB_COLLECTION?.trim() || `device_log_${productId}`
-  const registry = loadMap(mapPath, { productId, collection, label: DEFAULT_LABEL })
+  const manualRegistry = loadMap(mapPath, { productId, collection, label: DEFAULT_LABEL })
+  let existingRegistry: DeviceRegistry = { version: 1, devices: [] }
+  try {
+    existingRegistry = loadDeviceRegistry(root).registry
+  } catch {
+    // A first checkout may not have a local registry yet; the manual map is still usable.
+  }
+  const registry = mergeManualSnMapIntoRegistry(existingRegistry, manualRegistry)
 
   fs.mkdirSync(path.dirname(outPath), { recursive: true })
   fs.writeFileSync(outPath, `${JSON.stringify(registry, null, 2)}\n`, 'utf8')
@@ -83,7 +95,8 @@ function main() {
         source: mapPath,
         output: outPath,
         deviceCount: registry.devices.length,
-        sns: registry.devices.map((item) => item.sn)
+        manualDeviceCount: manualRegistry.devices.length,
+        sns: manualRegistry.devices.map((item) => item.sn)
       },
       null,
       2

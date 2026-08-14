@@ -13,7 +13,7 @@ export const deviceListSchema = z.object({
     return trimmed.length > 0 ? trimmed : undefined
   }, z.string().min(1).max(64).optional()),
   // `active` = 近 7 天内有在线活跃过的设备（默认视图）；
-  // `newly-online` = 近 3 日首次/重新出现，且此前 4 日没有同步遥测；
+  // `newly-online` = 近 7 日首次进入本地监控的活跃设备；
   // `all` = 注册表全量设备。
   status: z
     .enum([

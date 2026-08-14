@@ -70,6 +70,19 @@ export function mergeDeviceIdsIntoRegistry(
 }
 
 /**
+ * Apply the small manual SN map without discarding the full IoT registry.
+ * Excel is an override layer, not a replacement for devices synced from IoT.
+ */
+export function mergeManualSnMapIntoRegistry(existing: DeviceRegistry, manual: DeviceRegistry): DeviceRegistry {
+  const byId = new Map(existing.devices.map((item) => [item.device_id, { ...item }]))
+  for (const entry of manual.devices) {
+    const current = byId.get(entry.device_id)
+    byId.set(entry.device_id, current ? { ...current, ...entry } : { ...entry })
+  }
+  return { version: 1, devices: [...byId.values()].sort((a, b) => a.device_id.localeCompare(b.device_id)) }
+}
+
+/**
  * 将 IoT 平台设备列表合并进既有注册表。
  *
  * 行为：
