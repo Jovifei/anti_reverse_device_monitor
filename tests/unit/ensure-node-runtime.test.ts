@@ -35,14 +35,9 @@ describe('ensure-node-runtime', () => {
 
     try {
       const systemRoot = process.env.SystemRoot ?? 'C:\\Windows'
-      const environmentWithoutPath = Object.fromEntries(
-        Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'path')
-      )
-      const env = {
-        ...environmentWithoutPath,
-        Path: [fixture, path.dirname(process.execPath), path.join(systemRoot, 'System32')].join(path.delimiter)
-      }
+      const runtimePath = [fixture, path.dirname(process.execPath), path.join(systemRoot, 'System32')].join(path.delimiter)
       const command = [
+        `$env:Path = ${quotePowerShell(runtimePath)}`,
         `Set-Location -LiteralPath ${quotePowerShell(fixture)}`,
         `. ${quotePowerShell(helperPath)}`,
         'Ensure-NodeRuntime -EnsureProjectDependencies | Out-Null'
@@ -50,7 +45,6 @@ describe('ensure-node-runtime', () => {
       const powershell = path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
       const result = spawnSync(powershell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', command], {
         cwd: fixture,
-        env,
         encoding: 'utf8'
       })
 
