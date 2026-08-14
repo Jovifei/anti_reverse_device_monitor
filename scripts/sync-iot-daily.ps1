@@ -12,6 +12,7 @@ $OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
 # 兜底用 $PWD（.cmd 已 cd 到仓库根；部分 -Command 调用下 $PSScriptRoot 为空）。
 $repo = if ($PSScriptRoot) { Split-Path $PSScriptRoot -Parent } else { $PWD.Path }
 Set-Location $repo
+. (Join-Path $PSScriptRoot 'ensure-node-runtime.ps1')
 
 # 日志：logs/sync-iot-daily-YYYY-MM-DD.log（同一天追加）
 $logDir = Join-Path $repo 'logs'
@@ -34,7 +35,15 @@ if (-not (Test-Path '.env.local')) {
 
 # 核心：造梦者 IoT 平台 → config/devices.json（npm script 自带 --env-file=.env.local）
 Log '[1/1] npm run devices:sync-iot (造梦者 → config/devices.json)'
-npm run devices:sync-iot *>> $logFile
+try {
+  $runtime = Ensure-NodeRuntime -EnsureProjectDependencies
+  $npm = $runtime.Npm
+} catch {
+  Log "[sync-iot-daily][ERROR] $_"
+  exit 1
+}
+
+& $npm run devices:sync-iot *>> $logFile
 if ($LASTEXITCODE -ne 0) {
   Log ("[sync-iot-daily][ERROR] devices:sync-iot 退出码 {0}" -f $LASTEXITCODE)
   exit $LASTEXITCODE

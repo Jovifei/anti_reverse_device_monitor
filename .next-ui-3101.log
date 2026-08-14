@@ -1,0 +1,211 @@
+
+> anti-reverse-device-monitor@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3101
+
+   ▲ Next.js 15.5.20
+   - Local:        http://127.0.0.1:3101
+   - Network:      http://127.0.0.1:3101
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 4.6s
+ ○ Compiling /devices ...
+ ✓ Compiled /devices in 2.1s (650 modules)
+ GET /devices 200 in 788ms
+ GET /devices 200 in 266ms
+ ○ Compiling /api/live ...
+ ✓ Compiled /api/live in 520ms (662 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /api/live 200 in 653ms
+ GET /devices 200 in 362ms
+ GET /api/live 200 in 17ms
+ GET /devices 200 in 188ms
+ GET /api/live 200 in 26ms
+ GET /api/live 200 in 16ms
+ ✓ Compiled in 447ms (433 modules)
+ GET /devices 200 in 427ms
+ GET /api/live 200 in 37ms
+ GET /api/live 200 in 25ms
+ ✓ Compiled in 526ms (676 modules)
+ GET /devices 200 in 286ms
+ ✓ Compiled in 398ms (676 modules)
+ GET /devices 200 in 192ms
+ ✓ Compiled in 395ms (676 modules)
+ GET /devices 200 in 244ms
+ GET /api/live 200 in 37ms
+ ✓ Compiled in 433ms (676 modules)
+ GET /devices 200 in 585ms
+ ✓ Compiled in 879ms (676 modules)
+ GET /devices 200 in 807ms
+ GET /api/live 200 in 39ms
+ ✓ Compiled in 405ms (676 modules)
+ GET /devices 200 in 221ms
+ ✓ Compiled in 361ms (676 modules)
+ GET /devices 200 in 182ms
+ GET /api/live 200 in 26ms
+ ✓ Compiled in 405ms (676 modules)
+ GET /devices 200 in 202ms
+ GET /devices 200 in 348ms
+ GET /api/live 200 in 78ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 26ms
+ GET /api/live 200 in 17ms
+ GET /devices 200 in 222ms
+ GET /api/live 200 in 22ms
+ GET /devices 200 in 184ms
+ GET /api/live 200 in 32ms
+ GET /api/live 200 in 22ms
+ GET /devices 200 in 184ms
+ GET /api/live 200 in 22ms
+ GET /api/live 200 in 23ms
+ GET /api/live 200 in 21ms
+ GET /api/live 200 in 26ms
+ GET /api/live 200 in 21ms
+ GET /api/live 200 in 26ms
+ GET /api/live 200 in 27ms
+ GET /api/live 200 in 22ms
+ GET /api/live 200 in 24ms
+ GET /api/live 200 in 22ms
+ GET /api/live 200 in 21ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 22ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 20ms
+ GET /api/live 200 in 21ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 20ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 20ms
+ GET /api/live 200 in 20ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 20ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 21ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 23ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 23ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 22ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 28ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 22ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 29ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 13ms
+ GET /api/live 200 in 20ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 20ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 20ms
+ GET /api/live 200 in 20ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 17ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 19ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 33ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 25ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 11ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 13ms
+ GET /api/live 200 in 11ms
+ GET /api/live 200 in 13ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 13ms
+ GET /api/live 200 in 13ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 13ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 13ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 21ms
+ GET /api/live 200 in 13ms
+ GET /api/live 200 in 11ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 14ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 16ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 13ms
+ GET /api/live 200 in 11ms
+ GET /api/live 200 in 13ms
+ GET /api/live 200 in 18ms
+ GET /api/live 200 in 15ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 11ms
+ GET /api/live 200 in 11ms
+ GET /api/live 200 in 11ms
+ GET /api/live 200 in 12ms
+ GET /api/live 200 in 12ms

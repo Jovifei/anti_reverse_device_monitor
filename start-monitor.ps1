@@ -4,6 +4,7 @@ try { chcp 65001 > $null } catch {}
 $OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
 $repo = if ($PSScriptRoot) { $PSScriptRoot } else { $PWD.Path }
 Set-Location $repo
+. "$PSScriptRoot\scripts\ensure-node-runtime.ps1"
 
 Write-Host '========================================'
 Write-Host ' Anti-reverse monitor launcher'
@@ -16,28 +17,18 @@ if (-not (Test-Path '.env.local')) {
   Read-Host 'Press Enter to exit'
   exit 1
 }
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-  Write-Host '[ERROR] node not found. Install Node.js first.' -ForegroundColor Red
+try {
+  $runtime = Ensure-NodeRuntime -EnsureProjectDependencies
+  $node = $runtime.Node
+  $npm = $runtime.Npm
+} catch {
+  Write-Host "[ERROR] $_" -ForegroundColor Red
   Read-Host 'Press Enter to exit'
   exit 1
-}
-if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-  Write-Host '[ERROR] npm not found. Install Node.js 22 LTS first.' -ForegroundColor Red
-  Read-Host 'Press Enter to exit'
-  exit 1
-}
-if (-not (Test-Path 'node_modules')) {
-  Write-Host '[0/5] node_modules missing; installing locked dependencies with npm ci...'
-  npm ci
-  if ($LASTEXITCODE -ne 0) {
-    Write-Host '[ERROR] npm ci failed.' -ForegroundColor Red
-    Read-Host 'Press Enter to exit'
-    exit 1
-  }
 }
 
 Write-Host '[1/5] Applying local DB migrations...'
-node --env-file=.env.local scripts/ensure-db-migrations.mjs
+& $node --env-file=.env.local scripts/ensure-db-migrations.mjs
 if ($LASTEXITCODE -ne 0) {
   Write-Host '[ERROR] DB migration failed.' -ForegroundColor Red
   Read-Host 'Press Enter to exit'
@@ -58,7 +49,7 @@ if (-not (Test-Path 'config\devices.json')) {
 }
 if (Test-Path 'config\device-sn-map.xlsx') {
   Write-Host '[2/5] Applying SN map Excel → config/devices.json...'
-  npm run devices:apply-map
+  & $npm run devices:apply-map
   if ($LASTEXITCODE -ne 0) {
     Write-Host '[ERROR] devices:apply-map failed.' -ForegroundColor Red
     Read-Host 'Press Enter to exit'
@@ -70,7 +61,7 @@ if (Test-Path 'config\device-sn-map.xlsx') {
 
 Write-Host ''
 Write-Host '[2b] Syncing IoT device registry (造梦者 → config/devices.json)...'
-npm run devices:sync-iot
+& $npm run devices:sync-iot
 if ($LASTEXITCODE -ne 0) {
   Write-Host '[ERROR] devices:sync-iot failed; Mongo sync was not started to avoid using a stale registry.' -ForegroundColor Red
   Read-Host 'Press Enter to exit'
@@ -80,7 +71,7 @@ Write-Host '[OK] IoT device registry refreshed; source sync will use its device_
 
 Write-Host ''
 Write-Host '[3/5] Syncing registry devices from Mongo to local SQLite...'
-npm run source:sync
+& $npm run source:sync
 if ($LASTEXITCODE -ne 0) {
   Write-Host '[ERROR] source:sync failed.' -ForegroundColor Red
   Read-Host 'Press Enter to exit'
@@ -95,7 +86,7 @@ if ($existingWorker) {
   Write-Host ("[WARN] source:worker already running (pid {0}); skip starting a second copy." -f ($existingWorker | Select-Object -First 1 -ExpandProperty ProcessId)) -ForegroundColor Yellow
 } else {
   # Explicit heap on the child process: default Node heap OOMs when Next.dev already holds ~2–3 GB.
-  $workerCmd = "chcp 65001>nul & cd /d `"$PWD`" & set NODE_OPTIONS=--max-old-space-size=4096& npm run source:worker"
+  $workerCmd = ('chcp 65001>nul & cd /d "{0}" & set NODE_OPTIONS=--max-old-space-size=4096& call "{1}" run source:worker' -f $PWD.Path, $npm)
   Start-Process -FilePath 'cmd.exe' -ArgumentList @('/k', $workerCmd)
 }
 
